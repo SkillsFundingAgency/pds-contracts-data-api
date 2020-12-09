@@ -1,0 +1,130 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceEnvironmentName": {
+      "type": "string",
+      "metadata": {
+        "description": "Short name of the environment. Used for the name of resources created."
+      }
+    },
+    "serviceName": {
+      "type": "string",
+      "metadata": {
+        "description": "Short name of the service. Used for the name of resources created."
+      }
+    },
+    "ASPNETCORE_ENVIRONMENT": {
+      "type": "string"
+    },
+    "aspSize": {
+      "type": "string",
+      "defaultValue": "1"
+    },
+    "aspInstances": {
+      "type": "int",
+      "defaultValue": 1
+    },
+    "sharedResourceGroupName": {
+      "type": "string"
+    },
+    "sharedAppInsightsName": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "deploymentUrlBase": "https://raw.githubusercontent.com/SkillsFundingAgency/funding-platform-building-blocks/master/templates/",
+    "resourceNamePrefix": "[toLower(concat('pds-', parameters('resourceEnvironmentName'),'-', parameters('serviceName')))]",
+    "appServiceName": "[concat(variables('resourceNamePrefix'), 'api-as')]",
+    "appServicePlanName": "[concat(variables('resourceNamePrefix'), 'api-asp')]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2017-05-10",
+      "name": "app-service-plan",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('deploymentUrlBase'),'app-service-plan.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "appServicePlanName": {
+            "value": "[variables('appServicePlanName')]"
+          },
+          "aspSize": {
+            "value": "[parameters('aspSize')]"
+          },
+          "aspInstances": {
+            "value": "[parameters('aspInstances')]"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "2017-05-10",
+      "name": "app-service",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(variables('deploymentUrlBase'),'app-service.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "appServiceName": {
+            "value": "[variables('appServiceName')]"
+          },
+          "appServicePlanName": {
+            "value": "[variables('appServicePlanName')]"
+          },
+          "appServicePlanResourceGroup": {
+            "value": "[resourceGroup().name]"
+          },
+          "appServiceAppSettings": {
+            "value": [
+              {
+                "name": "ASPNETCORE_ENVIRONMENT",
+                "value": "[parameters('ASPNETCORE_ENVIRONMENT')]"
+              },
+              {
+                "name": "PdsApplicationInsights:InstrumentationKey",
+                "value": "[reference(resourceId(parameters('sharedResourceGroupName'), 'microsoft.insights/components', parameters('sharedAppInsightsName')),'2015-05-01').InstrumentationKey]"
+              },
+              {
+                "name": "PdsApplicationInsights:Environment",
+                "value": "[parameters('resourceEnvironmentName')]"
+              },
+              {
+                "name": "Logging:ApplicationInsights:Loglevel:Default",
+                "value": "Information"
+              },
+              {
+                "name": "Logging:ApplicationInsights:Loglevel:Microsoft",
+                "value": "Error"
+              },
+              {
+                "name": "Logging:LogLevel:Default",
+                "value": "Information"
+              }
+            ]
+          },
+          "appServiceConnectionStrings": {
+            "value": [
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "app-service-plan"
+      ]
+    }
+  ],
+  "outputs": {
+    "AppServiceName": {
+      "type": "string",
+      "value": "[variables('appServiceName')]"
+    }
+  }
+}
