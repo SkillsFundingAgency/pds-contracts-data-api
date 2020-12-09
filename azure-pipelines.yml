@@ -1,0 +1,30 @@
+﻿trigger:
+  batch: true
+  branches:
+    include:
+      - "*"
+
+pr: none
+
+variables:
+  buildConfiguration: 'release'
+
+pool:
+  vmImage: 'windows-latest'
+
+jobs:
+- job: 'BuildAndPublish'
+  workspace:
+    clean: all
+  steps:
+  - task: CopyFiles@2
+    displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
+    inputs:
+      contents: |
+        azure/**
+      targetFolder: '$(build.artifactstagingdirectory)/publish'
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact'
+    inputs:
+      pathtoPublish: '$(build.artifactstagingdirectory)/publish'
