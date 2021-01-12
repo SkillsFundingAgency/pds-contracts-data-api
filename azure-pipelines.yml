@@ -17,6 +17,37 @@ jobs:
   workspace:
     clean: all
   steps:
+  - task: DotNetCoreCLI@2
+    displayName: Restore
+    inputs:
+      command: restore
+      projects: '**/*.csproj'
+      feedsToUse: 'select'
+      vstsFeed: '9fd46a3f-eada-41dc-86e9-36332aeb8ef1/ecd5af68-0566-42db-8cd7-e71176254aa2'
+
+  - task: DotNetCoreCLI@2
+    displayName: Build
+    inputs:
+      projects: '**/*.csproj'
+      arguments: '--configuration $(buildConfiguration) --no-restore'
+
+  - task: DotNetCoreCLI@2
+    displayName: Test
+    inputs:
+      command: test
+      projects: '**/*Tests/*.csproj'
+      arguments: '--configuration $(buildConfiguration) --no-build --collect "Code coverage" --filter TestCategory=Unit'
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Publish Website'
+    inputs:
+      command: publish
+      publishWebProjects: false
+      zipAfterPublish: true
+      projects: |
+        Pds.Contracts.Data/Pds.Contracts.Data.Api/Pds.Contracts.Data.Api.csproj
+      arguments: '--configuration $(buildConfiguration) --output $(build.artifactstagingdirectory)/publish --no-restore --no-build'
+      
   - task: CopyFiles@2
     displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
     inputs:
