@@ -11,7 +11,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pds.Contracts.Data.Services
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pds.Contracts.Data.Services.Tests", "Pds.Contracts.Data.Services.Tests\Pds.Contracts.Data.Services.Tests.csproj", "{905AC8ED-6B01-471C-98C9-3C612C7E5230}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pds.Contracts.Data.Repository", "Pds.Contracts.Data.Repository\Pds.Contracts.Data.Repository.csproj", "{A2AE1827-E511-4A36-8C47-FF1DB58652A1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pds.Contracts.Data.Repository", "Pds.Contracts.Data.Repository\Pds.Contracts.Data.Repository.csproj", "{A2AE1827-E511-4A36-8C47-FF1DB58652A1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pds.Contracts.Data.Repository.Tests", "Pds.Contracts.Data.Repository.Tests\Pds.Contracts.Data.Repository.Tests.csproj", "{9FB954DE-EB17-4DF9-8DA6-E480B3AD2B19}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F967A6A4-E511-497B-9143-BE01F6C06E1B}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +46,10 @@ Global
 		{A2AE1827-E511-4A36-8C47-FF1DB58652A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A2AE1827-E511-4A36-8C47-FF1DB58652A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A2AE1827-E511-4A36-8C47-FF1DB58652A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FB954DE-EB17-4DF9-8DA6-E480B3AD2B19}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FB954DE-EB17-4DF9-8DA6-E480B3AD2B19}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FB954DE-EB17-4DF9-8DA6-E480B3AD2B19}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FB954DE-EB17-4DF9-8DA6-E480B3AD2B19}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

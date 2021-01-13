@@ -18,8 +18,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             // Arrange
             var expectedServiceModel = Mock.Of<Models.Contract>();
             var expectedDataModel = Mock.Of<Contract>();
-
-            //Set up
             var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
             Mock.Get(mockRepo)
                 .Setup(r => r.GetByIdAsync(It.IsAny<int>()))

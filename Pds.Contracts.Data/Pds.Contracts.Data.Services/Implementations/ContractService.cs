@@ -11,8 +11,8 @@ namespace Pds.Contracts.Data.Services.Implementations
     /// <inheritdoc/>
     public class ContractService : IContractService
     {
-        private readonly IRepository<Contract> repository;
-        private readonly IMapper mapper;
+        private readonly IRepository<Contract> _repository;
+        private readonly IMapper _mapper;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContractService" /> class.
@@ -21,22 +21,22 @@ namespace Pds.Contracts.Data.Services.Implementations
         /// <param name="mapper">Automapper instance.</param>
         public ContractService(IRepository<Contract> repository, IMapper mapper)
         {
-            this.repository = repository;
-            this.mapper = mapper;
+            _repository = repository;
+            _mapper = mapper;
         }
 
         /// <inheritdoc/>
         public async Task<Models.Contract> GetAsync(int id)
         {
-            var contract = await repository.GetByIdAsync(id).ConfigureAwait(false);
-            return mapper.Map<Models.Contract>(contract);
+            var contract = await _repository.GetByIdAsync(id).ConfigureAwait(false);
+            return _mapper.Map<Models.Contract>(contract);
         }
 
         /// <inheritdoc/>
         public IList<Models.Contract> GetByContractNumber(string contractNumber)
         {
-            var contracts = repository.GetMany(c => c.ContractNumber.Equals(contractNumber, System.StringComparison.OrdinalIgnoreCase)).ToList();
-            return mapper.Map<IList<Models.Contract>>(contracts.ToList());
+            var contracts = _repository.GetMany(c => c.ContractNumber.Equals(contractNumber, System.StringComparison.OrdinalIgnoreCase)).ToList();
+            return _mapper.Map<IList<Models.Contract>>(contracts.ToList());
         }
     }
 }
