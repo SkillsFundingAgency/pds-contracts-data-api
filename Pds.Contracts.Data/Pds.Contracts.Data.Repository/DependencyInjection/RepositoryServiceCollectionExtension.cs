@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Pds.Contracts.Data.Repository.Context;
 using Pds.Contracts.Data.Repository.Implementations;
 using Pds.Contracts.Data.Repository.Interfaces;
 
@@ -21,6 +23,7 @@ namespace Pds.Contracts.Data.Repository.DependencyInjection
         public static IServiceCollection AddRepositoriesServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            services.AddScoped<DbContext, PdsContext>();
 
             return services;
         }
