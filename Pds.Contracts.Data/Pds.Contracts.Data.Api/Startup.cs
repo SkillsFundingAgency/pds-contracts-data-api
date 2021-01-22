@@ -8,6 +8,9 @@ using Pds.Contracts.Data.Api.MvcConfiguration;
 using Pds.Contracts.Data.Services.DependencyInjection;
 using Pds.Core.Logging;
 using Pds.Core.Telemetry.ApplicationInsights;
+using System;
+using System.IO;
+using System.Reflection;
 
 namespace Pds.Contracts.Data.Api
 {
@@ -62,6 +65,10 @@ namespace Pds.Contracts.Data.Api
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc(CurrentApiVersion, new OpenApiInfo { Title = AssemblyName, Version = CurrentApiVersion });
+
+                // Set the comments path for the Swagger JSON and UI.
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, $"{AssemblyName}.xml");
+                c.IncludeXmlComments(xmlPath);
             });
 
             services.AddHealthChecks()

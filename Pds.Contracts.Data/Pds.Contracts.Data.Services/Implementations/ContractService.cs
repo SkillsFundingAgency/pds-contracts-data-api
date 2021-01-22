@@ -2,6 +2,7 @@
 using Pds.Contracts.Data.Repository.DataModels;
 using Pds.Contracts.Data.Repository.Interfaces;
 using Pds.Contracts.Data.Services.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -35,8 +36,15 @@ namespace Pds.Contracts.Data.Services.Implementations
         /// <inheritdoc/>
         public IList<Models.Contract> GetByContractNumber(string contractNumber)
         {
-            var contracts = _repository.GetMany(c => c.ContractNumber.Equals(contractNumber, System.StringComparison.OrdinalIgnoreCase)).ToList();
-            return _mapper.Map<IList<Models.Contract>>(contracts.ToList());
+            var contracts = _repository.GetMany(c => c.ContractNumber == contractNumber);
+            return _mapper.Map<IList<Models.Contract>>(contracts);
+        }
+
+        /// <inheritdoc/>
+        public Models.Contract GetByContractNumberAndVersion(string contractNumber, int version)
+        {
+            var contract = _repository.GetByPredicate(c => c.ContractNumber == contractNumber && c.ContractVersion == version);
+            return _mapper.Map<Models.Contract>(contract);
         }
     }
 }

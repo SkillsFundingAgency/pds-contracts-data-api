@@ -30,8 +30,4 @@
     <ProjectReference Include="..\Pds.Contracts.Data.Services\Pds.Contracts.Data.Services.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Unit\" />
-  </ItemGroup>
-
 </Project>

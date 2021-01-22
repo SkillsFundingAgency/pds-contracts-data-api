@@ -18,6 +18,14 @@ namespace Pds.Contracts.Data.Services.Interfaces
         Task<Models.Contract> GetAsync(int id);
 
         /// <summary>
+        /// Gets the by contract number and version asynchronous.
+        /// </summary>
+        /// <param name="contractNumber">The contract number.</param>
+        /// <param name="version">The version.</param>
+        /// <returns>A contract <see cref="Models.Contract"/>.</returns>
+        Models.Contract GetByContractNumberAndVersion(string contractNumber, int version);
+
+        /// <summary>
         /// Gets the contract by contract number.
         /// </summary>
         /// <param name="contractNumber">The contract identifier.</param>
