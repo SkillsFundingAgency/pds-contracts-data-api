@@ -5,7 +5,10 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Pds.Contracts.Data.Api.Controllers;
 using Pds.Contracts.Data.Services.Interfaces;
+using Pds.Contracts.Data.Services.Models;
+using Pds.Contracts.Data.Services.Models.Enums;
 using Pds.Core.Logging;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Pds.Contracts.Data.Api.Tests.Unit
@@ -123,5 +126,69 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             mockLogger.Verify();
             mockContractService.Verify();
         }
+
+        [TestMethod, TestCategory("Unit")]
+        public async Task GetContractReminders_ReturnsExpectedResult()
+        {
+            // Arrange
+            var expected = ExpectedContractReminders();
+
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+
+            var mockExampleService = new Mock<IContractService>();
+            var controller = new ContractController(mockLogger.Object, mockExampleService.Object);
+
+            // Act
+            var actual = await controller.GetContractReminders();
+
+            // Assert
+            actual.Value.Should().BeEquivalentTo(expected);
+            mockLogger.Verify();
+        }
+
+        #region Arrange Helpers
+
+        private ContractReminders ExpectedContractReminders()
+        {
+            ContractReminders rtn = new ContractReminders();
+
+            Contract one = new Contract()
+            {
+                Title = "ESF SSW contract variation for Humber LEP version 5",
+                ContractNumber = "ESIF-5014",
+                ContractVersion = 5,
+                Status = ContractStatus.Approved,
+                FundingType = ContractFundingType.Esf
+            };
+
+            Contract two = new Contract()
+            {
+                Title = "ESF SSW contract variation for Humber LEP version 5",
+                ContractNumber = "ESIF-5014",
+                ContractVersion = 5,
+                Status = ContractStatus.Approved,
+                FundingType = ContractFundingType.Esf
+            };
+
+            IList<Contract> contractList = new List<Contract>() { one, two };
+
+            rtn.Contracts = contractList;
+
+            rtn.CurrentPage = 1;
+            rtn.PageCount = 10;
+            rtn.SortedBy = ContractSortOptions.CreatedAt |
+                ContractSortOptions.Value |
+                ContractSortOptions.ContractVersion;
+            rtn.TotalCount = 200;
+
+            return rtn;
+        }
+
+        #endregion
+
     }
 }
