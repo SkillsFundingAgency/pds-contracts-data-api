@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.AzureAD.UI;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -6,11 +7,13 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using Pds.Contracts.Data.Api.MvcConfiguration;
 using Pds.Contracts.Data.Services.DependencyInjection;
+using Pds.Core.ApiAuthentication;
 using Pds.Core.Logging;
 using Pds.Core.Telemetry.ApplicationInsights;
+using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 
 namespace Pds.Contracts.Data.Api
 {
@@ -21,8 +24,9 @@ namespace Pds.Contracts.Data.Api
     {
         private const string RequireElevatedRightsPolicyName = "RequireElevatedRights";
         private const string CurrentApiVersion = "v1.0.0";
-
         private static string _assemblyName;
+
+        private readonly IWebHostEnvironment _environment;
 
         /// <summary>
         /// Gets the application configuration.
@@ -46,9 +50,11 @@ namespace Pds.Contracts.Data.Api
         /// Initializes a new instance of the <see cref="Startup"/> class.
         /// </summary>
         /// <param name="configuration">The application configuration.</param>
-        public Startup(IConfiguration configuration)
+        /// <param name="environment">Web host environment.</param>
+        public Startup(IConfiguration configuration, IWebHostEnvironment environment)
         {
             Configuration = configuration;
+            _environment = environment;
         }
 
         /// <summary>
@@ -59,8 +65,15 @@ namespace Pds.Contracts.Data.Api
         {
             services.AddApiControllers();
             services.AddFeatureServices(Configuration);
+            services.AddHealthChecks().AddFeatureHealthChecks();
             services.AddPdsApplicationInsightsTelemetry(options => BuildAppInsightsConfiguration(options));
             services.AddLoggerAdapter();
+            services.AddAzureADAuthentication(Configuration);
+
+            if (_environment.IsDevelopment())
+            {
+                services.DisableAuthentication(AssemblyName);
+            }
 
             services.AddSwaggerGen(c =>
             {
@@ -69,10 +82,12 @@ namespace Pds.Contracts.Data.Api
                 // Set the comments path for the Swagger JSON and UI.
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, $"{AssemblyName}.xml");
                 c.IncludeXmlComments(xmlPath);
-            });
 
-            services.AddHealthChecks()
-                .AddFeatureHealthChecks();
+                if (!_environment.IsDevelopment())
+                {
+                    AddOauth2ClientCredentialsFlow(c);
+                }
+            });
 
             services.AddAuthorization(options =>
             {
@@ -102,6 +117,8 @@ namespace Pds.Contracts.Data.Api
 
             app.UseRouting();
 
+            app.UseAuthentication();
+
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
@@ -115,6 +132,28 @@ namespace Pds.Contracts.Data.Api
         {
             Configuration.Bind("PdsApplicationInsights", options);
             options.Component = AssemblyName;
+        }
+
+        private void AddOauth2ClientCredentialsFlow(SwaggerGenOptions c)
+        {
+            var authOptions = new AzureADOptions();
+            Configuration.Bind("Authentication", authOptions);
+
+            c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.OAuth2,
+                Flows = new OpenApiOAuthFlows
+                {
+                    ClientCredentials = new OpenApiOAuthFlow
+                    {
+                        TokenUrl = new Uri($"{authOptions.Instance}{authOptions.TenantId}/oauth2/v2.0/token"),
+                        Scopes = new Dictionary<string, string>
+                        {
+                            [$"{authOptions.ClientId}/.default"] = "default scope"
+                        }
+                    }
+                }
+            });
         }
     }
 }

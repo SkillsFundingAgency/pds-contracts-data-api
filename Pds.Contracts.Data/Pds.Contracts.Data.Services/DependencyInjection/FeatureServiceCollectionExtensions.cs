@@ -6,6 +6,8 @@ using Pds.Contracts.Data.Repository.Context;
 using Pds.Contracts.Data.Repository.DependencyInjection;
 using Pds.Contracts.Data.Services.Implementations;
 using Pds.Contracts.Data.Services.Interfaces;
+using Pds.Core.ApiClient.Interfaces;
+using Pds.Core.ApiClient.Services;
 
 namespace Pds.Contracts.Data.Services.DependencyInjection
 {
@@ -33,6 +35,7 @@ namespace Pds.Contracts.Data.Services.DependencyInjection
             services.AddAutoMapper(typeof(FeatureServiceCollectionExtensions).Assembly);
 
             services.AddScoped<IContractService, ContractService>();
+            services.AddTransient(typeof(IAuthenticationService<>), typeof(AuthenticationService<>));
 
             return services;
         }

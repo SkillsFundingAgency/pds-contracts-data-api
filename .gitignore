@@ -10,6 +10,7 @@
 *.userosscache
 *.sln.docstates
 **/appsettings.json
+**/appsettings.*.json
 **/.DS_Store
 
 # User-specific files (MonoDevelop/Xamarin Studio)
@@ -340,3 +341,6 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+
+# Exclude documentation file
+**/Pds.Contracts.Data.Api.xml
