@@ -11,6 +11,14 @@ namespace Pds.Contracts.Data.Services.Models
     public class Contract
     {
         /// <summary>
+        /// Gets or sets the identifier.
+        /// </summary>
+        /// <value>
+        /// The identifier.
+        /// </value>
+        public int Id { get; set; }
+
+        /// <summary>
         /// Gets or sets the ukprn.
         /// </summary>
         /// <value>
