@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.AzureAD.UI;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -85,7 +86,7 @@ namespace Pds.Contracts.Data.Api
 
                 if (!_environment.IsDevelopment())
                 {
-                    AddOauth2ClientCredentialsFlow(c);
+                    AddOauth2BeararTokenAuthDefenition(c);
                 }
             });
 
@@ -134,25 +135,27 @@ namespace Pds.Contracts.Data.Api
             options.Component = AssemblyName;
         }
 
-        private void AddOauth2ClientCredentialsFlow(SwaggerGenOptions c)
+        private void AddOauth2BeararTokenAuthDefenition(SwaggerGenOptions c)
         {
-            var authOptions = new AzureADOptions();
-            Configuration.Bind("Authentication", authOptions);
-
-            c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+            var securityScheme = new OpenApiSecurityScheme
             {
-                Type = SecuritySchemeType.OAuth2,
-                Flows = new OpenApiOAuthFlows
+                Name = "JWT Authentication",
+                Description = "Enter JWT Bearer token",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer", // must be lower case
+                BearerFormat = "JWT",
+                Reference = new OpenApiReference
                 {
-                    ClientCredentials = new OpenApiOAuthFlow
-                    {
-                        TokenUrl = new Uri($"{authOptions.Instance}{authOptions.TenantId}/oauth2/v2.0/token"),
-                        Scopes = new Dictionary<string, string>
-                        {
-                            [$"{authOptions.ClientId}/.default"] = "default scope"
-                        }
-                    }
+                    Id = JwtBearerDefaults.AuthenticationScheme,
+                    Type = ReferenceType.SecurityScheme
                 }
+            };
+
+            c.AddSecurityDefinition(securityScheme.Reference.Id, securityScheme);
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                { securityScheme, new string[] { } }
             });
         }
     }
