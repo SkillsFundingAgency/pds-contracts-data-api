@@ -160,5 +160,29 @@ namespace Pds.Contracts.Data.Api.Controllers
             contracts.Start();
             return await contracts;
         }
+
+        /// <summary>
+        /// Update the LastEmailReminderSent and LastUpdatedAt for provided list of contracts.
+        /// </summary>
+        /// <param name="request">List of UpdateLastEmailReminderSentRequest models.</param>
+        /// <returns>A list of contracts that are overdue.</returns>
+        /// <response code="204">No contracts need reminders to be issued.</response>
+        /// <response code="400">One or more parameters supplied are not valid.</response>
+        /// <response code="401">Supplied authorisation credentials are not valid.</response>
+        /// <response code="500">Application error, invalid operation attempted.</response>
+        /// <response code="503">Service is un-available, retry the operation later.</response>
+        [HttpPatch("contractReminders")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public IActionResult UpdateLastEmailReminderSent([FromBody] List<UpdateLastEmailReminderSentRequest> request)
+        {
+            _logger.LogInformation($"Update LastEmailReminderSent and LastUpdatedAt called.");
+
+            return Ok();
+        }
     }
 }
