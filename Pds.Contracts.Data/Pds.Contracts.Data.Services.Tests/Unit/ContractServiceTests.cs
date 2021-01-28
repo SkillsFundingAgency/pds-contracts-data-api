@@ -22,9 +22,9 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             // Arrange
             var expectedServiceModel = Mock.Of<Models.Contract>();
             var expectedDataModel = Mock.Of<Contract>();
-            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            var mockRepo = Mock.Of<IContractRepository>(MockBehavior.Strict);
             Mock.Get(mockRepo)
-                .Setup(r => r.GetByIdAsync(It.IsAny<int>()))
+                .Setup(r => r.GetAsync(It.IsAny<int>()))
                 .ReturnsAsync(expectedDataModel)
                 .Verifiable();
 
@@ -41,20 +41,20 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             // Assert
             actual.Should().Be(expectedServiceModel);
-            Mock.Get(mockRepo).Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Once);
+            Mock.Get(mockRepo).Verify(r => r.GetAsync(It.IsAny<int>()), Times.Once);
             Mock.Get(mockMapper).Verify(m => m.Map<Models.Contract>(It.IsAny<Contract>()), Times.Once);
         }
 
         [TestMethod]
-        public void GetByContractNumber_ReturnsExpectedResult()
+        public async Task GetByContractNumber_ReturnsExpectedResultAsync()
         {
             // Arrange
             var expectedServiceModelCollection = Mock.Of<IList<Models.Contract>>();
             var expectedDataModelCollection = Mock.Of<IQueryable<Contract>>();
-            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            var mockRepo = Mock.Of<IContractRepository>(MockBehavior.Strict);
             Mock.Get(mockRepo)
-                .Setup(r => r.GetMany(It.IsAny<Expression<Func<Contract, bool>>>()))
-                .Returns(expectedDataModelCollection)
+                .Setup(r => r.GetByContractNumberAsync(It.IsAny<string>()))
+                .ReturnsAsync(expectedDataModelCollection)
                 .Verifiable();
 
             var mockMapper = Mock.Of<IMapper>();
@@ -66,24 +66,24 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             var contractService = new ContractService(mockRepo, mockMapper);
 
             // Act
-            var actual = contractService.GetByContractNumber("some-contract-number");
+            var actual = await contractService.GetByContractNumberAsync("some-contract-number");
 
             // Assert
             actual.Should().BeEquivalentTo(expectedServiceModelCollection);
-            Mock.Get(mockRepo).Verify(r => r.GetMany(It.IsAny<Expression<Func<Contract, bool>>>()), Times.Once);
+            Mock.Get(mockRepo).Verify(r => r.GetByContractNumberAsync("some-contract-number"), Times.Once);
             Mock.Get(mockMapper).Verify(m => m.Map<IList<Models.Contract>>(It.IsAny<IQueryable<Contract>>()), Times.Once);
         }
 
         [TestMethod]
-        public void GetByContractNumberAndVersion_ReturnsExpectedResult()
+        public async Task GetByContractNumberAndVersion_ReturnsExpectedResultAsync()
         {
             // Arrange
             var expectedServiceModel = Mock.Of<Models.Contract>();
             var expectedDataModel = Mock.Of<Contract>();
-            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            var mockRepo = Mock.Of<IContractRepository>(MockBehavior.Strict);
             Mock.Get(mockRepo)
-                .Setup(r => r.GetByPredicate(It.IsAny<Expression<Func<Contract, bool>>>()))
-                .Returns(expectedDataModel)
+                .Setup(r => r.GetByContractNumberAndVersionAsync(It.IsAny<string>(), It.IsAny<int>()))
+                .ReturnsAsync(expectedDataModel)
                 .Verifiable();
 
             var mockMapper = Mock.Of<IMapper>();
@@ -95,11 +95,11 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             var contractService = new ContractService(mockRepo, mockMapper);
 
             // Act
-            var actual = contractService.GetByContractNumberAndVersion("some-contract-number", 1);
+            var actual = await contractService.GetByContractNumberAndVersionAsync("some-contract-number", 1);
 
             // Assert
             actual.Should().Be(expectedServiceModel);
-            Mock.Get(mockRepo).Verify(r => r.GetByPredicate(It.IsAny<Expression<Func<Contract, bool>>>()), Times.Once);
+            Mock.Get(mockRepo).Verify(r => r.GetByContractNumberAndVersionAsync("some-contract-number", 1), Times.Once);
             Mock.Get(mockMapper).Verify(m => m.Map<Models.Contract>(It.IsAny<Contract>()), Times.Once);
         }
     }

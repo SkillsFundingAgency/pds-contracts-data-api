@@ -4,6 +4,7 @@ using Moq;
 using Pds.Contracts.Data.Repository.Context;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace Pds.Contracts.Data.Repository.Tests.SetUp
 {
@@ -23,6 +24,7 @@ namespace Pds.Contracts.Data.Repository.Tests.SetUp
             mockSet.As<IQueryable<T>>().Setup(m => m.Expression).Returns(entities.AsQueryable().Expression);
             mockSet.As<IQueryable<T>>().Setup(m => m.ElementType).Returns(entities.AsQueryable().ElementType);
             mockSet.As<IQueryable<T>>().Setup(m => m.GetEnumerator()).Returns(entities.AsQueryable().GetEnumerator());
+
             return mockSet;
         }
 

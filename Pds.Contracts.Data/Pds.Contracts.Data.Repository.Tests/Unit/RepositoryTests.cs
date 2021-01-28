@@ -1,4 +1,5 @@
-﻿using FluentAssertions;
+﻿using EntityFrameworkCoreMock;
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -78,7 +79,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
         }
 
         [TestMethod]
-        public void GetByPredicateTest()
+        public async Task GetByPredicateTestAsync()
         {
             //Arrange
             var expectation = new DummyDataModel { Id = 1, ATableColumn = "expected" };
@@ -88,7 +89,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
                  new DummyDataModel { Id = 2, ATableColumn = "not expected" }
             };
 
-            var mockDbSet = dummyCollection.GetMockDbSet();
+            var mockDbSet = new DbSetMock<DummyDataModel>(dummyCollection, (k, c) => k.Id, true);
             var mockDbContext = Mock.Of<DbContext>(MockBehavior.Strict);
             Mock.Get(mockDbContext)
                 .Setup(db => db.Set<DummyDataModel>())
@@ -96,15 +97,15 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
 
             //Act
             var repo = new Repository<DummyDataModel>(mockDbContext);
-            var actual = repo.GetByPredicate(dummy => dummy.Id == 1);
+            var actual = await repo.GetByPredicateAsync(dummy => dummy.ATableColumn == expectation.ATableColumn);
 
             //Assert
-            actual.Should().Be(expectation);
+            actual.Should().BeEquivalentTo(expectation);
             Mock.Get(mockDbContext).Verify();
         }
 
         [TestMethod]
-        public void GetByPredicateReturnsNullTest()
+        public async Task GetByPredicateReturnsNullTestAsync()
         {
             //Arrange
             var mockDbContext = Mock.Of<DbContext>(MockBehavior.Strict);
@@ -114,7 +115,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
 
             //Act
             var repo = new Repository<DummyDataModel>(mockDbContext);
-            var actual = repo.GetByPredicate(dummy => dummy.Id == 1);
+            var actual = await repo.GetByPredicateAsync(dummy => dummy.Id == 1);
 
             //Assert
             actual.Should().BeNull();

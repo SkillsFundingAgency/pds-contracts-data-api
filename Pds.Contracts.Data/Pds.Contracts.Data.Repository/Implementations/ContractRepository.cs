@@ -1,5 +1,7 @@
-﻿using Pds.Contracts.Data.Repository.DataModels;
+﻿using Microsoft.EntityFrameworkCore;
+using Pds.Contracts.Data.Repository.DataModels;
 using Pds.Contracts.Data.Repository.Interfaces;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace Pds.Contracts.Data.Repository.Implementations
@@ -29,6 +31,24 @@ namespace Pds.Contracts.Data.Repository.Implementations
         {
             await _repository.AddAsync(contract);
             await _work.CommitAsync();
+        }
+
+        /// <inheritdoc/>
+        public async Task<Contract> GetAsync(int id)
+        {
+            return await _repository.GetByIdAsync(id).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc/>
+        public async Task<Contract> GetByContractNumberAndVersionAsync(string contractNumber, int version)
+        {
+            return await _repository.GetByPredicateAsync(c => c.ContractNumber == contractNumber && c.ContractVersion == version);
+        }
+
+        /// <inheritdoc/>
+        public async Task<IEnumerable<Contract>> GetByContractNumberAsync(string contractNumber)
+        {
+            return await _repository.GetMany(c => c.ContractNumber == contractNumber).ToListAsync();
         }
     }
 }

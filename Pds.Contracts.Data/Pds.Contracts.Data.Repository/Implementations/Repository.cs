@@ -33,7 +33,7 @@ namespace Pds.Contracts.Data.Repository.Implementations
         public async Task<T> GetByIdAsync(int id) => await _dbContext.FindAsync<T>(id).ConfigureAwait(false);
 
         /// <inheritdoc/>
-        public T GetByPredicate(Expression<Func<T, bool>> where) => _dbContext.Set<T>()?.SingleOrDefault(where);
+        public async Task<T> GetByPredicateAsync(Expression<Func<T, bool>> where) => _dbContext.Set<T>() is null ? null : await _dbContext.Set<T>().SingleOrDefaultAsync(where);
 
         /// <inheritdoc/>
         public IQueryable<T> GetMany(Expression<Func<T, bool>> where) => _dbContext.Set<T>()?.Where(where);

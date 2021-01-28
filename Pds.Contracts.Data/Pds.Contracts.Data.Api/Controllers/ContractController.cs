@@ -80,10 +80,10 @@ namespace Pds.Contracts.Data.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-        public ActionResult<Contract> GetByContractNumberAndVersion(string contractNumber, int versionNumber)
+        public async Task<ActionResult<Contract>> GetByContractNumberAndVersionAsync(string contractNumber, int versionNumber)
         {
             _logger.LogInformation($"Get a contract by contract number: {contractNumber} and version: {versionNumber}.");
-            var contract = _contractService.GetByContractNumberAndVersion(contractNumber, versionNumber);
+            var contract = await _contractService.GetByContractNumberAndVersionAsync(contractNumber, versionNumber);
             if (contract is null)
             {
                 return NotFound();

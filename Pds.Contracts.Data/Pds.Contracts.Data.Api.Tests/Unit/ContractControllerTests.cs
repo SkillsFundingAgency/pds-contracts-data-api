@@ -75,7 +75,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         }
 
         [TestMethod]
-        public void GetByContractNumberAndVersion_ReturnsSingleContractResultFromContractService()
+        public async Task GetByContractNumberAndVersion_ReturnsSingleContractResultFromContractServiceAsync()
         {
             // Arrange
             var expected = Mock.Of<Services.Models.Contract>();
@@ -86,14 +86,14 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.GetByContractNumberAndVersion(It.IsAny<string>(), It.IsAny<int>()))
-                .Returns(expected)
+                .Setup(e => e.GetByContractNumberAndVersionAsync(It.IsAny<string>(), It.IsAny<int>()))
+                .ReturnsAsync(expected)
                 .Verifiable();
 
             var controller = new ContractController(mockLogger.Object, mockContractService.Object);
 
             // Act
-            var actual = controller.GetByContractNumberAndVersion("some-contract-number", 1);
+            var actual = await controller.GetByContractNumberAndVersionAsync("some-contract-number", 1);
 
             // Assert
             actual.Should().BeObjectResult().WithValue(expected);
@@ -102,7 +102,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         }
 
         [TestMethod]
-        public void GetByContractNumberAndVersion_ReturnsNotFoundResult()
+        public async Task GetByContractNumberAndVersion_ReturnsNotFoundResultAsync()
         {
             // Arrange
             var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
@@ -112,14 +112,14 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.GetByContractNumberAndVersion(It.IsAny<string>(), It.IsAny<int>()))
-                .Returns(default(Services.Models.Contract))
+                .Setup(e => e.GetByContractNumberAndVersionAsync(It.IsAny<string>(), It.IsAny<int>()))
+                .ReturnsAsync(default(Services.Models.Contract))
                 .Verifiable();
 
             var controller = new ContractController(mockLogger.Object, mockContractService.Object);
 
             // Act
-            var actual = controller.GetByContractNumberAndVersion("invalid-contract-number", 1);
+            var actual = await controller.GetByContractNumberAndVersionAsync("invalid-contract-number", 1);
 
             // Assert
             actual.Result.Should().BeNotFoundResult();

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pds.Contracts.Data.Repository.DataModels;
+using System;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -24,7 +25,7 @@ namespace Pds.Contracts.Data.Repository.Interfaces
         /// </summary>
         /// <param name="where">The where predicate.</param>
         /// <returns>Instance of <typeparamref name="T"/>.</returns>
-        T GetByPredicate(Expression<Func<T, bool>> where);
+        Task<T> GetByPredicateAsync(Expression<Func<T, bool>> where);
 
         /// <summary>
         /// Gets all <typeparamref name="T"/>.

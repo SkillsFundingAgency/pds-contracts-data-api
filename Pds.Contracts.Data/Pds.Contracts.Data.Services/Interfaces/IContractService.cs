@@ -23,7 +23,7 @@ namespace Pds.Contracts.Data.Services.Interfaces
         /// <param name="contractNumber">The contract number.</param>
         /// <param name="version">The version.</param>
         /// <returns>A contract <see cref="Models.Contract"/>.</returns>
-        Models.Contract GetByContractNumberAndVersion(string contractNumber, int version);
+        Task<Models.Contract> GetByContractNumberAndVersionAsync(string contractNumber, int version);
 
         /// <summary>
         /// Gets the contract by contract number.
@@ -32,6 +32,6 @@ namespace Pds.Contracts.Data.Services.Interfaces
         /// <returns>
         /// A list of contracts for a given contract number.
         /// </returns>
-        public IList<Models.Contract> GetByContractNumber(string contractNumber);
+        public Task<IList<Models.Contract>> GetByContractNumberAsync(string contractNumber);
     }
 }
