@@ -1,14 +1,17 @@
 ﻿using FluentAssertions;
 using FluentAssertions.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Pds.Contracts.Data.Api.Controllers;
+using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
-using Pds.Contracts.Data.Services.Models.Enums;
+using Pds.Contracts.Data.Services.Responses;
 using Pds.Core.Logging;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace Pds.Contracts.Data.Api.Tests.Unit
@@ -131,64 +134,88 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task GetContractReminders_ReturnsExpectedResult()
         {
             // Arrange
-            var expected = ExpectedContractReminders();
+            int reminderInterval = 14;
+            int pageNumber = 1;
+            int pageSize = 1;
+            ContractSortOptions sort = ContractSortOptions.LastUpdatedAt;
+            SortDirection order = SortDirection.Asc;
+            string baseUrl = "https://localhost:5001";
+            string requestPath = "/api/contractReminders";
+            string queryString = "?reminderInterval=14&page={page}&count=1&sort=LastUpdatedAt&order=Asc";
+            string requestQueryString = $"?reminderInterval={reminderInterval}&page={pageNumber}&count={pageSize}&sort=1&order=0";
+            string expectedQueryString = $"?reminderInterval={reminderInterval}&page=2&count={pageSize}&sort=LastUpdatedAt&order=Asc";
 
-            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            var expected = GetExpectedContractReminders();
 
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
                 .Verifiable();
 
-            var mockExampleService = new Mock<IContractService>();
-            var controller = new ContractController(mockLogger.Object, mockExampleService.Object);
+            var httpContext = new DefaultHttpContext(); // or mock a `HttpContext`
+            httpContext.Request.Path = requestPath;
+            httpContext.Request.QueryString = new QueryString(requestQueryString);
+            var controllerContext = new ControllerContext()
+            {
+                HttpContext = httpContext,
+            };
+
+            var mockContractService = new Mock<IContractService>(MockBehavior.Strict);
+            mockContractService
+                .Setup(e => e.GetContractRemindersAsync(reminderInterval, pageNumber, pageSize, sort, order, requestPath + queryString))
+                .ReturnsAsync(expected)
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object) { ControllerContext = controllerContext };
 
             // Act
-            var actual = await controller.GetContractReminders();
+            var actual = await controller.GetContractReminders(reminderInterval, pageNumber, pageSize, sort, order);
 
             // Assert
-            actual.Value.Should().BeEquivalentTo(expected);
+            var okResult = actual.Result.Should().BeOfType<OkObjectResult>().Subject;
+            var response = okResult.Value.Should().BeAssignableTo<ContractReminderResponse<IEnumerable<ContractReminderItem>>>().Subject;
+            response.Should().BeEquivalentTo(expected);
+            response.Paging.NextPageUrl.Should().BeEquivalentTo(baseUrl + requestPath + expectedQueryString);
+            mockContractService.Verify();
             mockLogger.Verify();
         }
 
         #region Arrange Helpers
 
-        private ContractReminders ExpectedContractReminders()
+        private ContractReminderResponse<IEnumerable<ContractReminderItem>> GetExpectedContractReminders()
         {
-            ContractReminders rtn = new ContractReminders();
+            int reminderInterval = 14;
+            int pageNumber = 1;
+            int pageSize = 1;
+            ContractSortOptions sort = ContractSortOptions.LastUpdatedAt;
+            SortDirection order = SortDirection.Asc;
+            const string contractNumber = "Test-Contract-Number";
+            const string title = "Test Title";
+            string baseUrl = $"https://localhost:5001";
 
-            Contract one = new Contract()
+            var expectedList = new List<ContractReminderItem>
             {
-                Title = "ESF SSW contract variation for Humber LEP version 5",
-                ContractNumber = "ESIF-5014",
-                ContractVersion = 5,
-                Status = ContractStatus.Approved,
-                FundingType = ContractFundingType.Esf
+                new ContractReminderItem { Id = 2, Title = title, ContractNumber = contractNumber, ContractVersion = 2, Ukprn = 12345678, Status = ContractStatus.PublishedToProvider, FundingType = ContractFundingType.AdvancedLearnerLoans }
             };
 
-            Contract two = new Contract()
+            var expected = new ContractReminderResponse<IEnumerable<ContractReminderItem>>(expectedList)
             {
-                Title = "ESF SSW contract variation for Humber LEP version 5",
-                ContractNumber = "ESIF-5014",
-                ContractVersion = 5,
-                Status = ContractStatus.Approved,
-                FundingType = ContractFundingType.Esf
+                Paging = new Metadata()
+                {
+                    CurrentPage = pageNumber,
+                    HasNextPage = true,
+                    HasPreviousPage = false,
+                    NextPageUrl = baseUrl + $"/api/contractReminders?reminderInterval={reminderInterval}&page=2&count={pageSize}&sort={sort}&order={order}",
+                    PageSize = pageSize,
+                    PreviousPageUrl = string.Empty,
+                    TotalCount = 2,
+                    TotalPages = 2
+                }
             };
 
-            IList<Contract> contractList = new List<Contract>() { one, two };
-
-            rtn.Contracts = contractList;
-
-            rtn.CurrentPage = 1;
-            rtn.PageCount = 10;
-            rtn.SortedBy = ContractSortOptions.CreatedAt |
-                ContractSortOptions.Value |
-                ContractSortOptions.ContractVersion;
-            rtn.TotalCount = 200;
-
-            return rtn;
+            return expected;
         }
 
-        #endregion
-
+        #endregion Arrange Helpers
     }
 }

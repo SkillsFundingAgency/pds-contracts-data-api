@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
-using Pds.Contracts.Data.Services.Models.Enums;
+using Pds.Contracts.Data.Services.Responses;
 using Pds.Core.Logging;
-using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -18,6 +18,7 @@ namespace Pds.Contracts.Data.Api.Controllers
     public class ContractController : BaseApiController
     {
         private readonly ILoggerAdapter<ContractController> _logger;
+
         private readonly IContractService _contractService;
 
         /// <summary>
@@ -38,11 +39,15 @@ namespace Pds.Contracts.Data.Api.Controllers
         /// </summary>
         /// <param name="id">The unique identifier of contract.</param>
         /// <returns>
-        /// A <see cref="Task{Contract}" /> representing the result of the asynchronous operation.
+        /// A <see cref="Task{Contract}"/> representing the result of the asynchronous operation.
         /// </returns>
         /// <response code="404">No contract found for given identifier.</response>
-        /// <response code="500">Application error, invalid operation attempted, please report this to developer.</response>
-        /// <response code="503">Service is un-available, try after sometime may be the application has been flooded.</response>
+        /// <response code="500">
+        /// Application error, invalid operation attempted, please report this to developer.
+        /// </response>
+        /// <response code="503">
+        /// Service is un-available, try after sometime may be the application has been flooded.
+        /// </response>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -68,11 +73,17 @@ namespace Pds.Contracts.Data.Api.Controllers
         /// <param name="contractNumber">The contract number.</param>
         /// <param name="versionNumber">The version number.</param>
         /// <returns>
-        /// A <see cref="ActionResult{Contract}" /> representing the return value of the this operation.
+        /// A <see cref="ActionResult{Contract}"/> representing the return value of the this operation.
         /// </returns>
-        /// <response code="404">No contract can be found for given contract number and version number.</response>
-        /// <response code="500">Application error, invalid operation attempted, please report this to developer.</response>
-        /// <response code="503">Service is un-available, try after sometime may be the application has been flooded.</response>
+        /// <response code="404">
+        /// No contract can be found for given contract number and version number.
+        /// </response>
+        /// <response code="500">
+        /// Application error, invalid operation attempted, please report this to developer.
+        /// </response>
+        /// <response code="503">
+        /// Service is un-available, try after sometime may be the application has been flooded.
+        /// </response>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -94,8 +105,8 @@ namespace Pds.Contracts.Data.Api.Controllers
 
         /// <summary>
         /// Gets a list of unsigned contracts that are past their due date.
-        /// This method currently returns a dummy set of data.
         /// </summary>
+        /// <param name="reminderInterval">Interval in days.</param>
         /// <param name="page">The page number to return.</param>
         /// <param name="count">The number of records in the page.</param>
         /// <param name="sort">Sort parameters to apply.</param>
@@ -106,59 +117,38 @@ namespace Pds.Contracts.Data.Api.Controllers
         /// <response code="401">Supplied authorisation credentials are not valid.</response>
         /// <response code="500">Application error, invalid operation attempted.</response>
         /// <response code="503">Service is un-available, retry the operation later.</response>
-        [HttpGet("contractReminders")]
+        [HttpGet("/api/contractReminders")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<ContractReminders>> GetContractReminders(
-            int? page = 1,
-            int? count = 10,
+        public async Task<ActionResult<ContractReminderResponse<IEnumerable<ContractReminderItem>>>> GetContractReminders(
+            int reminderInterval = 14,
+            int page = 1,
+            int count = 10,
             ContractSortOptions sort = ContractSortOptions.LastUpdatedAt,
             SortDirection order = SortDirection.Asc)
         {
-            _logger.LogInformation($"Get contract reminders called with page: {page}, count: {count}, sort: {sort}, order: {order}");
+            _logger.LogInformation($"Get contract reminders called with reminder interval: {reminderInterval},  page: {page}, count: {count}, sort: {sort}, order: {order}");
 
-            Task<ContractReminders> contracts = new Task<ContractReminders>(() =>
+            // This creates a template of the query string so that ONLY the page can be replaced
+            // further down the process.
+            string routeTemplateUrl = Request.Path.Value + $"?reminderInterval={reminderInterval}&page={{page}}&count={count}&sort={sort}&order={order}";
+
+            var results = await _contractService.GetContractRemindersAsync(reminderInterval, page, count, sort, order, routeTemplateUrl);
+
+            if (results is null || (results.Paging.TotalCount > 0 && page > results.Paging.TotalPages))
             {
-                ContractReminders rtn = new ContractReminders();
+                return NotFound();
+            }
+            else if (results.Paging.TotalCount == 0)
+            {
+                return NoContent();
+            }
 
-                Contract one = new Contract()
-                {
-                    Title = "ESF SSW contract variation for Humber LEP version 5",
-                    ContractNumber = "ESIF-5014",
-                    ContractVersion = 5,
-                    Status = ContractStatus.Approved,
-                    FundingType = ContractFundingType.Esf
-                };
-
-                Contract two = new Contract()
-                {
-                    Title = "ESF SSW contract variation for Humber LEP version 5",
-                    ContractNumber = "ESIF-5014",
-                    ContractVersion = 5,
-                    Status = ContractStatus.Approved,
-                    FundingType = ContractFundingType.Esf
-                };
-
-                List<Contract> contractList = new List<Contract>() { one, two };
-
-                rtn.Contracts = contractList;
-
-                rtn.CurrentPage = 1;
-                rtn.PageCount = 10;
-                rtn.SortedBy = ContractSortOptions.CreatedAt |
-                    ContractSortOptions.Value |
-                    ContractSortOptions.ContractVersion;
-                rtn.TotalCount = 200;
-
-                return rtn;
-            });
-
-            contracts.Start();
-            return await contracts;
+            return Ok(results);
         }
 
         /// <summary>
@@ -171,7 +161,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         /// <response code="401">Supplied authorisation credentials are not valid.</response>
         /// <response code="500">Application error, invalid operation attempted.</response>
         /// <response code="503">Service is un-available, retry the operation later.</response>
-        [HttpPatch("contractReminders")]
+        [HttpPatch("/api/contractReminders")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

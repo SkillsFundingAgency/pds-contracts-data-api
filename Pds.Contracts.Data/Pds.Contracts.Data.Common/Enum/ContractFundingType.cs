@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Pds.Contracts.Data.Services.Models.Enums
+namespace Pds.Contracts.Data.Common.Enums
 {
     /// <summary>
     /// The types of funding that the system supports.

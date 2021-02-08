@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 
-namespace Pds.Contracts.Data.Services.Models.Enums
+namespace Pds.Contracts.Data.Common.Enums
 {
     /// <summary>
     /// Represents the states a contract can be in.

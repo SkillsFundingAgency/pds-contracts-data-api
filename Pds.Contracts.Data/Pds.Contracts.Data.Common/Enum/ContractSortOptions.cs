@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Pds.Contracts.Data.Services.Models.Enums
+namespace Pds.Contracts.Data.Common.Enums
 {
     /// <summary>
     /// A list of sort options to apply to a query.

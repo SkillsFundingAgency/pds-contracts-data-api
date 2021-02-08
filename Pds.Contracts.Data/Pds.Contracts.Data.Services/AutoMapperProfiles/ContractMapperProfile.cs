@@ -1,5 +1,8 @@
 ﻿using AutoMapper;
+using Pds.Contracts.Data.Services.Models;
+using System.Collections.Generic;
 using DataModel = Pds.Contracts.Data.Repository.DataModels;
+
 using ServiceModel = Pds.Contracts.Data.Services.Models;
 
 namespace Pds.Contracts.Data.Services.AutoMapperProfiles
@@ -7,7 +10,7 @@ namespace Pds.Contracts.Data.Services.AutoMapperProfiles
     /// <summary>
     /// Automapper profile for data models and service models.
     /// </summary>
-    /// <seealso cref="AutoMapper.Profile" />
+    /// <seealso cref="AutoMapper.Profile"/>
     public class ContractMapperProfile : Profile
     {
         /// <summary>
@@ -16,6 +19,7 @@ namespace Pds.Contracts.Data.Services.AutoMapperProfiles
         public ContractMapperProfile()
         {
             CreateMap<DataModel.Contract, ServiceModel.Contract>();
+            CreateMap<DataModel.Contract, ServiceModel.ContractReminderItem>();
         }
     }
 }

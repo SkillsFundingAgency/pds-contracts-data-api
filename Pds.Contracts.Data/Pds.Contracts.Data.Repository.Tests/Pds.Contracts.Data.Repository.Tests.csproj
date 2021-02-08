@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Pds.Contracts.Data.Common\Pds.Contracts.Data.Common.csproj" />
     <ProjectReference Include="..\Pds.Contracts.Data.Repository\Pds.Contracts.Data.Repository.csproj" />
   </ItemGroup>
 

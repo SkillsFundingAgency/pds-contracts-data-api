@@ -1,4 +1,4 @@
-﻿using Pds.Contracts.Data.Services.Models.Enums;
+﻿using Pds.Contracts.Data.Common.Enums;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;

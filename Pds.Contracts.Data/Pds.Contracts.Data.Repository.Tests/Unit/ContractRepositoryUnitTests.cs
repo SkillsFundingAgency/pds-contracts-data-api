@@ -2,6 +2,7 @@
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Repository.DataModels;
 using Pds.Contracts.Data.Repository.Implementations;
 using Pds.Contracts.Data.Repository.Interfaces;
@@ -82,6 +83,52 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             actual.Should().BeEquivalentTo(expected);
             Mock.Get(mockRepo)
                 .Verify(r => r.GetMany(c => c.ContractNumber == ContractNumber), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task GetContractRemindersAsync_ReturnsExpectedResultTest()
+        {
+            //Arrange
+            int reminderInterval = 14;
+            int pageNumber = 1;
+            int pageSize = 1;
+            ContractSortOptions sort = ContractSortOptions.LastUpdatedAt;
+            SortDirection order = SortDirection.Asc;
+            DateTime currentDateTimeMinusNumberOfDays = DateTime.UtcNow.Date.AddDays(-reminderInterval).AddHours(23).AddMinutes(59);
+            const string ContractNumber = "expected-contract-number";
+            var createdAt = DateTime.UtcNow.AddDays(-30);
+            var lastEmailReminderSent = DateTime.UtcNow.AddDays(-15);
+
+            var contracts = new List<Contract>()
+            {
+                new Contract { Id = 1, ContractNumber = ContractNumber, ContractVersion = 1, LastEmailReminderSent = null, Status = 0, FundingType = 1, CreatedAt = createdAt },
+                new Contract { Id = 2, ContractNumber = ContractNumber, ContractVersion = 2, LastEmailReminderSent = lastEmailReminderSent, Status = 0, FundingType = 1, CreatedAt = createdAt },
+                new Contract { Id = 3, ContractNumber = ContractNumber, ContractVersion = 3, LastEmailReminderSent = lastEmailReminderSent, Status = 0, FundingType = 1, CreatedAt = createdAt },
+                new Contract { Id = 4, ContractNumber = ContractNumber, ContractVersion = 4, LastEmailReminderSent = null, Status = 0, FundingType = 1, CreatedAt = createdAt },
+            };
+
+            var contractsExpected = new List<Contract>()
+            {
+                new Contract { Id = 1, ContractNumber = ContractNumber, ContractVersion = 1, LastEmailReminderSent = null, Status = 0, FundingType = 1, CreatedAt = createdAt },
+            };
+            var pagedListExpected = new PagedList<Contract>(contractsExpected, 4, pageNumber, pageSize);
+
+            var mockDbSet = new DbSetMock<Contract>(contracts, (c, _) => c.Id, true);
+
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetMany(It.IsAny<Expression<Func<Contract, bool>>>()))
+                .Returns(mockDbSet.Object);
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork);
+            var actual = await contractRepo.GetContractRemindersAsync(currentDateTimeMinusNumberOfDays, pageNumber, pageSize, sort, order);
+
+            //Assert
+            actual.Should().BeEquivalentTo(pagedListExpected);
+            Mock.Get(mockRepo)
+                .Verify(r => r.GetMany(q => ((q.LastEmailReminderSent == null && currentDateTimeMinusNumberOfDays >= q.CreatedAt) || (q.LastEmailReminderSent != null && currentDateTimeMinusNumberOfDays >= q.LastEmailReminderSent)) && q.Status == (int)ContractStatus.PublishedToProvider), Times.Exactly(1));
         }
     }
 }
