@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Pds.Contracts.Data.Api\Pds.Contracts.Data.Api.csproj" />
+    <ProjectReference Include="..\Pds.Contracts.Data.Common\Pds.Contracts.Data.Common.csproj" />
   </ItemGroup>
 
   <ItemGroup>

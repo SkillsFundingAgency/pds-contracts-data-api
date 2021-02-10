@@ -1,7 +1,5 @@
 ﻿using Pds.Contracts.Data.Services.Interfaces;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Pds.Contracts.Data.Services.Models
 {

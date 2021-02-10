@@ -40,5 +40,11 @@ namespace Pds.Contracts.Data.Repository.Implementations
 
         /// <inheritdoc/>
         public void Update(T entity) => _ = _dbContext.Set<T>().Update(entity);
+
+        /// <inheritdoc/>
+        public void Patch(T old, T current)
+        {
+            _dbContext.Entry<T>(old).CurrentValues.SetValues(current);
+        }
     }
 }

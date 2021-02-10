@@ -35,7 +35,6 @@ namespace Pds.Contracts.Data.Services.DependencyInjection
 
             services.AddRepositoriesServices(configuration);
             services.AddAutoMapper(typeof(FeatureServiceCollectionExtensions).Assembly);
-
             services.AddScoped<IContractService, ContractService>();
             services.AddTransient(typeof(IAuthenticationService<>), typeof(AuthenticationService<>));
 

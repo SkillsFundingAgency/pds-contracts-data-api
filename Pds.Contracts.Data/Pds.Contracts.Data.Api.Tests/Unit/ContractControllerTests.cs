@@ -180,6 +180,95 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             mockLogger.Verify();
         }
 
+        [TestMethod]
+        public async Task UpdateLastEmailReminderSent_ReturnsOKResultAsync()
+        {
+            // Arrange
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+
+            var mockContractService = new Mock<IContractService>();
+            mockContractService
+                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()))
+                .ReturnsAsync(expectedDataModel)
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object);
+
+            // Act
+            var actual = await controller.UpdateLastEmailReminderSent(GetUpdateLastEmailReminderSentRequest());
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.OK);
+            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()), Times.Once);
+            mockLogger.Verify();
+        }
+
+        [TestMethod]
+        public async Task UpdateLastEmailReminderSent_ReturnsNotFoundResultAsync()
+        {
+            // Arrange
+            Contract dummyModel = null;
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+
+            var mockContractService = new Mock<IContractService>();
+            mockContractService
+                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()))
+                .ReturnsAsync(dummyModel)
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object);
+
+            var request = GetUpdateLastEmailReminderSentRequest();
+
+            // Act
+            var actual = await controller.UpdateLastEmailReminderSent(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
+            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()), Times.Once);
+            mockLogger.Verify();
+        }
+
+        [TestMethod]
+        public async Task UpdateLastEmailReminderSent_ReturnsBadRequestResultAsync()
+        {
+            // Arrange
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+
+            var mockContractService = new Mock<IContractService>();
+            mockContractService
+                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()))
+                .ReturnsAsync(expectedDataModel)
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object);
+
+            controller.ModelState.AddModelError("Id", "Id must be greater than zero");
+
+            var request = GetUpdateLastEmailReminderSentRequest();
+            request.Id = 0;
+
+            // Act
+            var actual = await controller.UpdateLastEmailReminderSent(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()), Times.Never);
+            mockLogger.Verify();
+        }
+
         #region Arrange Helpers
 
         private ContractReminderResponse<IEnumerable<ContractReminderItem>> GetExpectedContractReminders()
@@ -214,6 +303,11 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             };
 
             return expected;
+        }
+
+        private UpdateLastEmailReminderSentRequest GetUpdateLastEmailReminderSentRequest()
+        {
+            return new UpdateLastEmailReminderSentRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
         }
 
         #endregion Arrange Helpers

@@ -3,7 +3,6 @@ using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Pds.Contracts.Data.Common.Enums;
-using Pds.Contracts.Data.Repository.DataModels;
 using Pds.Contracts.Data.Repository.Implementations;
 using Pds.Contracts.Data.Repository.Interfaces;
 using Pds.Contracts.Data.Services.Implementations;
@@ -14,9 +13,7 @@ using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
-
 using DataModels = Pds.Contracts.Data.Repository.DataModels;
 
 namespace Pds.Contracts.Data.Services.Tests.Unit
@@ -144,8 +141,10 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             var expectedDummyMetadata = new Metadata() { CurrentPage = 1, PageSize = pageSize, TotalCount = 1, TotalPages = 1, NextPageUrl = string.Empty, PreviousPageUrl = string.Empty };
 
             var expectedDummyReminderItems = new List<ContractReminderItem>();
-            var expectedDummyServiceModel = new ContractReminderResponse<IEnumerable<ContractReminderItem>>(expectedDummyReminderItems);
-            expectedDummyServiceModel.Paging = expectedDummyMetadata;
+            var expectedDummyServiceModel = new ContractReminderResponse<IEnumerable<ContractReminderItem>>(expectedDummyReminderItems)
+            {
+                Paging = expectedDummyMetadata
+            };
 
             var expectedDummyDataModel = new PagedList<DataModels.Contract>(new List<DataModels.Contract>(), 1, 1, 1);
 
@@ -174,6 +173,52 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Mock.Get(mockRepo).Verify(r => r.GetContractRemindersAsync(currentDateTimeMinusNumberOfDays, pageNumber, pageSize, sort, order), Times.Once);
             Mock.Get(mockMapper).Verify(m => m.Map<IEnumerable<Models.ContractReminderItem>>(new List<DataModels.Contract>()), Times.Once);
             _mockLogger.Verify();
+        }
+
+        [TestMethod]
+        public async Task UpdateLastEmailReminderSentAndLastUpdatedAt_TestAsync_SuccessResultExpected()
+        {
+            // Arrange
+            Contract dummyServiceModel = new Contract() { Id = 1, ContractVersion = 1, ContractNumber = "abc" };
+            var expectedDataModel = Mock.Of<DataModels.Contract>();
+            var mockRepo = Mock.Of<IContractRepository>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+              .Setup(r => r.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<int>()))
+              .ReturnsAsync(expectedDataModel)
+              .Verifiable();
+
+            string actionUrl = "action";
+            var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
+            Mock.Get(mockUriService)
+                .Setup(m => m.GetUri(actionUrl))
+                .Returns(It.IsAny<Uri>())
+                .Verifiable();
+
+            _mockLogger = new Mock<ILoggerAdapter<ContractService>>();
+
+            var mockMapper = Mock.Of<IMapper>();
+            Mock.Get(mockMapper)
+                .Setup(m => m.Map<Models.Contract>(It.IsAny<DataModels.Contract>()))
+                .Returns(dummyServiceModel)
+                .Verifiable();
+
+            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object);
+
+            var reminder = GetASingleUpdateLastEmailReminderSentRequest();
+
+            // Act
+            var result = await contractService.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(reminder);
+
+            // Assert
+            result.Should().NotBeNull();
+            Mock.Get(mockRepo).Verify(r => r.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(reminder.Id), Times.Exactly(1));
+            Mock.Get(mockMapper).Verify(m => m.Map<Models.Contract>(It.IsAny<DataModels.Contract>()), Times.Once);
+            _mockLogger.Verify();
+        }
+
+        private UpdateLastEmailReminderSentRequest GetASingleUpdateLastEmailReminderSentRequest()
+        {
+            return new UpdateLastEmailReminderSentRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
         }
 
         private void SetUpMockUriService(string actionUrl)

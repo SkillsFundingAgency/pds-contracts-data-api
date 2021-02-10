@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Authentication.AzureAD.UI;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -13,7 +12,6 @@ using Pds.Core.Logging;
 using Pds.Core.Telemetry.ApplicationInsights;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace Pds.Contracts.Data.Api
@@ -65,6 +63,7 @@ namespace Pds.Contracts.Data.Api
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddApiControllers();
+
             services.AddFeatureServices(Configuration);
             services.AddHealthChecks().AddFeatureHealthChecks();
             services.AddPdsApplicationInsightsTelemetry(options => BuildAppInsightsConfiguration(options));

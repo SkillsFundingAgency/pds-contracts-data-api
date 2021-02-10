@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Pds.Contracts.Data.Services.Models
+﻿namespace Pds.Contracts.Data.Services.Models
 {
     /// <summary>
     /// Metadata.

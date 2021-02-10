@@ -2,26 +2,19 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 using Pds.Contracts.Data.Common.Enums;
-using Pds.Contracts.Data.Repository.DataModels;
 using Pds.Contracts.Data.Repository.Implementations;
-using Pds.Contracts.Data.Repository.Interfaces;
 using Pds.Contracts.Data.Services.AutoMapperProfiles;
 using Pds.Contracts.Data.Services.Implementations;
-using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
 using Pds.Contracts.Data.Services.Responses;
 using Pds.Contracts.Data.Services.Tests.SetUp;
 using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 using DataModels = Pds.Contracts.Data.Repository.DataModels;
-using ServiceModels = Pds.Contracts.Data.Services.Models;
 
 namespace Pds.Contracts.Data.Services.Tests.Integration
 {
@@ -74,11 +67,12 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             };
 
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
+            ILoggerAdapter<ContractRepository> loggerRepo = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));
 
             var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
             var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
-            var contractRepo = new ContractRepository(repo, work);
+            var contractRepo = new ContractRepository(repo, work, loggerRepo);
             var uriService = new UriService(baseUrl);
             var service = new ContractService(contractRepo, _mapper, uriService, logger);
 
@@ -94,6 +88,74 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             //Assert
             result.Should().BeEquivalentTo(expected);
+        }
+
+        [TestMethod]
+        public async Task UpdateLastEmailReminderSentAndLastUpdatedAtAsync_ReturnsExpectedResult_Test()
+        {
+            //Arrange
+            SetMapperHelper();
+            string baseUrl = $"https://localhost:5001";
+            const string contractNumber = "main-000";
+            const string title = "Test Title";
+            int x = 0;
+
+            var working = new List<DataModels.Contract>
+            {
+                new DataModels.Contract { Id = 1, Title = title, ContractNumber = string.Empty, ContractVersion = 1, Ukprn = 12345678, LastEmailReminderSent = null }
+            };
+
+            var request = new UpdateLastEmailReminderSentRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1 };
+
+            foreach (var item in working)
+            {
+                item.ContractNumber = $"{contractNumber}{x}";
+                item.Ukprn += x;
+                item.LastEmailReminderSent = null;
+                x += 1;
+            }
+
+            ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
+            ILoggerAdapter<ContractRepository> loggerRepo = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));
+
+            var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
+            var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
+            var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
+            var contractRepo = new ContractRepository(repo, work, loggerRepo);
+            var uriService = new UriService(baseUrl);
+            var service = new ContractService(contractRepo, _mapper, uriService, logger);
+
+            foreach (var item in working)
+            {
+                await repo.AddAsync(item);
+            }
+
+            await work.CommitAsync();
+
+            //Act
+            var beforeUpdate = await contractRepo.GetAsync(request.Id);
+
+            // assigning to a new variable before this is an in memory db so the
+            // LastEmailReminderSent was being populated.
+            var actualBeforeUpdate = new DataModels.Contract()
+            {
+                Id = beforeUpdate.Id,
+                Title = beforeUpdate.Title,
+                ContractNumber = beforeUpdate.ContractNumber,
+                ContractVersion = beforeUpdate.ContractVersion,
+                Ukprn = beforeUpdate.Ukprn,
+                LastEmailReminderSent = beforeUpdate.LastEmailReminderSent
+            };
+
+            var contract = await service.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(request);
+
+            var afterUpdate = await contractRepo.GetAsync(request.Id);
+
+            //Assert
+            contract.Should().NotBeNull();
+            actualBeforeUpdate.LastEmailReminderSent.Should().BeNull();
+            afterUpdate.LastEmailReminderSent.Should().NotBeNull();
+            afterUpdate.LastUpdatedAt.Should().BeExactly(afterUpdate.LastEmailReminderSent.Value.TimeOfDay);
         }
 
         /// <summary>

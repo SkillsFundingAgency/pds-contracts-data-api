@@ -35,7 +35,9 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         [TestMethod]
         public async Task GetContractRemindersAsync_WithDefaultParameters_ReturnsResponse()
         {
-            // Arrange Act
+            // Arrange
+
+            // Act
             var response = await _testClient.GetAsync("/api/contractReminders");
 
             // Assert
@@ -99,5 +101,62 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
+
+        [TestMethod]
+        public async Task UpdateLastEmailReminderSentAsync_WithDefaultParameters_ReturnsResponse()
+        {
+            // Arrange
+            var content = new UpdateLastEmailReminderSentRequest()
+            {
+                Id = 1,
+                ContractNumber = "Levy-0002",
+                ContractVersion = 1
+            };
+
+            // Act
+            var response = await _testClient.PatchAsync("/api/contractReminder", GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        [TestMethod]
+        public async Task UpdateLastEmailReminderSentAsync_WithDefaultParameters_Returns400Response()
+        {
+            // Arrange
+            var content = new UpdateLastEmailReminderSentRequest()
+            {
+                Id = 0,
+                ContractNumber = "Levy-0002",
+                ContractVersion = 0
+            };
+
+            // Act
+            var response = await _testClient.PatchAsync("/api/contractReminder", GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [TestMethod]
+        public async Task UpdateLastEmailReminderSentAsync_WithDefaultParameters_Returns404Response()
+        {
+            // Arrange
+            var content = new UpdateLastEmailReminderSentRequest()
+            {
+                Id = 99,
+                ContractNumber = "Levy-0002",
+                ContractVersion = 1
+            };
+
+            // Act
+            var response = await _testClient.PatchAsync("/api/contractReminder", GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        private StringContent GetStringContent(object obj)
+            => new StringContent(JsonConvert.SerializeObject(obj), Encoding.Default, "application/json");
     }
 }

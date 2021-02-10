@@ -52,5 +52,12 @@ namespace Pds.Contracts.Data.Repository.Interfaces
         /// </summary>
         /// <param name="entity">The entity.</param>
         void Update(T entity);
+
+        /// <summary>
+        /// Updates the specified entity.
+        /// </summary>
+        /// <param name="old">The old entity.</param>
+        /// <param name="current">The current entity.</param>
+        void Patch(T old, T current);
     }
 }

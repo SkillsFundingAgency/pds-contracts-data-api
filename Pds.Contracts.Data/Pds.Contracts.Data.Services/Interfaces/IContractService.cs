@@ -44,5 +44,12 @@ namespace Pds.Contracts.Data.Services.Interfaces
         /// <param name="templatedQueryString">The templated query string.</param>
         /// <returns>Returns a list of contract reminder response.</returns>
         Task<ContractReminderResponse<IEnumerable<ContractReminderItem>>> GetContractRemindersAsync(int reminderInterval, int pageNumber, int pageSize, ContractSortOptions sort, SortDirection order, string templatedQueryString);
+
+        /// <summary>
+        /// Update the LastEmailReminderSent and LastUpdatedAt for a provided id, contract number and contract version.
+        /// </summary>
+        /// <param name="request">An UpdateLastEmailReminderSentRequest model containing id, contract number and contract version.</param>
+        /// <returns>Returns a contract service model.</returns>
+        Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(UpdateLastEmailReminderSentRequest request);
     }
 }

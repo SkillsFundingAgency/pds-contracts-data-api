@@ -3,9 +3,9 @@ using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Repository.DataModels;
 using Pds.Contracts.Data.Repository.Extensions;
 using Pds.Contracts.Data.Repository.Interfaces;
+using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Pds.Contracts.Data.Repository.Implementations
@@ -18,6 +18,8 @@ namespace Pds.Contracts.Data.Repository.Implementations
     {
         private readonly IRepository<Contract> _repository;
 
+        private readonly ILoggerAdapter<ContractRepository> _logger;
+
         private readonly IUnitOfWork _work;
 
         /// <summary>
@@ -25,10 +27,12 @@ namespace Pds.Contracts.Data.Repository.Implementations
         /// </summary>
         /// <param name="repository">Contract repository.</param>
         /// <param name="work">The single unit of work.</param>
-        public ContractRepository(IRepository<Contract> repository, IUnitOfWork work)
+        /// <param name="logger">The logger.</param>
+        public ContractRepository(IRepository<Contract> repository, IUnitOfWork work, ILoggerAdapter<ContractRepository> logger)
         {
             _repository = repository;
             _work = work;
+            _logger = logger;
         }
 
         /// <inheritdoc/>
@@ -69,6 +73,27 @@ namespace Pds.Contracts.Data.Repository.Implementations
             var sortedContracts = query.OrderByDynamic(sort.ToString(), order);
 
             return await sortedContracts.ToPagedList(pageNumber, pageSize);
+        }
+
+        /// <inheritdoc/>
+        public async Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(int contractId)
+        {
+            var updatedDate = DateTime.UtcNow;
+
+            var contract = await _repository.GetByIdAsync(contractId);
+            if (contract != null)
+            {
+                contract.LastEmailReminderSent = updatedDate;
+                contract.LastUpdatedAt = updatedDate;
+                await _work.CommitAsync();
+                _logger.LogInformation($"[UpdateLastEmailReminderSentAndLastUpdatedAtAsync] - Updated successfully the last email reminder sent - Contract Id: {contractId}, Contract Number: {contract.ContractNumber}");
+            }
+            else
+            {
+                _logger.LogError($"[UpdateLastEmailReminderSentAndLastUpdatedAtAsync] Contract not found - Contract Id {contractId}.");
+            }
+
+            return contract;
         }
     }
 }

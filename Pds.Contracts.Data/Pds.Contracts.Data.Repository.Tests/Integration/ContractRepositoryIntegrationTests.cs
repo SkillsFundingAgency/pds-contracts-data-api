@@ -1,8 +1,10 @@
 ﻿using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Repository.Implementations;
 using Pds.Contracts.Data.Repository.Tests.SetUp;
+using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +15,8 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
     [TestClass, TestCategory("Integration")]
     public class ContractRepositoryIntegrationTests
     {
+        private readonly ILoggerAdapter<ContractRepository> _logger = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));
+
         [TestMethod]
         public async Task ExampleCreateContractAsync_TestAsync()
         {
@@ -20,7 +24,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
             var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
             var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
-            var contractRepo = new ContractRepository(repo, work);
+            var contractRepo = new ContractRepository(repo, work, _logger);
             var contract = new DataModels.Contract
             {
                 Id = 1,
@@ -46,7 +50,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
             var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
             var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
-            var contractRepo = new ContractRepository(repo, work);
+            var contractRepo = new ContractRepository(repo, work, _logger);
             var expected = new DataModels.Contract
             {
                 Id = 1,
@@ -71,7 +75,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
             var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
             var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
-            var contractRepo = new ContractRepository(repo, work);
+            var contractRepo = new ContractRepository(repo, work, _logger);
             const string ContractNumber = "Test";
             var expected = new DataModels.Contract
             {
@@ -108,7 +112,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
             var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
             var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
-            var contractRepo = new ContractRepository(repo, work);
+            var contractRepo = new ContractRepository(repo, work, _logger);
             const string ContractNumber = "Test";
             var expected = new List<DataModels.Contract>
             {
@@ -138,7 +142,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
             var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
             var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
-            var contractRepo = new ContractRepository(repo, work);
+            var contractRepo = new ContractRepository(repo, work, _logger);
 
             const string contractNumber = "Test-Contract-Number";
             const string title = "Test Title";
@@ -164,6 +168,41 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
 
             //Assert
             actual.Items.Should().BeEquivalentTo(expected);
+        }
+
+        [TestMethod]
+        public async Task UpdateLastEmailReminderSentAndLastUpdatedAtAsync_Test()
+        {
+            //Arrange
+            var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
+            var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
+            var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
+            var contractRepo = new ContractRepository(repo, work, _logger);
+
+            int contractId = 1;
+            const string contractNumber = "main-0001";
+            const string title = "Test Title";
+            DateTime lastEmailReminderSent = DateTime.UtcNow;
+
+            var working = new List<DataModels.Contract>
+            {
+                new DataModels.Contract { Id = contractId, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, LastEmailReminderSent = null, LastUpdatedAt = lastEmailReminderSent }
+            };
+
+            //Act
+            foreach (var item in working)
+            {
+                await repo.AddAsync(item);
+            }
+
+            await work.CommitAsync();
+
+            await contractRepo.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(contractId);
+
+            var actual = await contractRepo.GetAsync(contractId);
+
+            //Assert
+            actual.LastEmailReminderSent.Should().NotBeNull();
         }
     }
 }

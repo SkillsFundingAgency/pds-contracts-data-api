@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Pds.Contracts.Data.Common.Enums;
-using Pds.Contracts.Data.Repository.Implementations;
 using Pds.Contracts.Data.Repository.Interfaces;
 using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
@@ -8,7 +7,6 @@ using Pds.Contracts.Data.Services.Responses;
 using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Pds.Contracts.Data.Services.Implementations
@@ -89,6 +87,13 @@ namespace Pds.Contracts.Data.Services.Implementations
             };
 
             return apiResponse;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(UpdateLastEmailReminderSentRequest request)
+        {
+            var contract = await _repository.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(request.Id);
+            return _mapper.Map<Models.Contract>(contract);
         }
 
         /// <summary>

@@ -6,6 +6,7 @@ using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Repository.DataModels;
 using Pds.Contracts.Data.Repository.Implementations;
 using Pds.Contracts.Data.Repository.Interfaces;
+using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -16,6 +17,8 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public class ContractRepositoryUnitTests
     {
+        private readonly Mock<ILoggerAdapter<ContractRepository>> _mockLogger = new Mock<ILoggerAdapter<ContractRepository>>();
+
         [TestMethod]
         public async Task GetAsyncTestAsync()
         {
@@ -28,12 +31,13 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
                 .ReturnsAsync(expected);
 
             //Act
-            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork);
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
             var actual = await contractRepo.GetAsync(expected.Id);
 
             //Assert
             actual.Should().Be(expected);
             Mock.Get(mockRepo).VerifyAll();
+            _mockLogger.VerifyAll();
         }
 
         [TestMethod]
@@ -48,12 +52,13 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
                 .ReturnsAsync(expected);
 
             //Act
-            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork);
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
             var actual = await contractRepo.GetByContractNumberAndVersionAsync(expected.ContractNumber, expected.ContractVersion);
 
             //Assert
             actual.Should().Be(expected);
             Mock.Get(mockRepo).VerifyAll();
+            _mockLogger.VerifyAll();
         }
 
         [TestMethod]
@@ -76,13 +81,14 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
                 .Returns(mockDbSet.Object);
 
             //Act
-            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork);
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
             var actual = await contractRepo.GetByContractNumberAsync(ContractNumber);
 
             //Assert
             actual.Should().BeEquivalentTo(expected);
             Mock.Get(mockRepo)
                 .Verify(r => r.GetMany(c => c.ContractNumber == ContractNumber), Times.Once);
+            _mockLogger.VerifyAll();
         }
 
         [TestMethod]
@@ -122,13 +128,94 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
                 .Returns(mockDbSet.Object);
 
             //Act
-            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork);
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
             var actual = await contractRepo.GetContractRemindersAsync(currentDateTimeMinusNumberOfDays, pageNumber, pageSize, sort, order);
 
             //Assert
             actual.Should().BeEquivalentTo(pagedListExpected);
             Mock.Get(mockRepo)
                 .Verify(r => r.GetMany(q => ((q.LastEmailReminderSent == null && currentDateTimeMinusNumberOfDays >= q.CreatedAt) || (q.LastEmailReminderSent != null && currentDateTimeMinusNumberOfDays >= q.LastEmailReminderSent)) && q.Status == (int)ContractStatus.PublishedToProvider), Times.Exactly(1));
+            _mockLogger.VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task UpdateLastEmailReminderSentAndLastUpdatedAt_ReturnsExpectedResult_TestAsync()
+        {
+            //Arrange
+            int searchContractId = 1;
+            int contractId = 1;
+            DateTime updatedDate = DateTime.UtcNow;
+            var dummyContract = new Contract { Id = contractId, ContractNumber = "expected-contract-number", ContractVersion = 1, LastEmailReminderSent = null, LastUpdatedAt = updatedDate };
+
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            Mock.Get(mockUnitOfWork)
+                .Setup(u => u.CommitAsync())
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetByIdAsync(searchContractId))
+                .ReturnsAsync(dummyContract);
+
+            SetMockLogger();
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            var result = await contractRepo.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(searchContractId);
+
+            //Assert
+            result.Should().NotBeNull();
+            Mock.Get(mockRepo).Verify(r => r.GetByIdAsync(searchContractId), Times.Once);
+            dummyContract.LastEmailReminderSent.Should().NotBeNull();
+            Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Once);
+            _mockLogger.VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task UpdateLastEmailReminderSentAndLastUpdatedAt_ReturnsNullResult_TestAsync()
+        {
+            //Arrange
+            int searchContractId = 99;
+            DateTime updatedDate = DateTime.UtcNow;
+            Contract dummyContract = null;
+
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            Mock.Get(mockUnitOfWork)
+                .Setup(u => u.CommitAsync())
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetByIdAsync(searchContractId))
+                .ReturnsAsync(dummyContract);
+
+            SetMockErrorLogger();
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            var result = await contractRepo.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(searchContractId);
+
+            //Assert
+            result.Should().BeNull();
+            Mock.Get(mockRepo).Verify(r => r.GetByIdAsync(searchContractId), Times.Once);
+            Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Never);
+            _mockLogger.VerifyAll();
+        }
+
+        private void SetMockLogger()
+        {
+            _mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+        }
+
+        private void SetMockErrorLogger()
+        {
+            _mockLogger
+                .Setup(logger => logger.LogError(It.IsAny<string>()))
+                .Verifiable();
         }
     }
 }

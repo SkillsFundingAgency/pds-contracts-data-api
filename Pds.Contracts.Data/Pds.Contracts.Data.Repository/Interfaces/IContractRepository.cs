@@ -1,6 +1,5 @@
 ﻿using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Repository.DataModels;
-using Pds.Contracts.Data.Repository.Implementations;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -51,5 +50,12 @@ namespace Pds.Contracts.Data.Repository.Interfaces
         /// <param name="order">Sort order.</param>
         /// <returns>IList Contract.</returns>
         Task<IPagedList<Contract>> GetContractRemindersAsync(DateTime currentDateTimeMinusNumberOfDays, int pageNumber, int pageSize, ContractSortOptions sort, SortDirection order);
+
+        /// <summary>
+        /// Updates the last email reminder sent date and last updated at date.
+        /// </summary>
+        /// <param name="contractId">Contract Id.</param>
+        /// <returns>Returns a contract model entity using the provided Id.</returns>
+        Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(int contractId);
     }
 }

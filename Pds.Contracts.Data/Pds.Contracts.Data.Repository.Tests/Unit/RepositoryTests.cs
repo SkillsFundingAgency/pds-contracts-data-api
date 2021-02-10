@@ -194,5 +194,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             Mock.Get(mockDbSet)
                 .Verify(e => e.Update(dummyModel), Times.Once);
         }
+
+        // Unable to unit test Patch method - EF extension method
     }
 }
