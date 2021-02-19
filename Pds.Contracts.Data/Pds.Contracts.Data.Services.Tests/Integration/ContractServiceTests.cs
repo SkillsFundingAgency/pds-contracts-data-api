@@ -2,6 +2,9 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
+using Pds.Audit.Api.Client.Implementations;
+using Pds.Audit.Api.Client.Interfaces;
 using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Repository.Implementations;
 using Pds.Contracts.Data.Services.AutoMapperProfiles;
@@ -13,7 +16,7 @@ using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-
+using AuditModels = Pds.Audit.Api.Client.Models;
 using DataModels = Pds.Contracts.Data.Repository.DataModels;
 
 namespace Pds.Contracts.Data.Services.Tests.Integration
@@ -21,6 +24,8 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
     [TestClass, TestCategory("Integration")]
     public class ContractServiceTests
     {
+        private Mock<IAuditService> _mockAuditService;
+
         private IMapper _mapper = null;
 
         [TestMethod]
@@ -69,14 +74,15 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
             ILoggerAdapter<ContractRepository> loggerRepo = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));
 
+            MockAuditService();
+
             var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
             var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
             var contractRepo = new ContractRepository(repo, work, loggerRepo);
             var uriService = new UriService(baseUrl);
-            var service = new ContractService(contractRepo, _mapper, uriService, logger);
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object);
 
-            //Act
             foreach (var item in working)
             {
                 await repo.AddAsync(item);
@@ -84,6 +90,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             await work.CommitAsync();
 
+            //Act
             var result = await service.GetContractRemindersAsync(reminderInterval, pageNumber, pageSize, sort, order, routeTemplateUrl);
 
             //Assert
@@ -118,12 +125,14 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
             ILoggerAdapter<ContractRepository> loggerRepo = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));
 
+            MockAuditService();
+
             var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
             var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
             var contractRepo = new ContractRepository(repo, work, loggerRepo);
             var uriService = new UriService(baseUrl);
-            var service = new ContractService(contractRepo, _mapper, uriService, logger);
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object);
 
             foreach (var item in working)
             {
@@ -158,6 +167,75 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             afterUpdate.LastUpdatedAt.Should().BeExactly(afterUpdate.LastEmailReminderSent.Value.TimeOfDay);
         }
 
+        [TestMethod]
+        public async Task UpdateContractConfirmApprovalAsync_ReturnsExpectedResult_Test()
+        {
+            //Arrange
+            SetMapperHelper();
+            string baseUrl = $"https://localhost:5001";
+            const string contractNumber = "main-000";
+            const string title = "Test Title";
+            int x = 0;
+
+            var working = new List<DataModels.Contract>
+            {
+                new DataModels.Contract { Id = 1, Title = title, ContractNumber = string.Empty, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.ApprovedWaitingConfirmation }
+            };
+
+            var request = new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1 };
+
+            foreach (var item in working)
+            {
+                item.ContractNumber = $"{contractNumber}{x}";
+                item.Ukprn += x;
+                item.LastEmailReminderSent = null;
+                x += 1;
+            }
+
+            ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
+            ILoggerAdapter<ContractRepository> loggerRepo = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));
+
+            MockAuditService();
+
+            var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
+            var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
+            var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
+            var contractRepo = new ContractRepository(repo, work, loggerRepo);
+            var uriService = new UriService(baseUrl);
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object);
+
+            foreach (var item in working)
+            {
+                await repo.AddAsync(item);
+            }
+
+            await work.CommitAsync();
+
+            //Act
+            var beforeUpdate = await contractRepo.GetAsync(request.Id);
+
+            // assigning to a new variable before this is an in memory db so the
+            // LastEmailReminderSent was being populated.
+            var actualBeforeUpdate = new DataModels.Contract()
+            {
+                Id = beforeUpdate.Id,
+                Title = beforeUpdate.Title,
+                ContractNumber = beforeUpdate.ContractNumber,
+                ContractVersion = beforeUpdate.ContractVersion,
+                Ukprn = beforeUpdate.Ukprn,
+                Status = beforeUpdate.Status
+            };
+
+            var contract = await service.UpdateContractConfirmApprovalAsync(request);
+
+            var afterUpdate = await contractRepo.GetAsync(request.Id);
+
+            //Assert
+            contract.Should().NotBeNull();
+            actualBeforeUpdate.Status.Should().Be((int)ContractStatus.ApprovedWaitingConfirmation);
+            afterUpdate.Status.Should().Be((int)ContractStatus.Approved);
+        }
+
         /// <summary>
         /// Set the mapper config.
         /// </summary>
@@ -169,6 +247,16 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             });
 
             _mapper = mapperConfig.CreateMapper();
+        }
+
+        private void MockAuditService()
+        {
+            _mockAuditService = new Mock<IAuditService>();
+
+            _mockAuditService
+                .Setup(e => e.AuditAsync(It.IsAny<AuditModels.Audit>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
         }
     }
 }

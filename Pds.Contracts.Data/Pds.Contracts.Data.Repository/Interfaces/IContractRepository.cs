@@ -1,4 +1,5 @@
 ﻿using Pds.Contracts.Data.Common.Enums;
+using Pds.Contracts.Data.Common.Responses;
 using Pds.Contracts.Data.Repository.DataModels;
 using System;
 using System.Collections.Generic;
@@ -57,5 +58,16 @@ namespace Pds.Contracts.Data.Repository.Interfaces
         /// <param name="contractId">Contract Id.</param>
         /// <returns>Returns a contract model entity using the provided Id.</returns>
         Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(int contractId);
+
+        /// <summary>
+        /// Update the contract status to given new status.
+        /// </summary>
+        /// <param name="contractId">Contract Id.</param>
+        /// <param name="requiredContractStatus">required contract status before update.</param>
+        /// <param name="newContractStatus">the new contract status.</param>
+        /// <returns>
+        /// Returns a UpdatedContractStatusResponse model which will have the new and old contract status.
+        /// </returns>
+        Task<UpdatedContractStatusResponse> UpdateContractStatusAsync(int contractId, ContractStatus requiredContractStatus, ContractStatus newContractStatus);
     }
 }

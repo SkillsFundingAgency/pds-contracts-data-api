@@ -2,6 +2,7 @@
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using Pds.Contracts.Data.Common.CustomExceptionHandlers;
 using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Repository.DataModels;
 using Pds.Contracts.Data.Repository.Implementations;
@@ -199,6 +200,115 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
 
             //Assert
             result.Should().BeNull();
+            Mock.Get(mockRepo).Verify(r => r.GetByIdAsync(searchContractId), Times.Once);
+            Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Never);
+            _mockLogger.VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task UpdateContractStatusAsync_ReturnsExpectedResult_TestAsync()
+        {
+            //Arrange
+            ContractStatus requiredContractStatus = ContractStatus.ApprovedWaitingConfirmation;
+            ContractStatus newContractStatus = ContractStatus.Approved;
+            int searchContractId = 1;
+            int contractId = 1;
+            DateTime expectedUpdatedDate = DateTime.UtcNow;
+            DateTime lastUpdatedDate = expectedUpdatedDate.AddDays(40);
+            var dummyContract = new Contract { Id = contractId, ContractNumber = "expected-contract-number", ContractVersion = 1, Status = (int)requiredContractStatus, LastUpdatedAt = lastUpdatedDate };
+
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            Mock.Get(mockUnitOfWork)
+                .Setup(u => u.CommitAsync())
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetByIdAsync(searchContractId))
+                .ReturnsAsync(dummyContract);
+
+            SetMockLogger();
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            var result = await contractRepo.UpdateContractStatusAsync(searchContractId, requiredContractStatus, newContractStatus);
+
+            //Assert
+            result.Should().NotBeNull();
+            Mock.Get(mockRepo).Verify(r => r.GetByIdAsync(searchContractId), Times.Once);
+            dummyContract.Status.Should().Be((int)newContractStatus);
+            dummyContract.LastUpdatedAt.Date.Should().BeSameDateAs(expectedUpdatedDate.Date);
+            Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Once);
+            _mockLogger.VerifyAll();
+        }
+
+        [TestMethod]
+        public void UpdateContractConfirmApprovalAsync_ReturnsContractStatusExceptionResult_Test()
+        {
+            //Arrange
+            ContractStatus requiredContractStatus = ContractStatus.ApprovedWaitingConfirmation;
+            ContractStatus newContractStatus = ContractStatus.Approved;
+            int searchContractId = 1;
+            int contractId = 1;
+            DateTime lastUpdatedDate = DateTime.UtcNow;
+            var dummyContract = new Contract { Id = contractId, ContractNumber = "expected-contract-number", ContractVersion = 1, Status = (int)ContractStatus.WithdrawnByAgency, LastUpdatedAt = lastUpdatedDate };
+
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            Mock.Get(mockUnitOfWork)
+                .Setup(u => u.CommitAsync())
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetByIdAsync(searchContractId))
+                .ReturnsAsync(dummyContract);
+
+            SetMockErrorLogger();
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            Func<Task> act = async () => await contractRepo.UpdateContractStatusAsync(searchContractId, requiredContractStatus, newContractStatus);
+
+            //Assert
+            var result = act.Should().Throw<ContractStatusException>();
+            Mock.Get(mockRepo).Verify(r => r.GetByIdAsync(searchContractId), Times.Once);
+            dummyContract.Status.Should().Be((int)ContractStatus.WithdrawnByAgency);
+            dummyContract.LastUpdatedAt.Should().BeSameDateAs(lastUpdatedDate);
+            Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Never);
+            _mockLogger.VerifyAll();
+        }
+
+        [TestMethod]
+        public void UpdateContractConfirmApprovalAsync_ReturnsContractNotFoundExceptionResult_Test()
+        {
+            //Arrange
+            ContractStatus requiredContractStatus = ContractStatus.ApprovedWaitingConfirmation;
+            ContractStatus newContractStatus = ContractStatus.Approved;
+            int searchContractId = 1;
+            DateTime lastUpdatedDate = DateTime.UtcNow;
+            Contract dummyContract = null;
+
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            Mock.Get(mockUnitOfWork)
+                .Setup(u => u.CommitAsync())
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetByIdAsync(searchContractId))
+                .ReturnsAsync(dummyContract);
+
+            SetMockErrorLogger();
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            Func<Task> act = async () => await contractRepo.UpdateContractStatusAsync(searchContractId, requiredContractStatus, newContractStatus);
+
+            //Assert
+            var result = act.Should().Throw<ContractNotFoundException>();
             Mock.Get(mockRepo).Verify(r => r.GetByIdAsync(searchContractId), Times.Once);
             Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Never);
             _mockLogger.VerifyAll();

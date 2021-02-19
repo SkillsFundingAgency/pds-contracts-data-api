@@ -1,5 +1,8 @@
 ﻿using AutoMapper;
+using Pds.Audit.Api.Client.Enumerations;
+using Pds.Audit.Api.Client.Interfaces;
 using Pds.Contracts.Data.Common.Enums;
+using Pds.Contracts.Data.Common.Responses;
 using Pds.Contracts.Data.Repository.Interfaces;
 using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
@@ -14,6 +17,8 @@ namespace Pds.Contracts.Data.Services.Implementations
     /// <inheritdoc/>
     public class ContractService : IContractService
     {
+        private const string _appName = "Pds.Contracts.Data.Api";
+
         private readonly IContractRepository _repository;
 
         private readonly IMapper _mapper;
@@ -22,6 +27,8 @@ namespace Pds.Contracts.Data.Services.Implementations
 
         private readonly ILoggerAdapter<ContractService> _logger;
 
+        private readonly IAuditService _auditService;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ContractService"/> class.
         /// </summary>
@@ -29,12 +36,14 @@ namespace Pds.Contracts.Data.Services.Implementations
         /// <param name="mapper">Automapper instance.</param>
         /// <param name="uriService">The uri service.</param>
         /// <param name="logger">The logger.</param>
-        public ContractService(IContractRepository repository, IMapper mapper, IUriService uriService, ILoggerAdapter<ContractService> logger)
+        /// <param name="auditService">The audit service used for auditing.</param>
+        public ContractService(IContractRepository repository, IMapper mapper, IUriService uriService, ILoggerAdapter<ContractService> logger, IAuditService auditService)
         {
             _repository = repository;
             _mapper = mapper;
             _uriService = uriService;
             _logger = logger;
+            _auditService = auditService;
         }
 
         /// <inheritdoc/>
@@ -94,6 +103,37 @@ namespace Pds.Contracts.Data.Services.Implementations
         {
             var contract = await _repository.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(request.Id);
             return _mapper.Map<Models.Contract>(contract);
+        }
+
+        /// <inheritdoc/>
+        public async Task<UpdatedContractStatusResponse> UpdateContractConfirmApprovalAsync(UpdateConfirmApprovalRequest request)
+        {
+            _logger.LogInformation($"[UpdateContractConfirmApprovalAsync] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
+            ContractStatus requiredContractStatus = ContractStatus.ApprovedWaitingConfirmation;
+            ContractStatus newContractStatus = ContractStatus.Approved;
+            var updatedContractStatusResponse = await _repository.UpdateContractStatusAsync(request.Id, requiredContractStatus, newContractStatus);
+
+            string message = $"Contract [{updatedContractStatusResponse.ContractNumber}] Version number [{updatedContractStatusResponse.ContractVersion}] with Id [{updatedContractStatusResponse.Id}] has been {updatedContractStatusResponse.NewStatus}. Additional Information Details: ContractId is: {updatedContractStatusResponse.Id}. Contract Status Before was {updatedContractStatusResponse.Status} . Contract Status After is {updatedContractStatusResponse.NewStatus}";
+            try
+            {
+                await _auditService.AuditAsync(new Audit.Api.Client.Models.Audit()
+                {
+                    Action = ActionType.ContractConfirmApproval,
+                    Severity = SeverityLevel.Information,
+                    Ukprn = updatedContractStatusResponse.Ukprn,
+                    Message = message,
+                    User = $"[{_appName}]"
+                });
+
+                _logger.LogInformation($"[UpdateContractConfirmApproval] Audit success for the message: {message}");
+            }
+            catch (Exception e)
+            {
+                //Silent log with the message and error details.
+                _logger.LogError($"[UpdateContractConfirmApproval] Audit log failed for the contract number: {updatedContractStatusResponse.ContractNumber}, contract Id: {updatedContractStatusResponse.Id}. Message: {message}. The Error: {e.Message}");
+            }
+
+            return updatedContractStatusResponse;
         }
 
         /// <summary>

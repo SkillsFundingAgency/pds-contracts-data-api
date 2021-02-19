@@ -1,16 +1,22 @@
 ﻿using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
+using Pds.Contracts.Data.Common.Enums;
+using Pds.Contracts.Data.Repository.Context;
 using Pds.Contracts.Data.Services.Models;
 using Pds.Contracts.Data.Services.Responses;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using DataModels = Pds.Contracts.Data.Repository.DataModels;
 
 namespace Pds.Contracts.Data.Api.Tests.Integration
 {
@@ -26,6 +32,42 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         public ContractControllerTests()
         {
             var appFactory = new WebApplicationFactory<Startup>();
+            appFactory = appFactory.WithWebHostBuilder(config =>
+            {
+                config.ConfigureServices(services =>
+                {
+                    var descriptor = services.SingleOrDefault(
+                           d => d.ServiceType ==
+                           typeof(DbContextOptions<PdsContext>));
+
+                    if (descriptor != null)
+                    {
+                        services.Remove(descriptor);
+                    }
+
+                    services.AddDbContext<PdsContext>(options =>
+                        options.UseInMemoryDatabase("InMemory"));
+
+                    // Build the service provider.
+                    var serviceProvider = services.BuildServiceProvider();
+
+                    // Create a scope to obtain a reference to the database context (PdsContext).
+                    using var scope = serviceProvider.CreateScope();
+
+                    var db = scope.ServiceProvider.GetRequiredService<PdsContext>();
+                    List<DataModels.Contract> working = GetDataModelContracts();
+                    if (db.Contracts.Count() <= 0)
+                    {
+                        foreach (var item in working)
+                        {
+                            db.Contracts.Add(item);
+                        }
+
+                        db.SaveChanges();
+                    }
+                });
+            });
+
             _testClient = appFactory.CreateClient();
             _testClient.BaseAddress = new Uri("http://localhost:5001");
             _testClient.DefaultRequestHeaders.Accept.Clear();
@@ -156,7 +198,75 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
+        [TestMethod]
+        public async Task UpdateContractConfirmApproval_WithDefaultParameters_ReturnsResponse()
+        {
+            // Arrange
+            var content = new UpdateConfirmApprovalRequest()
+            {
+                Id = 4,
+                ContractNumber = "Levy-0002",
+                ContractVersion = 1
+            };
+
+            // Act
+            var response = await _testClient.PatchAsync("/api/confirmApproval", GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        [TestMethod]
+        public async Task UpdateContractConfirmApproval_WithDefaultParameters_Returns400Response()
+        {
+            // Arrange
+            var content = new UpdateConfirmApprovalRequest()
+            {
+                Id = 0,
+                ContractNumber = "Levy-0002",
+                ContractVersion = 0
+            };
+
+            // Act
+            var response = await _testClient.PatchAsync("/api/confirmApproval", GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [TestMethod]
+        public async Task UpdateContractConfirmApproval_WithDefaultParameters_Returns404Response()
+        {
+            // Arrange
+            var content = new UpdateConfirmApprovalRequest()
+            {
+                Id = 99,
+                ContractNumber = "Levy-0002",
+                ContractVersion = 1
+            };
+
+            // Act
+            var response = await _testClient.PatchAsync("/api/confirmApproval", GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
         private StringContent GetStringContent(object obj)
             => new StringContent(JsonConvert.SerializeObject(obj), Encoding.Default, "application/json");
+
+        private List<DataModels.Contract> GetDataModelContracts()
+        {
+            string contractNumber = "Test-Contract-Number";
+            string title = "Test Title";
+            DateTime lastEmailReminderSent = DateTime.UtcNow;
+            return new List<DataModels.Contract>
+            {
+                new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 2, Title = title, ContractNumber = contractNumber, ContractVersion = 2, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 3, Title = title, ContractNumber = contractNumber, ContractVersion = 3, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 4, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+            };
+        }
     }
 }

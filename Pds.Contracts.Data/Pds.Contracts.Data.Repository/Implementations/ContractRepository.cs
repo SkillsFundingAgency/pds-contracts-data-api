@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Pds.Contracts.Data.Common.CustomExceptionHandlers;
 using Pds.Contracts.Data.Common.Enums;
+using Pds.Contracts.Data.Common.Responses;
 using Pds.Contracts.Data.Repository.DataModels;
 using Pds.Contracts.Data.Repository.Extensions;
 using Pds.Contracts.Data.Repository.Interfaces;
@@ -94,6 +96,39 @@ namespace Pds.Contracts.Data.Repository.Implementations
             }
 
             return contract;
+        }
+
+        /// <inheritdoc/>
+        public async Task<UpdatedContractStatusResponse> UpdateContractStatusAsync(int contractId, ContractStatus requiredContractStatus, ContractStatus newContractStatus)
+        {
+            UpdatedContractStatusResponse updatedContractStatusResponse = null;
+            var updatedDate = DateTime.UtcNow;
+            var contract = await _repository.GetByIdAsync(contractId);
+            if (contract != null)
+            {
+                updatedContractStatusResponse = new UpdatedContractStatusResponse() { Id = contract.Id, ContractNumber = contract.ContractNumber, ContractVersion = contract.ContractVersion, Ukprn = contract.Ukprn, Status = contract.Status };
+
+                if (contract.Status == (int)requiredContractStatus)
+                {
+                    contract.Status = (int)newContractStatus;
+                    contract.LastUpdatedAt = updatedDate;
+                    await _work.CommitAsync();
+                    updatedContractStatusResponse.NewStatus = contract.Status;
+                    _logger.LogInformation($"[UpdateContractConfirmApprovalAsync] - Updated successfully the contract status to {(ContractStatus)contract.Status} - Contract Id: {contractId}, Contract Number: {contract.ContractNumber}");
+                }
+                else
+                {
+                    _logger.LogError($"[UpdateContractConfirmApprovalAsync] Contract status is not {requiredContractStatus} - Contract Id {contractId} , the current status is {(ContractStatus)contract.Status}.");
+                    throw new ContractStatusException($"Contract status is not {requiredContractStatus} - Contract Id {contractId} , the current status is {(ContractStatus)contract.Status}.");
+                }
+            }
+            else
+            {
+                _logger.LogError($"[UpdateContractConfirmApprovalAsync] Contract not found - Contract Id {contractId}.");
+                throw new ContractNotFoundException($"Contract not found - Contract Id {contractId}.");
+            }
+
+            return updatedContractStatusResponse;
         }
     }
 }

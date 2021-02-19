@@ -1,4 +1,5 @@
 ﻿using Pds.Contracts.Data.Common.Enums;
+using Pds.Contracts.Data.Common.Responses;
 using Pds.Contracts.Data.Services.Models;
 using Pds.Contracts.Data.Services.Responses;
 using System.Collections.Generic;
@@ -46,10 +47,22 @@ namespace Pds.Contracts.Data.Services.Interfaces
         Task<ContractReminderResponse<IEnumerable<ContractReminderItem>>> GetContractRemindersAsync(int reminderInterval, int pageNumber, int pageSize, ContractSortOptions sort, SortDirection order, string templatedQueryString);
 
         /// <summary>
-        /// Update the LastEmailReminderSent and LastUpdatedAt for a provided id, contract number and contract version.
+        /// Update the LastEmailReminderSent and LastUpdatedAt for a provided id, contract number
+        /// and contract version.
         /// </summary>
-        /// <param name="request">An UpdateLastEmailReminderSentRequest model containing id, contract number and contract version.</param>
+        /// <param name="request">
+        /// An UpdateLastEmailReminderSentRequest model containing id, contract number and contract version.
+        /// </param>
         /// <returns>Returns a contract service model.</returns>
         Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(UpdateLastEmailReminderSentRequest request);
+
+        /// <summary>
+        /// Update the contract status to Approved service. and contract version.
+        /// </summary>
+        /// <param name="request">
+        /// An UpdateConfirmApprovalRequest model containing id, contract number and contract version.
+        /// </param>
+        /// <returns>Returns a Updated Contract Status Response model.</returns>
+        Task<UpdatedContractStatusResponse> UpdateContractConfirmApprovalAsync(UpdateConfirmApprovalRequest request);
     }
 }

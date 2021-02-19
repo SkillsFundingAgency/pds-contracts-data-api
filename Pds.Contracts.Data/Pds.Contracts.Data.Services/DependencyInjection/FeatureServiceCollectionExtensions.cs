@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Pds.Audit.Api.Client.Implementations;
+using Pds.Audit.Api.Client.Interfaces;
 using Pds.Contracts.Data.Repository.Context;
 using Pds.Contracts.Data.Repository.DependencyInjection;
 using Pds.Contracts.Data.Services.Implementations;
@@ -10,6 +12,8 @@ using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
 using Pds.Core.ApiClient.Interfaces;
 using Pds.Core.ApiClient.Services;
+using Pds.Core.Utils.Implementations;
+using Pds.Core.Utils.Interfaces;
 
 namespace Pds.Contracts.Data.Services.DependencyInjection
 {
@@ -36,6 +40,7 @@ namespace Pds.Contracts.Data.Services.DependencyInjection
             services.AddRepositoriesServices(configuration);
             services.AddAutoMapper(typeof(FeatureServiceCollectionExtensions).Assembly);
             services.AddScoped<IContractService, ContractService>();
+
             services.AddTransient(typeof(IAuthenticationService<>), typeof(AuthenticationService<>));
 
             services.AddSingleton<IUriService>(provider =>
