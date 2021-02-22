@@ -67,6 +67,37 @@
     },
     "authenticationClientId": {
       "type": "string"
+    },
+    "AuditApiBaseAddress": {
+      "type": "string"
+    },
+    "AuditApiAzureAdTenant": {
+      "type": "string"
+    },
+    "AuditApiAzureAdClientId": {
+      "type": "string"
+    },
+    "AuditApiAzureAdClientSecret": {
+      "type": "securestring"
+    },
+    "AuditApiAzureAdAppUri": {
+      "type": "string"
+    },
+    "HttpOptionsRetryCount": {
+      "type": "string",
+      "defaultValue": "3"
+    },
+    "HttpOptionsBackOffPower": {
+      "type": "string",
+      "defaultValue": "2"
+    },
+    "HttpOptionsCircuitBreakerToleranceCount": {
+      "type": "string",
+      "defaultValue": "5"
+    },
+    "HttpOptionsCircuitBreakerDuration": {
+      "type": "string",
+      "defaultValue": "0.00:00:15"
     }
   },
   "variables": {
@@ -205,7 +236,48 @@
               {
                 "name": "Authentication:ClientId",
                 "value": "[parameters('authenticationClientId')]"
+              },
+              {
+                "name": "AuditApiConfiguration:ApiBaseAddress",
+                "value": "[parameters('AuditApiBaseAddress')]"
+              },
+              {
+                "name": "AuditApiConfiguration:Authority",
+                "value": "https://login.microsoftonline.com/"
+              },
+              {
+                "name": "AuditApiConfiguration:TenantId",
+                "value": "[parameters('AuditApiAzureAdTenant')]"
+              },
+              {
+                "name": "AuditApiConfiguration:ClientId",
+                "value": "[parameters('AuditApiAzureAdClientId')]"
+              },
+              {
+                "name": "AuditApiConfiguration:ClientSecret",
+                "value": "[parameters('AuditApiAzureAdClientSecret')]"
+              },
+              {
+                "name": "AuditApiConfiguration:AppUri",
+                "value": "[parameters('AuditApiAzureAdAppUri')]"
+              },
+              {
+                "name": "HttpPolicyOptions:HttpRetryCount",
+                "value": "[parameters('HttpOptionsRetryCount')]"
+              },
+              {
+                "name": "HttpPolicyOptions:HttpRetryBackoffPower",
+                "value": "[parameters('HttpOptionsBackOffPower')]"
+              },
+              {
+                "name": "HttpPolicyOptions:CircuitBreakerToleranceCount",
+                "value": "[parameters('HttpOptionsCircuitBreakerToleranceCount')]"
+              },
+              {
+                "name": "HttpPolicyOptions:CircuitBreakerDurationOfBreak",
+                "value": "[parameters('HttpOptionsCircuitBreakerDuration')]"
               }
+
             ]
           },
           "appServiceConnectionStrings": {
