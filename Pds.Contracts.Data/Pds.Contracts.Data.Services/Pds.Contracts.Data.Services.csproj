@@ -16,9 +16,9 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="5.0.1" />
-		<PackageReference Include="Pds.Audit.Api.Client" Version="1.0.0" />
+		<PackageReference Include="Pds.Audit.Api.Client" Version="1.0.4" />
 		<PackageReference Include="Pds.Core.CodeAnalysis.StyleCop" Version="2.0.0" />
-		<PackageReference Include="Pds.Core.ApiClient" Version="3.4.0" />
+		<PackageReference Include="Pds.Core.ApiClient" Version="4.0.0" />
 		<PackageReference Include="Pds.Core.Utils" Version="2.5.0" />
 	</ItemGroup>
 

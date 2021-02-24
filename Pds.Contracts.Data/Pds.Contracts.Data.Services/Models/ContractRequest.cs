@@ -5,7 +5,7 @@ namespace Pds.Contracts.Data.Services.Models
     /// <summary>
     /// Request object for update last email reminder sent.
     /// </summary>
-    public class UpdateLastEmailReminderSentRequest
+    public class ContractRequest
     {
         /// <summary>
         /// Gets or sets the contract Id.

@@ -11,6 +11,7 @@ using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AuditModels = Pds.Audit.Api.Client.Models;
 
 namespace Pds.Contracts.Data.Services.Implementations
 {
@@ -99,7 +100,7 @@ namespace Pds.Contracts.Data.Services.Implementations
         }
 
         /// <inheritdoc/>
-        public async Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(UpdateLastEmailReminderSentRequest request)
+        public async Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(ContractRequest request)
         {
             var contract = await _repository.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(request.Id);
             return _mapper.Map<Models.Contract>(contract);
@@ -134,6 +135,34 @@ namespace Pds.Contracts.Data.Services.Implementations
             }
 
             return updatedContractStatusResponse;
+        }
+
+        /// <inheritdoc/>
+        public async Task<UpdatedContractStatusResponse> UpdateContractWithdrawalAsync(UpdateContractWithdrawalRequest request)
+        {
+            string methodName = "UpdateContractWithdrawalAsync";
+            _logger.LogInformation($"[{methodName}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
+
+            var updatedContractStatusResponse = await _repository.UpdateContractStatusAsync(request.Id, ContractStatus.PublishedToProvider, request.WithdrawalType);
+
+            var message = $"Contract [{updatedContractStatusResponse.ContractNumber}] version [{updatedContractStatusResponse.ContractVersion}] with Id [{updatedContractStatusResponse.Id}] has been {updatedContractStatusResponse.NewStatus}.  Additional Information Details: ContractId is: {updatedContractStatusResponse.Id}. Contract Status Before was {updatedContractStatusResponse.Status}. Contract Status After is {updatedContractStatusResponse.NewStatus}.";
+
+            await _auditService.TrySendAuditAsync(GetAudit(updatedContractStatusResponse));
+
+            return updatedContractStatusResponse;
+        }
+
+        private AuditModels.Audit GetAudit(UpdatedContractStatusResponse updatedContractStatusResponse)
+        {
+            string message = $"Contract [{updatedContractStatusResponse.ContractNumber}] Version number [{updatedContractStatusResponse.ContractVersion}] with Id [{updatedContractStatusResponse.Id}] has been {updatedContractStatusResponse.NewStatus}. Additional Information Details: ContractId is: {updatedContractStatusResponse.Id}. Contract Status Before was {updatedContractStatusResponse.Status} . Contract Status After is {updatedContractStatusResponse.NewStatus}";
+            return new AuditModels.Audit()
+            {
+                Action = ActionType.ContractConfirmApproval,
+                Severity = SeverityLevel.Information,
+                Ukprn = updatedContractStatusResponse.Ukprn,
+                Message = message,
+                User = $"[{_appName}]"
+            };
         }
 
         /// <summary>

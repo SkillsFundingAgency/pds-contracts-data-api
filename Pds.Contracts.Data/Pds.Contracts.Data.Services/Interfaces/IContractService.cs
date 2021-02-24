@@ -54,7 +54,7 @@ namespace Pds.Contracts.Data.Services.Interfaces
         /// An UpdateLastEmailReminderSentRequest model containing id, contract number and contract version.
         /// </param>
         /// <returns>Returns a contract service model.</returns>
-        Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(UpdateLastEmailReminderSentRequest request);
+        Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(ContractRequest request);
 
         /// <summary>
         /// Update the contract status to Approved service. and contract version.
@@ -64,5 +64,15 @@ namespace Pds.Contracts.Data.Services.Interfaces
         /// </param>
         /// <returns>Returns a Updated Contract Status Response model.</returns>
         Task<UpdatedContractStatusResponse> UpdateContractConfirmApprovalAsync(UpdateConfirmApprovalRequest request);
+
+
+        /// <summary>
+        /// Update contract if it has a current status of PublishedToProvider to WithdrawByAgency or WithdrawByProvider.
+        /// </summary>
+        /// <param name="request">
+        /// An UpdateContractWithdrawalRequest model containing id, contract number, contract version and withdrawal status.
+        /// </param>
+        /// <returns>Returns a Updated Contract Status Response model.</returns>
+        Task<UpdatedContractStatusResponse> UpdateContractWithdrawalAsync(UpdateContractWithdrawalRequest request);
     }
 }

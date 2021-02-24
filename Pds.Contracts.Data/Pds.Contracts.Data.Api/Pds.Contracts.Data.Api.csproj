@@ -11,7 +11,7 @@
 		<None Remove="Pds.Contracts.Data.Api.xml" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="Pds.Audit.Api.Client" Version="1.0.2" />
+		<PackageReference Include="Pds.Audit.Api.Client" Version="1.0.4" />
 		<PackageReference Include="Pds.Core.ApiAuthentication" Version="1.0.2" />
 		<PackageReference Include="Pds.Core.CodeAnalysis.StyleCop" Version="2.0.0" />
 		<PackageReference Include="Pds.Core.Logging" Version="2.0.3" />

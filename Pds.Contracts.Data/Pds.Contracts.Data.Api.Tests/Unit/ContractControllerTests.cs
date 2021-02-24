@@ -137,7 +137,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             mockContractService.Verify();
         }
 
-        [TestMethod, TestCategory("Unit")]
+        [TestMethod]
         public async Task GetContractReminders_ReturnsExpectedResult()
         {
             // Arrange
@@ -199,7 +199,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()))
+                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()))
                 .ReturnsAsync(expectedDataModel)
                 .Verifiable();
 
@@ -210,7 +210,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             // Assert
             actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.OK);
-            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()), Times.Once);
+            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()), Times.Once);
             mockLogger.Verify();
         }
 
@@ -227,7 +227,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()))
+                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()))
                 .ReturnsAsync(dummyModel)
                 .Verifiable();
 
@@ -240,7 +240,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             // Assert
             actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
-            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()), Times.Once);
+            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()), Times.Once);
             mockLogger.Verify();
         }
 
@@ -256,7 +256,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()))
+                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()))
                 .ReturnsAsync(expectedDataModel)
                 .Verifiable();
 
@@ -272,7 +272,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             // Assert
             actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
-            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()), Times.Never);
+            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()), Times.Never);
             mockLogger.Verify();
         }
 
@@ -476,6 +476,174 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             mockLogger.Verify();
         }
 
+        [TestMethod]
+        public async Task UpdateContractWithdrawalAsync_ReturnsContractPreConditionFailedExceptionResult()
+        {
+            // Arrange
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+
+            var mockContractService = new Mock<IContractService>();
+            mockContractService
+                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .Throws(new ContractStatusException("Contract status is not PublishedToProvider."))
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object)
+            {
+                ControllerContext = CreateControllerContext()
+            };
+
+            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+
+            // Act
+            var actual = await controller.UpdateContractWithdrawalAsync(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.PreconditionFailed);
+            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
+            mockLogger.Verify();
+        }
+
+        [TestMethod]
+        public async Task UpdateContractWithdrawalAsync_ReturnsContractNotFoundExceptionResult()
+        {
+            // Arrange
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+
+            var mockContractService = new Mock<IContractService>();
+            mockContractService
+                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .Throws(new ContractNotFoundException("Contract was not found."))
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object)
+            {
+                ControllerContext = CreateControllerContext()
+            };
+
+            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+
+            // Act
+            var actual = await controller.UpdateContractWithdrawalAsync(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
+            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
+            mockLogger.Verify();
+        }
+
+        [TestMethod]
+        public async Task UpdateContractWithdrawalAsync_ReturnsContractGenericExceptionResult()
+        {
+            // Arrange
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+            mockLogger
+                .Setup(logger => logger.LogError(It.IsAny<string>()))
+                .Verifiable();
+
+            var mockContractService = new Mock<IContractService>();
+            mockContractService
+                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .Throws(new System.Exception())
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object)
+            {
+                ControllerContext = CreateControllerContext()
+            };
+
+            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+
+            // Act
+            var actual = await controller.UpdateContractWithdrawalAsync(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
+            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
+            mockLogger.Verify();
+        }
+
+        [TestMethod]
+        public async Task UpdateContractWithdrawalAsync_ReturnsContractNotFoundResult()
+        {
+            // Arrange
+            UpdatedContractStatusResponse dummyModel = null;
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+
+            var mockContractService = new Mock<IContractService>();
+            mockContractService
+                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .ReturnsAsync(dummyModel)
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object)
+            {
+                ControllerContext = CreateControllerContext()
+            };
+
+            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+
+            // Act
+            var actual = await controller.UpdateContractWithdrawalAsync(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
+            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
+            mockLogger.Verify();
+        }
+
+        [TestMethod]
+        public async Task UpdateContractWithdrawalAsync_ReturnsBadRequestResultAsync()
+        {
+            // Arrange
+            var expectedDataModel = Mock.Of<UpdatedContractStatusResponse>();
+
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+
+            var mockContractService = new Mock<IContractService>();
+            mockContractService
+                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .ReturnsAsync(expectedDataModel)
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object)
+            {
+                ControllerContext = CreateControllerContext()
+            };
+
+            controller.ModelState.AddModelError("Id", "Id must be greater than zero");
+
+            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+            request.Id = 0;
+
+            // Act
+            var actual = await controller.UpdateContractWithdrawalAsync(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Never);
+            mockLogger.Verify();
+        }
+
         #region Arrange Helpers
 
         private ControllerContext CreateControllerContext()
@@ -517,9 +685,9 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             return expected;
         }
 
-        private UpdateLastEmailReminderSentRequest GetUpdateLastEmailReminderSentRequest()
+        private ContractRequest GetUpdateLastEmailReminderSentRequest()
         {
-            return new UpdateLastEmailReminderSentRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+            return new ContractRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
         }
 
         #endregion Arrange Helpers

@@ -112,7 +112,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
                 new DataModels.Contract { Id = 1, Title = title, ContractNumber = string.Empty, ContractVersion = 1, Ukprn = 12345678, LastEmailReminderSent = null }
             };
 
-            var request = new UpdateLastEmailReminderSentRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1 };
+            var request = new ContractRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1 };
 
             foreach (var item in working)
             {
@@ -234,6 +234,75 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             contract.Should().NotBeNull();
             actualBeforeUpdate.Status.Should().Be((int)ContractStatus.ApprovedWaitingConfirmation);
             afterUpdate.Status.Should().Be((int)ContractStatus.Approved);
+        }
+
+        [TestMethod]
+        public async Task UpdateContractWithdrawalAsync_ReturnsExpectedResult_Test()
+        {
+            //Arrange
+            SetMapperHelper();
+            string baseUrl = $"https://localhost:5001";
+            const string contractNumber = "main-000";
+            const string title = "Test Title";
+            int x = 0;
+
+            var working = new List<DataModels.Contract>
+            {
+                new DataModels.Contract { Id = 1, Title = title, ContractNumber = string.Empty, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.PublishedToProvider }
+            };
+
+            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+
+            foreach (var item in working)
+            {
+                item.ContractNumber = $"{contractNumber}{x}";
+                item.Ukprn += x;
+                item.LastEmailReminderSent = null;
+                x += 1;
+            }
+
+            ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
+            ILoggerAdapter<ContractRepository> loggerRepo = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));
+
+            MockAuditService();
+
+            var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
+            var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
+            var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
+            var contractRepo = new ContractRepository(repo, work, loggerRepo);
+            var uriService = new UriService(baseUrl);
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object);
+
+            foreach (var item in working)
+            {
+                await repo.AddAsync(item);
+            }
+
+            await work.CommitAsync();
+
+            //Act
+            var beforeUpdate = await contractRepo.GetAsync(request.Id);
+
+            // assigning to a new variable before this is an in memory db so the
+            // LastEmailReminderSent was being populated.
+            var actualBeforeUpdate = new DataModels.Contract()
+            {
+                Id = beforeUpdate.Id,
+                Title = beforeUpdate.Title,
+                ContractNumber = beforeUpdate.ContractNumber,
+                ContractVersion = beforeUpdate.ContractVersion,
+                Ukprn = beforeUpdate.Ukprn,
+                Status = beforeUpdate.Status
+            };
+
+            var contract = await service.UpdateContractWithdrawalAsync(request);
+
+            var afterUpdate = await contractRepo.GetAsync(request.Id);
+
+            //Assert
+            contract.Should().NotBeNull();
+            actualBeforeUpdate.Status.Should().Be((int)ContractStatus.PublishedToProvider);
+            afterUpdate.Status.Should().Be((int)ContractStatus.WithdrawnByAgency);
         }
 
         /// <summary>

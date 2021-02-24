@@ -148,7 +148,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         public async Task UpdateLastEmailReminderSentAsync_WithDefaultParameters_ReturnsResponse()
         {
             // Arrange
-            var content = new UpdateLastEmailReminderSentRequest()
+            var content = new ContractRequest()
             {
                 Id = 1,
                 ContractNumber = "Levy-0002",
@@ -166,7 +166,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         public async Task UpdateLastEmailReminderSentAsync_WithDefaultParameters_Returns400Response()
         {
             // Arrange
-            var content = new UpdateLastEmailReminderSentRequest()
+            var content = new ContractRequest()
             {
                 Id = 0,
                 ContractNumber = "Levy-0002",
@@ -184,7 +184,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         public async Task UpdateLastEmailReminderSentAsync_WithDefaultParameters_Returns404Response()
         {
             // Arrange
-            var content = new UpdateLastEmailReminderSentRequest()
+            var content = new ContractRequest()
             {
                 Id = 99,
                 ContractNumber = "Levy-0002",
@@ -252,6 +252,63 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
+        [TestMethod]
+        public async Task UpdateContractWithdrawalAsync_WithDefaultParameters_ReturnsResponse()
+        {
+            // Arrange
+            var content = new UpdateContractWithdrawalRequest()
+            {
+                Id = 7,
+                ContractNumber = "Main-0001",
+                ContractVersion = 1,
+                WithdrawalType = ContractStatus.WithdrawnByAgency
+            };
+
+            // Act
+            var response = await _testClient.PatchAsync("/api/withdraw", GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        [TestMethod]
+        public async Task UpdateContractWithdrawalAsync_WithDefaultParameters_Returns400Response()
+        {
+            // Arrange
+            var content = new UpdateContractWithdrawalRequest()
+            {
+                Id = 0,
+                ContractNumber = "Levy-0002",
+                ContractVersion = 0,
+                WithdrawalType = ContractStatus.WithdrawnByAgency
+            };
+
+            // Act
+            var response = await _testClient.PatchAsync("/api/withdraw", GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [TestMethod]
+        public async Task UpdateContractWithdrawalAsync_WithDefaultParameters_Returns404Response()
+        {
+            // Arrange
+            var content = new UpdateContractWithdrawalRequest()
+            {
+                Id = 99,
+                ContractNumber = "Levy-0002",
+                ContractVersion = 1,
+                WithdrawalType = ContractStatus.WithdrawnByAgency
+            };
+
+            // Act
+            var response = await _testClient.PatchAsync("/api/withdraw", GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
         private StringContent GetStringContent(object obj)
             => new StringContent(JsonConvert.SerializeObject(obj), Encoding.Default, "application/json");
 
@@ -266,6 +323,10 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
                 new DataModels.Contract { Id = 2, Title = title, ContractNumber = contractNumber, ContractVersion = 2, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
                 new DataModels.Contract { Id = 3, Title = title, ContractNumber = contractNumber, ContractVersion = 3, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
                 new DataModels.Contract { Id = 4, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 5, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 123456785, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 6, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 123456786, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 7, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
+                new DataModels.Contract { Id = 8, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider }
             };
         }
     }

@@ -10,6 +10,7 @@ using Pds.Contracts.Data.Services.Responses;
 using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -179,7 +180,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-        public async Task<ActionResult> UpdateLastEmailReminderSent(UpdateLastEmailReminderSentRequest request)
+        public async Task<ActionResult> UpdateLastEmailReminderSent(ContractRequest request)
         {
             _logger.LogInformation($"Update LastEmailReminderSent and LastUpdatedAt called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
             if (!ModelState.IsValid)
@@ -248,6 +249,64 @@ namespace Pds.Contracts.Data.Api.Controllers
             catch (System.Exception ex)
             {
                 _logger.LogError($"[UpdateContractConfirmApproval] Internal server exception has occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+
+            return StatusCode(StatusCodes.Status200OK);
+        }
+
+        /// <summary>
+        /// Update contract status only when it has a current status of PublishedToProvider to WithdrawByAgency or WithdrawByProvider.
+        /// </summary>
+        /// <param name="request">
+        /// An UpdateContractWithdrawalRequest model containing id, contract number, contract version and withdrawal status.
+        /// </param>
+        /// <returns>A list of contracts that are overdue.</returns>
+        /// <response code="400">One or more parameters supplied are not valid.</response>
+        /// <response code="401">Supplied authorisation credentials are not valid.</response>
+        /// <response code="404">Contract was not found for the provided contract id.</response>
+        /// <response code="412">Contract pre checks failed.</response>
+        /// <response code="500">Application error, invalid operation attempted.</response>
+        /// <response code="503">Service is un-available, retry the operation later.</response>
+        [HttpPatch("/api/withdraw")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status412PreconditionFailed)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+        public async Task<ActionResult> UpdateContractWithdrawalAsync(UpdateContractWithdrawalRequest request)
+        {
+            string methodName = "UpdateContractWithdrawalAsync";
+            _logger.LogInformation($"[{methodName}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} ");
+            if (!ModelState.IsValid)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest);
+            }
+
+            try
+            {
+                var result = await _contractService.UpdateContractWithdrawalAsync(request);
+                if (result == null)
+                {
+                    return StatusCode(StatusCodes.Status404NotFound);
+                }
+            }
+            catch (ContractStatusException ex)
+            {
+                _logger.LogError($"[{methodName}] ContractStatusException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                return StatusCode(StatusCodes.Status412PreconditionFailed);
+            }
+            catch (ContractNotFoundException ex)
+            {
+                _logger.LogError($"[{methodName}] ContractNotFoundException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                return StatusCode(StatusCodes.Status404NotFound);
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError($"[{methodName}] Internal server exception has occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
