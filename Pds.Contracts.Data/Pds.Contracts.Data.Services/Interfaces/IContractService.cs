@@ -13,6 +13,13 @@ namespace Pds.Contracts.Data.Services.Interfaces
     public interface IContractService
     {
         /// <summary>
+        /// Creates a new record in there database with the requested details.
+        /// </summary>
+        /// <param name="request">The details of the request.</param>
+        /// <returns>The created contract.</returns>
+        Task CreateAsync(CreateContractRequest request);
+
+        /// <summary>
         /// Gets a contract by Id.
         /// </summary>
         /// <param name="id">The identifier.</param>

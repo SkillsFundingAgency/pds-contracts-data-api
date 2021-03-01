@@ -35,7 +35,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
 
             //Act
             var before = await repo.GetByIdAsync(1);
-            await contractRepo.ExampleCreate(contract);
+            await contractRepo.CreateAsync(contract);
             var after = await repo.GetByIdAsync(1);
 
             //Assert

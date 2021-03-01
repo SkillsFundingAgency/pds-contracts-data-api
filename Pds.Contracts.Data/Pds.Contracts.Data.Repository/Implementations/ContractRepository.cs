@@ -30,7 +30,10 @@ namespace Pds.Contracts.Data.Repository.Implementations
         /// <param name="repository">Contract repository.</param>
         /// <param name="work">The single unit of work.</param>
         /// <param name="logger">The logger.</param>
-        public ContractRepository(IRepository<Contract> repository, IUnitOfWork work, ILoggerAdapter<ContractRepository> logger)
+        public ContractRepository(
+            IRepository<Contract> repository,
+            IUnitOfWork work,
+            ILoggerAdapter<ContractRepository> logger)
         {
             _repository = repository;
             _work = work;
@@ -38,7 +41,7 @@ namespace Pds.Contracts.Data.Repository.Implementations
         }
 
         /// <inheritdoc/>
-        public async Task ExampleCreate(Contract contract)
+        public async Task CreateAsync(Contract contract)
         {
             await _repository.AddAsync(contract);
             await _work.CommitAsync();

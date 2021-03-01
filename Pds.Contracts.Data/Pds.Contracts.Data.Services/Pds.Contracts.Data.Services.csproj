@@ -27,8 +27,4 @@
 		<ProjectReference Include="..\Pds.Contracts.Data.Repository\Pds.Contracts.Data.Repository.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Folder Include="Implementations\" />
-	</ItemGroup>
-
 </Project>

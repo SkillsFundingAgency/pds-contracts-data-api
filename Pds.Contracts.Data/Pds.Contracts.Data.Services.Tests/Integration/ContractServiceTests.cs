@@ -15,6 +15,7 @@ using Pds.Contracts.Data.Services.Tests.SetUp;
 using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AuditModels = Pds.Audit.Api.Client.Models;
 using DataModels = Pds.Contracts.Data.Repository.DataModels;
@@ -24,9 +25,49 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
     [TestClass, TestCategory("Integration")]
     public class ContractServiceTests
     {
+        private readonly ISemaphoreOnEntity<string> _semaphoreOnEntity
+            = new SemaphoreOnEntity<string>();
+
         private Mock<IAuditService> _mockAuditService;
 
         private IMapper _mapper = null;
+
+        #region Create
+
+        [TestMethod]
+        public async Task CreateAsync_WhenInputIsValid_Then_CreatesContractSuccessfullyTest()
+        {
+            // Arrange
+            string baseUrl = $"https://localhost:5001";
+
+            SetMapperHelper();
+            var request = Generate_CreateContractRequest();
+
+            ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
+            ILoggerAdapter<ContractRepository> loggerRepo = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));
+
+            MockAuditService();
+
+            var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
+            var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
+            var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
+            var contractRepo = new ContractRepository(repo, work, loggerRepo);
+            var uriService = new UriService(baseUrl);
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity);
+
+            // Act
+            var before = await contractRepo.GetByContractNumberAsync(request.ContractNumber);
+
+            await service.CreateAsync(request);
+
+            var after = await contractRepo.GetByContractNumberAsync(request.ContractNumber);
+
+            // Assert
+            before.Should().BeEmpty();
+            after.Should().HaveCount(1).And.Subject.First().ContractVersion.Should().Be(request.ContractVersion);
+        }
+
+        #endregion
 
         [TestMethod]
         public async Task GetContractRemindersAsync_ReturnsExpectedTest()
@@ -81,7 +122,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
             var contractRepo = new ContractRepository(repo, work, loggerRepo);
             var uriService = new UriService(baseUrl);
-            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object);
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity);
 
             foreach (var item in working)
             {
@@ -132,7 +173,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
             var contractRepo = new ContractRepository(repo, work, loggerRepo);
             var uriService = new UriService(baseUrl);
-            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object);
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity);
 
             foreach (var item in working)
             {
@@ -202,7 +243,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
             var contractRepo = new ContractRepository(repo, work, loggerRepo);
             var uriService = new UriService(baseUrl);
-            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object);
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity);
 
             foreach (var item in working)
             {
@@ -271,7 +312,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
             var contractRepo = new ContractRepository(repo, work, loggerRepo);
             var uriService = new UriService(baseUrl);
-            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object);
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity);
 
             foreach (var item in working)
             {
@@ -326,6 +367,46 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
                 .Setup(e => e.AuditAsync(It.IsAny<AuditModels.Audit>()))
                 .Returns(Task.CompletedTask)
                 .Verifiable();
+        }
+
+        private CreateContractRequest Generate_CreateContractRequest()
+        {
+            DateTime startDate = new DateTime(2021, 4, 1);
+            startDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
+
+            DateTime endDate = new DateTime(2022, 3, 31);
+            endDate = DateTime.SpecifyKind(endDate, DateTimeKind.Utc);
+
+            var request = new CreateContractRequest()
+            {
+                UKPRN = 12345678,
+                Title = "Test contract title",
+                ContractNumber = "Test123",
+                ContractVersion = 1,
+                Value = 1000m,
+                Status = ContractStatus.PublishedToProvider,
+                FundingType = ContractFundingType.Unknown,
+                Year = "2021",
+                Type = ContractType.ConditionsOfFundingGrant,
+                ParentContractNumber = null,
+                StartDate = startDate,
+                EndDate = endDate,
+                AmendmentType = ContractAmendmentType.None,
+                ContractAllocationNumber = null,
+                FirstCensusDateId = null,
+                SecondCensusDateId = null,
+                CreatedBy = "Feed",
+                ContractContent = new CreateContractRequestDocument()
+                {
+                    Content = new byte[20],
+                    Size = 20,
+                    FileName = "Test file"
+                },
+                PageCount = 0,
+                ContractData = "http://www.uri.com",
+                ContractFundingStreamPeriodCodes = new CreateContractCode[] { new CreateContractCode() { Code = "Test" } }
+            };
+            return request;
         }
     }
 }

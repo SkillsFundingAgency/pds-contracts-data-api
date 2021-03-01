@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Pds.Audit.Api.Client.Enumerations;
 using Pds.Audit.Api.Client.Interfaces;
+using Pds.Contracts.Data.Common.CustomExceptionHandlers;
 using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Common.Responses;
 using Pds.Contracts.Data.Repository.Interfaces;
@@ -10,6 +11,8 @@ using Pds.Contracts.Data.Services.Responses;
 using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AuditModels = Pds.Audit.Api.Client.Models;
 
@@ -30,6 +33,8 @@ namespace Pds.Contracts.Data.Services.Implementations
 
         private readonly IAuditService _auditService;
 
+        private readonly ISemaphoreOnEntity<string> _semaphoreOnEntity;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ContractService"/> class.
         /// </summary>
@@ -38,13 +43,57 @@ namespace Pds.Contracts.Data.Services.Implementations
         /// <param name="uriService">The uri service.</param>
         /// <param name="logger">The logger.</param>
         /// <param name="auditService">The audit service used for auditing.</param>
-        public ContractService(IContractRepository repository, IMapper mapper, IUriService uriService, ILoggerAdapter<ContractService> logger, IAuditService auditService)
+        /// <param name="semaphoreOnEntity">The semaphore to use for locking.</param>
+        public ContractService(
+            IContractRepository repository,
+            IMapper mapper,
+            IUriService uriService,
+            ILoggerAdapter<ContractService> logger,
+            IAuditService auditService,
+            ISemaphoreOnEntity<string> semaphoreOnEntity)
         {
             _repository = repository;
             _mapper = mapper;
             _uriService = uriService;
             _logger = logger;
             _auditService = auditService;
+            _semaphoreOnEntity = semaphoreOnEntity;
+        }
+
+        /// <inheritdoc/>
+        public async Task CreateAsync(CreateContractRequest request)
+        {
+            await _semaphoreOnEntity.WaitAsync(request.ContractNumber).ConfigureAwait(false);
+
+            try
+            {
+                _logger.LogInformation($"Creating new contract [{request.ContractNumber}] version [{request.ContractVersion}] for [{request.UKPRN}].");
+
+                await ValidateForNewContractAsync(request.ContractNumber, request.ContractVersion);
+
+                var newContract = _mapper.Map<Repository.DataModels.Contract>(request);
+                newContract.LastUpdatedAt = newContract.CreatedAt = DateTime.UtcNow;
+
+                await _repository.CreateAsync(newContract);
+
+                string message = $"Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created.  The contract status after is Ready to sign .";
+
+                await _auditService.TrySendAuditAsync(
+                    new Audit.Api.Client.Models.Audit()
+                    {
+                        Action = ActionType.ContractCreated,
+                        Severity = SeverityLevel.Information,
+                        Ukprn = newContract.Ukprn,
+                        Message = message,
+                        User = $"[{_appName}]"
+                    });
+
+                _logger.LogInformation($"Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created for [{newContract.Ukprn}].");
+            }
+            finally
+            {
+                _semaphoreOnEntity.Release(request.ContractNumber);
+            }
         }
 
         /// <inheritdoc/>
@@ -163,6 +212,19 @@ namespace Pds.Contracts.Data.Services.Implementations
                 Message = message,
                 User = $"[{_appName}]"
             };
+        }
+
+        private async Task ValidateForNewContractAsync(string contractNumber, int contractVersion)
+        {
+            var existing = await _repository.GetByContractNumberAsync(contractNumber);
+            if (existing?.Any(p => p.ContractVersion > contractVersion) == true)
+            {
+                throw new ContractWithHigherVersionAlreadyExistsException(contractNumber, contractVersion);
+            }
+            else if (existing?.Any(p => p.ContractVersion == contractVersion) == true)
+            {
+                throw new DuplicateContractException(contractNumber, contractVersion);
+            }
         }
 
         /// <summary>

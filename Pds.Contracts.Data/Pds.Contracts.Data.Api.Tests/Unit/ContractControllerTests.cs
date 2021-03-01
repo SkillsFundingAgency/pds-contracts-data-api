@@ -2,10 +2,10 @@
 using FluentAssertions.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using Pds.Audit.Api.Client.Interfaces;
 using Pds.Contracts.Data.Api.Controllers;
 using Pds.Contracts.Data.Common.CustomExceptionHandlers;
 using Pds.Contracts.Data.Common.Enums;
@@ -14,18 +14,172 @@ using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
 using Pds.Contracts.Data.Services.Responses;
 using Pds.Core.Logging;
+using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Security.Claims;
-using System.Security.Principal;
 using System.Threading.Tasks;
-using AuditModels = Pds.Audit.Api.Client.Models;
 
 namespace Pds.Contracts.Data.Api.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]
     public class ContractControllerTests
     {
+        private readonly IContractService _contractService
+            = Mock.Of<IContractService>(MockBehavior.Strict);
+
+        private readonly ILoggerAdapter<ContractController> _logger
+            = Mock.Of<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
+
+        private readonly ProblemDetailsFactory _problemDetailsFactory
+            = Mock.Of<ProblemDetailsFactory>(MockBehavior.Strict);
+
+        #region Create
+
+        [TestMethod]
+        public async Task Create_Returns_ExpectedResult()
+        {
+            // Arrange
+            var contractRequest = new CreateContractRequest();
+
+            SetupLoggerInfo();
+
+            Mock.Get(_contractService)
+                .Setup(e => e.CreateAsync(contractRequest))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            var controller = new ContractController(_logger, _contractService);
+
+            // Act
+            var result = await controller.CreateContract(contractRequest);
+
+            // Assert
+            result.Should().BeStatusCodeResult().WithStatusCode(StatusCodes.Status201Created);
+
+            VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task Create_InvalidModelState_Returns_BadRequestResult()
+        {
+            // Arrange
+            var contractRequest = new CreateContractRequest();
+            string key = "Ukprn";
+            string error = "Value must be 8 digits.";
+
+            var validationProblemDetails = new ValidationProblemDetails()
+            {
+                Detail = "One or more errors with the input",
+                Status = StatusCodes.Status400BadRequest
+            };
+
+            validationProblemDetails.Errors.Add(key, new string[] { error });
+
+            SetupLoggerInfo();
+            SetupLoggerError();
+            SetupProblemDetailsFactory(validationProblemDetails);
+
+            var controller = new ContractController(_logger, _contractService);
+
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
+            controller.ModelState.AddModelError(key, error);
+
+            // Act
+            var result = await controller.CreateContract(contractRequest);
+
+            // Assert
+            var badResult = result.Should().BeAssignableTo<ObjectResult>();
+            badResult.Subject.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+
+            badResult.Subject.Value.Should().BeEquivalentTo(validationProblemDetails);
+
+            VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task Create_WhenContractAlreadyExists_Returns_409Conflict()
+        {
+            // Arrange
+            var contractRequest = new CreateContractRequest();
+
+            SetupLoggerInfo();
+            SetupLoggerError<DuplicateContractException>();
+
+            Mock.Get(_contractService)
+                .Setup(e => e.CreateAsync(contractRequest))
+                .Throws(new DuplicateContractException("test", 1))
+                .Verifiable();
+
+            var controller = new ContractController(_logger, _contractService);
+
+            // Act
+            var result = await controller.CreateContract(contractRequest);
+
+            // Assert
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+            status.Subject.Value.Should().NotBeNull();
+
+            VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task Create_WhenContractAlreadyExists_Returns_412PreconditionFailed()
+        {
+            // Arrange
+            var contractRequest = new CreateContractRequest();
+
+            SetupLoggerInfo();
+            SetupLoggerError<ContractWithHigherVersionAlreadyExistsException>();
+
+            Mock.Get(_contractService)
+                .Setup(e => e.CreateAsync(contractRequest))
+                .Throws(new ContractWithHigherVersionAlreadyExistsException("test", 1))
+                .Verifiable();
+
+            var controller = new ContractController(_logger, _contractService);
+
+            // Act
+            var result = await controller.CreateContract(contractRequest);
+
+            // Assert
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status412PreconditionFailed);
+            status.Subject.Value.Should().NotBeNull();
+
+            VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task Create_WhenSaveToDbFails_Returns_500InternalServerError()
+        {
+            // Arrange
+            var contractRequest = new CreateContractRequest();
+
+            SetupLoggerInfo();
+            SetupLoggerError<Exception>();
+
+            Mock.Get(_contractService)
+                .Setup(e => e.CreateAsync(contractRequest))
+                .Throws(new Exception())
+                .Verifiable();
+
+            var controller = new ContractController(_logger, _contractService);
+
+            // Act
+            var result = await controller.CreateContract(contractRequest);
+
+            // Assert
+            result.Should().BeStatusCodeResult().WithStatusCode(StatusCodes.Status500InternalServerError);
+
+            VerifyAll();
+        }
+
+        #endregion
+
+
+        #region GetById
+
         [TestMethod]
         public async Task GetById_ReturnsSingleContractResultFromContractService()
         {
@@ -84,6 +238,11 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             mockContractService.Verify();
         }
 
+        #endregion
+
+
+        #region GetByContractNumberAndVersion
+
         [TestMethod]
         public async Task GetByContractNumberAndVersion_ReturnsSingleContractResultFromContractServiceAsync()
         {
@@ -137,6 +296,11 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             mockContractService.Verify();
         }
 
+        #endregion
+
+
+        #region GetContractReminders
+
         [TestMethod]
         public async Task GetContractReminders_ReturnsExpectedResult()
         {
@@ -186,6 +350,11 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             mockContractService.Verify();
             mockLogger.Verify();
         }
+
+        #endregion
+
+
+        #region UpdateLastEmailReminderSent
 
         [TestMethod]
         public async Task UpdateLastEmailReminderSent_ReturnsOKResultAsync()
@@ -275,6 +444,11 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()), Times.Never);
             mockLogger.Verify();
         }
+
+        #endregion
+
+
+        #region UpdateContractConfirmApproval
 
         [TestMethod]
         public async Task UpdateContractConfirmApproval_ReturnsOKResultAsync()
@@ -476,6 +650,11 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             mockLogger.Verify();
         }
 
+        #endregion
+
+
+        #region UpdateContractWithdrawal
+
         [TestMethod]
         public async Task UpdateContractWithdrawalAsync_ReturnsContractPreConditionFailedExceptionResult()
         {
@@ -644,6 +823,9 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             mockLogger.Verify();
         }
 
+        #endregion
+
+
         #region Arrange Helpers
 
         private ControllerContext CreateControllerContext()
@@ -690,6 +872,57 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             return new ContractRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
         }
 
+        private void SetupLoggerInfo()
+        {
+            Mock.Get(_logger)
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+        }
+
+        private void SetupLoggerError()
+        {
+            Mock.Get(_logger)
+                .Setup(logger => logger.LogError(It.IsAny<string>()))
+                .Verifiable();
+        }
+
+        /// <summary>
+        /// Adds a setup to _logger to ensure the given exception type is raised.
+        /// </summary>
+        /// <typeparam name="TException">The exception type.</typeparam>
+        private void SetupLoggerError<TException>()
+            where TException : Exception
+        {
+            Mock.Get(_logger)
+                .Setup(logger => logger.LogError(It.IsAny<TException>(), It.IsAny<string>()))
+                .Verifiable();
+        }
+
+        private void SetupProblemDetailsFactory(ValidationProblemDetails validationProblemDetails)
+        {
+            Mock.Get(_problemDetailsFactory)
+                .Setup(p => p.CreateValidationProblemDetails(
+                    null,
+                    It.IsAny<ModelStateDictionary>(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null))
+                .Returns(validationProblemDetails);
+        }
+
         #endregion Arrange Helpers
+
+
+        #region Verify Helpers
+
+        private void VerifyAll()
+        {
+            Mock.Get(_contractService).VerifyAll();
+            Mock.Get(_logger).VerifyAll();
+        }
+
+        #endregion
     }
 }

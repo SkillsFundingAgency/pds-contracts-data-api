@@ -51,6 +51,8 @@ namespace Pds.Contracts.Data.Services.DependencyInjection
                 return new UriService(absoluteUri);
             });
 
+            services.AddSingleton(typeof(ISemaphoreOnEntity<>), typeof(SemaphoreOnEntity<>));
+
             return services;
         }
     }

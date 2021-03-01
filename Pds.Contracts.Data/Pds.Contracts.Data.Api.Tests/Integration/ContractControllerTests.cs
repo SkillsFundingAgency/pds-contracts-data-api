@@ -74,6 +74,84 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             _testClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
+        #region Create Tests
+
+        [TestMethod]
+        public async Task Create_WithTestContract_CreatesContractInSystemTest()
+        {
+            // Arrange
+            CreateContractRequest request = Generate_CreateContractRequest();
+
+            // Act
+            var response = await _testClient.PostAsync("/api/contract", GetStringContent(request));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.Created);
+        }
+
+        [TestMethod]
+        public async Task Create_InvalidContractNumber_ReturnsBadResponseTest()
+        {
+            // Arrange
+            CreateContractRequest request = Generate_CreateContractRequest();
+            request.ContractNumber = string.Empty;
+
+            // Act
+            var response = await _testClient.PostAsync("/api/contract", GetStringContent(request));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [TestMethod]
+        public async Task Create_InvalidContractVersion_ReturnsBadResponseTest()
+        {
+            // Arrange
+            CreateContractRequest request = Generate_CreateContractRequest();
+            request.ContractVersion = -1;
+
+            // Act
+            var response = await _testClient.PostAsync("/api/contract", GetStringContent(request));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [TestMethod]
+        public async Task Create_DuplicateContractCreateRequest_ReturnsConflictResponseTest()
+        {
+            // Arrange
+            CreateContractRequest request = Generate_CreateContractRequest();
+            request.ContractNumber = "Test-Contract-Number";
+            request.ContractVersion = 3;
+
+            // Act
+            var response = await _testClient.PostAsync("/api/contract", GetStringContent(request));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        }
+
+        [TestMethod]
+        public async Task Create_ContractCreateRequest_WhenContractWithHigherVersionExists_ReturnsPreconditionFailedResponseTest()
+        {
+            // Arrange
+            CreateContractRequest request = Generate_CreateContractRequest();
+            request.ContractNumber = "Test-Contract-High";
+            request.ContractVersion = 2;
+
+            // Act
+            var response = await _testClient.PostAsync("/api/contract", GetStringContent(request));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
+        }
+
+        #endregion
+
+
+        #region GetContractReminder
+
         [TestMethod]
         public async Task GetContractRemindersAsync_WithDefaultParameters_ReturnsResponse()
         {
@@ -144,6 +222,11 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         }
 
+        #endregion
+
+
+        #region UpdateLastEmailReminder
+
         [TestMethod]
         public async Task UpdateLastEmailReminderSentAsync_WithDefaultParameters_ReturnsResponse()
         {
@@ -198,6 +281,11 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
+        #endregion
+
+
+        #region UpdateContractConfirmApproval
+
         [TestMethod]
         public async Task UpdateContractConfirmApproval_WithDefaultParameters_ReturnsResponse()
         {
@@ -251,6 +339,11 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
+
+        #endregion
+
+
+        #region Arrange Helpers
 
         [TestMethod]
         public async Task UpdateContractWithdrawalAsync_WithDefaultParameters_ReturnsResponse()
@@ -326,8 +419,51 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
                 new DataModels.Contract { Id = 5, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 123456785, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
                 new DataModels.Contract { Id = 6, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 123456786, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
                 new DataModels.Contract { Id = 7, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
-                new DataModels.Contract { Id = 8, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider }
+                new DataModels.Contract { Id = 8, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
+                new DataModels.Contract { Id = 9, Title = title, ContractNumber = "Test-Contract-High", ContractVersion = 10, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans }
             };
         }
+
+        private CreateContractRequest Generate_CreateContractRequest()
+        {
+            DateTime startDate = new DateTime(2021, 4, 1);
+            startDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
+
+            DateTime endDate = new DateTime(2022, 3, 31);
+            endDate = DateTime.SpecifyKind(endDate, DateTimeKind.Utc);
+
+            var request = new CreateContractRequest()
+            {
+                UKPRN = 12345678,
+                Title = "Test contract title",
+                ContractNumber = "Test123",
+                ContractVersion = 1,
+                Value = 1000m,
+                Status = ContractStatus.PublishedToProvider,
+                FundingType = ContractFundingType.Unknown,
+                Year = "2021",
+                Type = ContractType.ConditionsOfFundingGrant,
+                ParentContractNumber = null,
+                StartDate = startDate,
+                EndDate = endDate,
+                AmendmentType = ContractAmendmentType.None,
+                ContractAllocationNumber = null,
+                FirstCensusDateId = null,
+                SecondCensusDateId = null,
+                CreatedBy = "Feed",
+                ContractContent = new CreateContractRequestDocument()
+                {
+                    Content = new byte[20],
+                    Size = 20,
+                    FileName = "Test file"
+                },
+                PageCount = 0,
+                ContractData = "http://www.uri.com",
+                ContractFundingStreamPeriodCodes = new CreateContractCode[] { new CreateContractCode() { Code = "Test" } }
+            };
+            return request;
+        }
+
+        #endregion
     }
 }

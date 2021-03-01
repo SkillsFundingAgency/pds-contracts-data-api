@@ -17,7 +17,7 @@ namespace Pds.Contracts.Data.Repository.Interfaces
         /// </summary>
         /// <param name="contract">The contract.</param>
         /// <returns>Async task.</returns>
-        Task ExampleCreate(DataModels.Contract contract);
+        Task CreateAsync(DataModels.Contract contract);
 
         /// <summary>
         /// Gets the contract by ID asynchronously.

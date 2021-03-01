@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Pds.Audit.Api.Client.Enumerations;
-using Pds.Audit.Api.Client.Interfaces;
 using Pds.Contracts.Data.Common.CustomExceptionHandlers;
 using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Services.Interfaces;
@@ -10,9 +8,6 @@ using Pds.Contracts.Data.Services.Responses;
 using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Pds.Contracts.Data.Api.Controllers
@@ -311,6 +306,64 @@ namespace Pds.Contracts.Data.Api.Controllers
             }
 
             return StatusCode(StatusCodes.Status200OK);
+        }
+
+        /// <summary>
+        /// Create a new contract with the given details.
+        /// </summary>
+        /// <param name="request">A <see cref="CreateContractRequest"/> containing the details of the contract.</param>
+        /// <returns>OK response if the contract was created successfully, error otherwise.</returns>
+        /// <response code="201">Contract has been successfully created in the system.</response>
+        /// <response code="400">One or more parameters supplied are not valid.</response>
+        /// <response code="401">Supplied authorisation credentials are not valid.</response>
+        /// <response code="409">Contract with the given number and version already exists.</response>
+        /// <response code="412">Contract witha a higher version already exists.</response>
+        /// <response code="500">Application error, invalid operation attempted.</response>
+        /// <response code="503">Service is un-available, retry the operation later.</response>
+        [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status412PreconditionFailed)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+        public async Task<ActionResult> CreateContract(CreateContractRequest request)
+        {
+            _logger.LogInformation($"[{nameof(CreateContract)}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}");
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogError($"[{nameof(CreateContract)}] provided data model failed validation check.");
+
+                return ValidationProblem();
+            }
+
+            try
+            {
+                await _contractService.CreateAsync(request);
+
+                _logger.LogInformation($"[{nameof(CreateContract)}] successfully created contract [{request.ContractNumber}] with version [{request.ContractVersion}]");
+
+                return new StatusCodeResult(StatusCodes.Status201Created);
+            }
+            catch (DuplicateContractException dc)
+            {
+                _logger.LogError(dc, $"[{nameof(CreateContract)}] " + dc.Message);
+
+                return StatusCode(StatusCodes.Status409Conflict, dc.Message);
+            }
+            catch (ContractWithHigherVersionAlreadyExistsException hva)
+            {
+                _logger.LogError(hva, $"[{nameof(CreateContract)}] " + hva.Message);
+
+                return StatusCode(StatusCodes.Status412PreconditionFailed, hva.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"[{nameof(CreateContract)}] raised an error when creating new contract record.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
     }
 }
