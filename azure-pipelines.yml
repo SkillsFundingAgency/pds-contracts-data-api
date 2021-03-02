@@ -27,15 +27,25 @@ jobs:
     inputs:
         targetType: inline
         script: |
-          Write-Host "Copying aspose license from $(downloadAsposeLicense.secureFilePath) to target folder"
+          $sourceDestination = "$(System.DefaultWorkingDirectory)\PDS.Contracts.Data\Pds.Contracts.Data.Services\DocumentServices\Resources\"
+          $testDestination = "$(System.DefaultWorkingDirectory)\PDS.Contracts.Data\Pds.Contracts.Data.Services.Tests\Integration\Resources\"
 
-          $destination = "$(System.DefaultWorkingDirectory)\PDS.Contracts.Data\Pds.Contracts.Data.Services\DocumentServices\Resources"
+          Write-Host "Copying aspose license from $(downloadAsposeLicense.secureFilePath) to target '$sourceDestination\Aspose.Total.lic'"
           
-          if(-not (Test-Path -Path "$destination")) {
-            New-Item -Type Directory -Path "$destination"
+          if(-not (Test-Path -Path "$sourceDestination")) {
+            New-Item -Type Directory -Path "$sourceDestination"
           }
 
-          Copy-Item -Path "$(downloadAsposeLicense.secureFilePath)" -Destination "$destination\Aspose.Total.lic"
+          Copy-Item -Path "$(downloadAsposeLicense.secureFilePath)" -Destination "$sourceDestination\Aspose.Total.lic"
+          Write-Host "File copied!"
+
+          Write-Host "Copying aspose license from $(downloadAsposeLicense.secureFilePath) to target '$testDestination\Aspose.Total.lic'"
+          
+          if(-not (Test-Path -Path "$testDestination")) {
+            New-Item -Type Directory -Path "$testDestination"
+          }
+
+          Copy-Item -Path "$(downloadAsposeLicense.secureFilePath)" -Destination "$testDestination\Aspose.Total.lic"
           Write-Host "File copied!"
 
   - task: DotNetCoreCLI@2

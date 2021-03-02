@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Pds.Contracts.Data.Repository.Interfaces;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Pds.Contracts.Data.Repository.Implementations
@@ -23,5 +24,9 @@ namespace Pds.Contracts.Data.Repository.Implementations
 
         /// <inheritdoc/>
         public async Task CommitAsync() => await _dbContext.SaveChangesAsync();
+
+        /// <inheritdoc/>
+        public bool IsTracked<T>(T entity)
+            where T : class => _dbContext.Set<T>().Local.Any(e => e == entity);
     }
 }

@@ -32,7 +32,7 @@ namespace Pds.Contracts.Data.Common.Enums
         /// The contract has been withdrawn through schedule.
         /// </summary>
         [Display(Name = "Autowithdrawn", Description = "Contract withdrawn missed deadline")]
-        [Obsolete]
+        [Obsolete("This status has been made obsolete, do not use, instead use WithdrawnByAgency or WithdrawnByProvider.")]
         AutoWithdrawn = 3,
 
         /// <summary>

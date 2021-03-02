@@ -33,6 +33,9 @@ namespace Pds.Contracts.Data.Repository.Implementations
         public async Task<T> GetByIdAsync(int id) => await _dbContext.FindAsync<T>(id).ConfigureAwait(false);
 
         /// <inheritdoc/>
+        public async Task<T> GetByPredicateWithIncludeAsync<TProperty>(Expression<Func<T, bool>> where, Expression<Func<T, TProperty>> navigationPropertyPath) => await _dbContext.Set<T>().Include(navigationPropertyPath).SingleOrDefaultAsync(where);
+
+        /// <inheritdoc/>
         public async Task<T> GetByPredicateAsync(Expression<Func<T, bool>> where) => _dbContext.Set<T>() is null ? null : await _dbContext.Set<T>().SingleOrDefaultAsync(where);
 
         /// <inheritdoc/>
@@ -42,9 +45,6 @@ namespace Pds.Contracts.Data.Repository.Implementations
         public void Update(T entity) => _ = _dbContext.Set<T>().Update(entity);
 
         /// <inheritdoc/>
-        public void Patch(T old, T current)
-        {
-            _dbContext.Entry<T>(old).CurrentValues.SetValues(current);
-        }
+        public async Task PatchAsync(int id, T current) => _dbContext.Entry<T>(await GetByIdAsync(id)).CurrentValues.SetValues(current);
     }
 }

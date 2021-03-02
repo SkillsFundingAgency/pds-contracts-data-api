@@ -314,6 +314,89 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             _mockLogger.VerifyAll();
         }
 
+        [TestMethod]
+        public async Task GetContractWithContractContentAsync_ReturnsExpectedResultTest()
+        {
+            //Arrange
+            var expected = new Contract { Id = 1, ContractNumber = "expected-contract-number", ContractVersion = 1, ContractContent = new ContractContent() { Id = 1 } };
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetByPredicateWithIncludeAsync(It.IsAny<Expression<Func<Contract, bool>>>(), It.IsAny<Expression<Func<Contract, ContractContent>>>()))
+                .ReturnsAsync(expected);
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            var actual = await contractRepo.GetContractWithContractContentAsync(expected.Id);
+
+            //Assert
+            actual.Should().Be(expected);
+            Mock.Get(mockRepo).VerifyAll();
+            _mockLogger.VerifyAll();
+        }
+
+        [TestMethod]
+        public void UpdateContractAsync_IsTrackedExpectedResultTest()
+        {
+            //Arrange
+            var expected = new Contract { Id = 1, ContractNumber = "expected-contract-number", ContractVersion = 1, ContractContent = new ContractContent() { Id = 1 } };
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            Mock.Get(mockUnitOfWork)
+               .Setup(u => u.IsTracked(expected))
+               .Returns(true)
+               .Verifiable();
+            Mock.Get(mockUnitOfWork)
+                .Setup(u => u.CommitAsync())
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.PatchAsync(It.IsAny<int>(), It.IsAny<Contract>()))
+                .Returns(Task.CompletedTask);
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            Func<Task> act = async () => await contractRepo.UpdateContractAsync(expected);
+
+            //Assert
+            act.Should().NotThrow();
+            Mock.Get(mockUnitOfWork).Verify(u => u.IsTracked(expected), Times.Once);
+            Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Once);
+            Mock.Get(mockRepo).Verify(r => r.PatchAsync(It.IsAny<int>(), It.IsAny<Contract>()), Times.Never);
+            _mockLogger.VerifyAll();
+        }
+
+        [TestMethod]
+        public void UpdateContractAsync_NotTrackedExpectedResultTest()
+        {
+            //Arrange
+            var expected = new Contract { Id = 1, ContractNumber = "expected-contract-number", ContractVersion = 1, ContractContent = new ContractContent() { Id = 1 } };
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            Mock.Get(mockUnitOfWork)
+               .Setup(u => u.IsTracked(expected))
+               .Returns(false)
+               .Verifiable();
+            Mock.Get(mockUnitOfWork)
+                .Setup(u => u.CommitAsync())
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.PatchAsync(It.IsAny<int>(), It.IsAny<Contract>()))
+                .Returns(Task.CompletedTask);
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            Func<Task> act = async () => await contractRepo.UpdateContractAsync(expected);
+
+            //Assert
+            act.Should().NotThrow();
+            Mock.Get(mockUnitOfWork).Verify(u => u.IsTracked(expected), Times.Once);
+            Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Never);
+            Mock.Get(mockRepo).Verify(r => r.PatchAsync(It.IsAny<int>(), It.IsAny<Contract>()), Times.Once);
+            _mockLogger.VerifyAll();
+        }
+
         private void SetMockLogger()
         {
             _mockLogger

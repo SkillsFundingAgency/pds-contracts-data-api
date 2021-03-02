@@ -823,7 +823,149 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             mockLogger.Verify();
         }
 
-        #endregion
+        #endregion UpdateContractWithdrawal
+
+
+        #region ManualApprove tests.
+
+        [TestMethod]
+        public async Task ManualApprove_ReturnsOKResultAsync()
+        {
+            // Arrange
+            SetMockLogger();
+
+            SetMockContractService_ManualApprove();
+
+            var controller = GetContractController();
+
+            var request = GetContractRequest();
+
+            // Act
+            var actual = await controller.ManualApprove(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.OK);
+            Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
+            Mock.Get(_logger).Verify();
+        }
+
+        [TestMethod]
+        public async Task ManualApprove_InputInvalid_ReturnsBadRequestResultAsync()
+        {
+            // Arrange
+            SetMockLogger();
+            SetMockContractService_ManualApprove();
+            var controller = GetContractController();
+
+            controller.ModelState.AddModelError("Id", "Id must be greater than zero");
+
+            var request = GetContractRequest();
+            request.Id = 0;
+
+            // Act
+            var actual = await controller.ManualApprove(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+            Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Never);
+            Mock.Get(_logger).Verify();
+        }
+
+        [TestMethod]
+        public async Task ManualApprove_InputInvalid_InvalidContractRequestExceptionAsync()
+        {
+            // Arrange
+            SetMockLogger();
+            SetMockContractService_ManualApprove_InvalidContractRequestException();
+            var controller = GetContractController();
+
+            controller.ModelState.AddModelError("Id", "Id must be greater than zero");
+
+            var request = GetContractRequest();
+            request.ContractNumber = "xyz";
+
+            // Act
+            var actual = await controller.ManualApprove(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+            Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Never);
+            Mock.Get(_logger).Verify();
+        }
+
+        [TestMethod]
+        public async Task ManualApprove_ReturnsContractNotFoundExceptionResult()
+        {
+            // Arrange
+            SetMockLogger_Error();
+            SetMockContractService_ManualApprove_ContractNotFoundException();
+            var controller = GetContractController();
+            var request = GetContractRequest();
+
+            // Act
+            var actual = await controller.ManualApprove(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
+            Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
+            Mock.Get(_logger).Verify();
+        }
+
+        [TestMethod]
+        public async Task ManualApprove_ReturnsContractExpectationFailedExceptionResult()
+        {
+            // Arrange
+            SetMockLogger_Error();
+            SetMockContractService_ManualApprove_ContractExpectationFailedException();
+            var controller = GetContractController();
+            var request = GetContractRequest();
+
+            // Act
+            var actual = await controller.ManualApprove(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
+            Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
+            Mock.Get(_logger).Verify();
+        }
+
+        [TestMethod]
+        public async Task ManualApprove_ReturnsContractStatusExceptionResult()
+        {
+            // Arrange
+            SetMockLogger_Error();
+            SetMockContractService_ManualApprove_ContractStatusException();
+            var controller = GetContractController();
+            var request = GetContractRequest();
+
+            // Act
+            var actual = await controller.ManualApprove(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.PreconditionFailed);
+            Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
+            Mock.Get(_logger).Verify();
+        }
+
+        [TestMethod]
+        public async Task ManualApprove_ReturnsGeneralExceptionResult()
+        {
+            // Arrange
+            SetMockLogger_Error();
+            SetMockContractService_ManualApprove_GeneralException();
+            var controller = GetContractController();
+            var request = GetContractRequest();
+
+            // Act
+            var actual = await controller.ManualApprove(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
+            Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
+            Mock.Get(_logger).Verify();
+        }
+
+        #endregion ManualApprove tests.
 
 
         #region Arrange Helpers
@@ -910,6 +1052,86 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                     null,
                     null))
                 .Returns(validationProblemDetails);
+        }
+
+        private ContractRequest GetContractRequest()
+        {
+            return new ContractRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+        }
+
+        private ContractController GetContractController()
+        {
+            return new ContractController(_logger, _contractService)
+            {
+                ControllerContext = CreateControllerContext()
+            };
+        }
+
+        private void SetMockLogger()
+        {
+            Mock.Get(_logger)
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+        }
+
+        private void SetMockLogger_Error()
+        {
+            Mock.Get(_logger)
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+            Mock.Get(_logger)
+                .Setup(logger => logger.LogError(It.IsAny<Exception>(), It.IsAny<string>()))
+                .Verifiable();
+        }
+
+        private void SetMockContractService_ManualApprove()
+        {
+            var mockDataModel = Mock.Of<UpdatedContractStatusResponse>(MockBehavior.Strict);
+
+            Mock.Get(_contractService)
+                .Setup(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()))
+                .ReturnsAsync(mockDataModel)
+                .Verifiable();
+        }
+
+        private void SetMockContractService_ManualApprove_InvalidContractRequestException()
+        {
+            Mock.Get(_contractService)
+                .Setup(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()))
+                .Throws(new InvalidContractRequestException("abc", 1, 1))
+                .Verifiable();
+        }
+
+        private void SetMockContractService_ManualApprove_ContractStatusException()
+        {
+            Mock.Get(_contractService)
+                .Setup(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()))
+                .Throws(new ContractStatusException("Contract status is not ApprovedWaitingConfirmation."))
+                .Verifiable();
+        }
+
+        private void SetMockContractService_ManualApprove_ContractNotFoundException()
+        {
+            Mock.Get(_contractService)
+                .Setup(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()))
+                .Throws(new ContractNotFoundException("Contract was not found."))
+                .Verifiable();
+        }
+
+        private void SetMockContractService_ManualApprove_ContractExpectationFailedException()
+        {
+            Mock.Get(_contractService)
+                .Setup(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()))
+                .Throws(new ContractExpectationFailedException("abc", 1, 1, "null"))
+                .Verifiable();
+        }
+
+        private void SetMockContractService_ManualApprove_GeneralException()
+        {
+            Mock.Get(_contractService)
+                 .Setup(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()))
+                 .Throws(new System.Exception())
+                 .Verifiable();
         }
 
         #endregion Arrange Helpers

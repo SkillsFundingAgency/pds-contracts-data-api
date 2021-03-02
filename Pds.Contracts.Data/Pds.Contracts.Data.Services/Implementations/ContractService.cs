@@ -35,8 +35,11 @@ namespace Pds.Contracts.Data.Services.Implementations
 
         private readonly ISemaphoreOnEntity<string> _semaphoreOnEntity;
 
+        private readonly IDocumentManagementContractService _documentService;
+        private readonly IContractValidationService _contractValidator;
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="ContractService"/> class.
+        /// Initializes a new instance of the <see cref="ContractService" /> class.
         /// </summary>
         /// <param name="repository">Contracts repository.</param>
         /// <param name="mapper">Automapper instance.</param>
@@ -44,13 +47,17 @@ namespace Pds.Contracts.Data.Services.Implementations
         /// <param name="logger">The logger.</param>
         /// <param name="auditService">The audit service used for auditing.</param>
         /// <param name="semaphoreOnEntity">The semaphore to use for locking.</param>
+        /// <param name="documentService">The document management Contract Service.</param>
+        /// <param name="contractValidator">The contract validator.</param>
         public ContractService(
             IContractRepository repository,
             IMapper mapper,
             IUriService uriService,
             ILoggerAdapter<ContractService> logger,
             IAuditService auditService,
-            ISemaphoreOnEntity<string> semaphoreOnEntity)
+            ISemaphoreOnEntity<string> semaphoreOnEntity,
+            IDocumentManagementContractService documentService,
+            IContractValidationService contractValidator)
         {
             _repository = repository;
             _mapper = mapper;
@@ -58,6 +65,8 @@ namespace Pds.Contracts.Data.Services.Implementations
             _logger = logger;
             _auditService = auditService;
             _semaphoreOnEntity = semaphoreOnEntity;
+            _documentService = documentService;
+            _contractValidator = contractValidator;
         }
 
         /// <inheritdoc/>
@@ -163,25 +172,52 @@ namespace Pds.Contracts.Data.Services.Implementations
             ContractStatus newContractStatus = ContractStatus.Approved;
             var updatedContractStatusResponse = await _repository.UpdateContractStatusAsync(request.Id, requiredContractStatus, newContractStatus);
 
-            string message = $"Contract [{updatedContractStatusResponse.ContractNumber}] Version number [{updatedContractStatusResponse.ContractVersion}] with Id [{updatedContractStatusResponse.Id}] has been {updatedContractStatusResponse.NewStatus}. Additional Information Details: ContractId is: {updatedContractStatusResponse.Id}. Contract Status Before was {updatedContractStatusResponse.Status} . Contract Status After is {updatedContractStatusResponse.NewStatus}";
-            try
-            {
-                await _auditService.AuditAsync(new Audit.Api.Client.Models.Audit()
-                {
-                    Action = ActionType.ContractConfirmApproval,
-                    Severity = SeverityLevel.Information,
-                    Ukprn = updatedContractStatusResponse.Ukprn,
-                    Message = message,
-                    User = $"[{_appName}]"
-                });
+            await _auditService.TrySendAuditAsync(GetAudit(updatedContractStatusResponse));
 
-                _logger.LogInformation($"[UpdateContractConfirmApproval] Audit success for the message: {message}");
-            }
-            catch (Exception e)
+            return updatedContractStatusResponse;
+        }
+
+        /// <inheritdoc/>
+        public async Task<UpdatedContractStatusResponse> ApproveManuallyAsync(ContractRequest request)
+        {
+            _logger.LogInformation($"[{nameof(ApproveManuallyAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id}.");
+            UpdatedContractStatusResponse updatedContractStatusResponse = null;
+
+            var manullyApproved = true;
+            var newContractStatus = ContractStatus.Approved;
+
+            var contract = await _repository.GetContractWithContractContentAsync(request.Id);
+
+            _contractValidator.Validate(contract, request, c => c.ContractContent != null);
+            _contractValidator.ValidateStatusChange(contract, newContractStatus, manullyApproved);
+
+            updatedContractStatusResponse = new UpdatedContractStatusResponse
             {
-                //Silent log with the message and error details.
-                _logger.LogError($"[UpdateContractConfirmApproval] Audit log failed for the contract number: {updatedContractStatusResponse.ContractNumber}, contract Id: {updatedContractStatusResponse.Id}. Message: {message}. The Error: {e.Message}");
-            }
+                Id = contract.Id,
+                ContractNumber = contract.ContractNumber,
+                ContractVersion = contract.ContractVersion,
+                Ukprn = contract.Ukprn,
+                Status = contract.Status
+            };
+
+            var contractRefernce = contract.ContractContent.FileName.Replace(".pdf", string.Empty);
+            var signer = $"hand and approved by ESFA";
+            var updatedDate = DateTime.UtcNow;
+            var signedContractDocument = _documentService.AddSignedDocumentPage(contract.ContractContent.Content, contractRefernce, signer, updatedDate, manullyApproved, (ContractFundingType)contract.FundingType);
+
+            contract.ContractContent.Content = signedContractDocument;
+            contract.ContractContent.Size = signedContractDocument.Length;
+
+            contract.Status = (int)newContractStatus;
+            contract.SignedOn = updatedDate;
+            contract.SignedBy = signer;
+            contract.SignedByDisplayName = signer;
+            contract.WasManuallyApproved = manullyApproved;
+
+            await _repository.UpdateContractAsync(contract);
+
+            updatedContractStatusResponse.NewStatus = contract.Status;
+            await _auditService.TrySendAuditAsync(GetAudit(updatedContractStatusResponse));
 
             return updatedContractStatusResponse;
         }
@@ -189,13 +225,9 @@ namespace Pds.Contracts.Data.Services.Implementations
         /// <inheritdoc/>
         public async Task<UpdatedContractStatusResponse> UpdateContractWithdrawalAsync(UpdateContractWithdrawalRequest request)
         {
-            string methodName = "UpdateContractWithdrawalAsync";
-            _logger.LogInformation($"[{methodName}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
+            _logger.LogInformation($"[{nameof(UpdateContractWithdrawalAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
 
             var updatedContractStatusResponse = await _repository.UpdateContractStatusAsync(request.Id, ContractStatus.PublishedToProvider, request.WithdrawalType);
-
-            var message = $"Contract [{updatedContractStatusResponse.ContractNumber}] version [{updatedContractStatusResponse.ContractVersion}] with Id [{updatedContractStatusResponse.Id}] has been {updatedContractStatusResponse.NewStatus}.  Additional Information Details: ContractId is: {updatedContractStatusResponse.Id}. Contract Status Before was {updatedContractStatusResponse.Status}. Contract Status After is {updatedContractStatusResponse.NewStatus}.";
-
             await _auditService.TrySendAuditAsync(GetAudit(updatedContractStatusResponse));
 
             return updatedContractStatusResponse;

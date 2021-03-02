@@ -69,5 +69,21 @@ namespace Pds.Contracts.Data.Repository.Interfaces
         /// Returns a UpdatedContractStatusResponse model which will have the new and old contract status.
         /// </returns>
         Task<UpdatedContractStatusResponse> UpdateContractStatusAsync(int contractId, ContractStatus requiredContractStatus, ContractStatus newContractStatus);
+
+        /// <summary>
+        /// Gets the Contract with Contract content egar loaded by contract Id asynchronously.
+        /// </summary>
+        /// <param name="id">The  Contract Id.</param>
+        /// <returns>An instance of <see cref="Contract"/> with <see cref="ContractContent"/> pre-populated.</returns>
+        Task<Contract> GetContractWithContractContentAsync(int id);
+
+        /// <summary>
+        /// Update contract.
+        /// </summary>
+        /// <param name="contract">Contract to be updated.</param>
+        /// <returns>
+        /// Async task completion.
+        /// </returns>
+        public Task UpdateContractAsync(Contract contract);
     }
 }

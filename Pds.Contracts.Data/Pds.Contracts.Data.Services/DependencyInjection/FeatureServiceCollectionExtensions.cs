@@ -7,6 +7,7 @@ using Pds.Audit.Api.Client.Implementations;
 using Pds.Audit.Api.Client.Interfaces;
 using Pds.Contracts.Data.Repository.Context;
 using Pds.Contracts.Data.Repository.DependencyInjection;
+using Pds.Contracts.Data.Services.DocumentServices;
 using Pds.Contracts.Data.Services.Implementations;
 using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
@@ -40,6 +41,11 @@ namespace Pds.Contracts.Data.Services.DependencyInjection
             services.AddRepositoriesServices(configuration);
             services.AddAutoMapper(typeof(FeatureServiceCollectionExtensions).Assembly);
             services.AddScoped<IContractService, ContractService>();
+
+            services.AddAsposeLicense();
+            services.AddScoped<IDocumentManagementContractService, AsposeDocumentManagementContractService>();
+            services.AddScoped<IDocumentManagementService, AsposeDocumentManagementService>();
+            services.AddScoped<IContractValidationService, ContractValidationService>();
 
             services.AddTransient(typeof(IAuthenticationService<>), typeof(AuthenticationService<>));
 

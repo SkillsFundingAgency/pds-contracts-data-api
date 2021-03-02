@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Pds.Contracts.Data.Common.Responses
+﻿namespace Pds.Contracts.Data.Common.Responses
 {
     /// <summary>
     /// Updated Contract Status Response class.

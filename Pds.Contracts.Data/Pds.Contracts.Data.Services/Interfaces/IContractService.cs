@@ -81,5 +81,14 @@ namespace Pds.Contracts.Data.Services.Interfaces
         /// </param>
         /// <returns>Returns a Updated Contract Status Response model.</returns>
         Task<UpdatedContractStatusResponse> UpdateContractWithdrawalAsync(UpdateContractWithdrawalRequest request);
+
+        /// <summary>
+        /// Manual update the contract status to Approved.
+        /// </summary>
+        /// <param name="request">
+        /// An ContractRequest model containing id, contract number and contract version.
+        /// </param>
+        /// <returns>Returns a Updated Contract Status Response model.</returns>
+        Task<UpdatedContractStatusResponse> ApproveManuallyAsync(ContractRequest request);
     }
 }

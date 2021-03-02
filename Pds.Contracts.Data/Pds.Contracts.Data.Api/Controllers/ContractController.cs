@@ -365,5 +365,69 @@ namespace Pds.Contracts.Data.Api.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
+
+        /// <summary>
+        /// Update the contract status to Approved. Manual Approve.
+        /// </summary>
+        /// <param name="request">
+        /// An ContractRequest model containing id, contract number and contract version.
+        /// </param>
+        /// <returns>A list of contracts that are overdue.</returns>
+        /// <response code="204">No contracts need reminders to be issued.</response>
+        /// <response code="400">One or more parameters supplied are not valid.</response>
+        /// <response code="401">Supplied authorisation credentials are not valid.</response>
+        /// <response code="404">Contract was not found for the provided contract id.</response>
+        /// <response code="412">Contract pre checks failed.</response>
+        /// <response code="500">Application error, invalid operation attempted.</response>
+        /// <response code="503">Service is un-available, retry the operation later.</response>
+        [HttpPatch("manualApprove")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status412PreconditionFailed)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+        public async Task<ActionResult> ManualApprove(ContractRequest request)
+        {
+            _logger.LogInformation($"[{nameof(ManualApprove)}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} ");
+            if (!ModelState.IsValid)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest);
+            }
+
+            try
+            {
+                await _contractService.ApproveManuallyAsync(request);
+            }
+            catch (InvalidContractRequestException ex)
+            {
+                _logger.LogError(ex, $"[{nameof(ManualApprove)}] Invalid contract request exception with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
+                return StatusCode(StatusCodes.Status400BadRequest);
+            }
+            catch (ContractNotFoundException ex)
+            {
+                _logger.LogError(ex, $"[{nameof(ManualApprove)}] failed to find a contract with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
+                return StatusCode(StatusCodes.Status404NotFound);
+            }
+            catch (ContractExpectationFailedException ex)
+            {
+                _logger.LogError(ex, $"[{nameof(ManualApprove)}] Contract expectation failed exception with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
+                return StatusCode(StatusCodes.Status404NotFound);
+            }
+            catch (ContractStatusException ex)
+            {
+                _logger.LogError(ex, $"[{nameof(ManualApprove)}] failed contract status expectation. For the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
+                return StatusCode(StatusCodes.Status412PreconditionFailed);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"[{nameof(ManualApprove)}] Un-expected exception for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+
+            return StatusCode(StatusCodes.Status200OK);
+        }
     }
 }

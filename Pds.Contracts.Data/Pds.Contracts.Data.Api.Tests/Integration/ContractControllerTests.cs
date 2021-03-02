@@ -10,6 +10,7 @@ using Pds.Contracts.Data.Services.Models;
 using Pds.Contracts.Data.Services.Responses;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -25,6 +26,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
     public class ContractControllerTests
     {
         private readonly HttpClient _testClient;
+
+        private readonly string _manualApproveUrl = "/api/Contract/manualApprove";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContractControllerTests"/> class.
@@ -340,10 +343,87 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
+        #endregion UpdateContractConfirmApproval
+
+
+        #region ManualApprove tests.
+
+        [TestMethod]
+        public async Task ManualApprove_WithValidInput_ReturnsResponse()
+        {
+            // Arrange
+            var content = GetContractRequest();
+
+            // Act
+            var response = await _testClient.PatchAsync(_manualApproveUrl, GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        [TestMethod]
+        public async Task ManualApprove_WithInvalidInput_Returns400Response()
+        {
+            // Arrange
+            var content = GetContractRequest();
+            content.Id = 0;
+
+            // Act
+            var response = await _testClient.PatchAsync(_manualApproveUrl, GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [TestMethod]
+        public async Task ManualApprove_WithValidInput_Returns404Response()
+        {
+            // Arrange
+            var content = GetContractRequest();
+            content.Id = 99;
+
+            // Act
+            var response = await _testClient.PatchAsync(_manualApproveUrl, GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
         #endregion
 
 
         #region Arrange Helpers
+
+        [TestMethod]
+        public async Task ManualApprove_ContractExpectationFailedException_Returns404Response()
+        {
+            // Arrange
+            var content = GetContractRequest();
+            content.Id = 1;
+
+            // Act
+            var response = await _testClient.PatchAsync(_manualApproveUrl, GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        [TestMethod]
+        public async Task ManualApprove_WithValidInput_Returns412Response()
+        {
+            // Arrange
+            var content = GetContractRequest();
+            content.Id = 6;
+
+            // Act
+            var response = await _testClient.PatchAsync(_manualApproveUrl, GetStringContent(content));
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
+        }
+
+        #endregion ManualApprove tests.
+
 
         [TestMethod]
         public async Task UpdateContractWithdrawalAsync_WithDefaultParameters_ReturnsResponse()
@@ -416,8 +496,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
                 new DataModels.Contract { Id = 2, Title = title, ContractNumber = contractNumber, ContractVersion = 2, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
                 new DataModels.Contract { Id = 3, Title = title, ContractNumber = contractNumber, ContractVersion = 3, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
                 new DataModels.Contract { Id = 4, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
-                new DataModels.Contract { Id = 5, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 123456785, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
-                new DataModels.Contract { Id = 6, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 123456786, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 5, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 123456785, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, ContractContent = GetDataModelContractContent(5) },
+                new DataModels.Contract { Id = 6, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 123456786, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, ContractContent = GetDataModelContractContent(6) },
                 new DataModels.Contract { Id = 7, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
                 new DataModels.Contract { Id = 8, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
                 new DataModels.Contract { Id = 9, Title = title, ContractNumber = "Test-Contract-High", ContractVersion = 10, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans }
@@ -464,6 +544,37 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             return request;
         }
 
-        #endregion
+        private DataModels.ContractContent GetDataModelContractContent(int id)
+        {
+            var pdfContent = GetPdfContent();
+            return new DataModels.ContractContent()
+            {
+                Id = id,
+                FileName = "sdf",
+                Content = pdfContent,
+                Size = pdfContent.Length
+            };
+        }
+
+        private byte[] GetPdfContent()
+        {
+            var pdfResources = "Pds.Contracts.Data.Api.Tests.Integration.Resources.test.pdf";
+            using (Stream resFilestream = typeof(ContractControllerTests).Assembly.GetManifestResourceStream(pdfResources))
+            {
+                byte[] ba = new byte[resFilestream.Length];
+                resFilestream.Read(ba, 0, ba.Length);
+                return ba;
+            }
+        }
+
+        private ContractRequest GetContractRequest()
+        {
+            return new ContractRequest()
+            {
+                Id = 5,
+                ContractNumber = "Test-Contract-Number",
+                ContractVersion = 1
+            };
+        }
     }
 }

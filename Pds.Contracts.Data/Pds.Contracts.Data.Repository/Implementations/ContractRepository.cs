@@ -133,5 +133,25 @@ namespace Pds.Contracts.Data.Repository.Implementations
 
             return updatedContractStatusResponse;
         }
+
+        /// <inheritdoc/>
+        public async Task<Contract> GetContractWithContractContentAsync(int id)
+        {
+            return await _repository.GetByPredicateWithIncludeAsync(c => c.Id == id, c => c.ContractContent);
+        }
+
+        /// <inheritdoc/>
+        public async Task UpdateContractAsync(Contract contract)
+        {
+            contract.LastUpdatedAt = DateTime.UtcNow;
+            if (_work.IsTracked(contract))
+            {
+                await _work.CommitAsync();
+            }
+            else
+            {
+                await _repository.PatchAsync(contract.Id, contract);
+            }
+        }
     }
 }
