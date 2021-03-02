@@ -17,6 +17,27 @@ jobs:
   workspace:
     clean: all
   steps:
+  - task: DownloadSecureFile@1
+    name: downloadAsposeLicense
+    displayName: 'Download Aspose License'
+    inputs:
+      secureFile: AsposeTotalLicense
+
+  - task: PowerShell@2
+    inputs:
+        targetType: inline
+        script: |
+          Write-Host "Copying aspose license from $(downloadAsposeLicense.secureFilePath) to target folder"
+
+          $destination = "$(System.DefaultWorkingDirectory)\PDS.Contracts.Data\Pds.Contracts.Data.Services\DocumentServices\Resources"
+          
+          if(-not (Test-Path -Path "$destination")) {
+            New-Item -Type Directory -Path "$destination"
+          }
+
+          Copy-Item -Path "$(downloadAsposeLicense.secureFilePath)" -Destination "$destination\Aspose.Total.lic"
+          Write-Host "File copied!"
+
   - task: DotNetCoreCLI@2
     displayName: Restore
     inputs:
