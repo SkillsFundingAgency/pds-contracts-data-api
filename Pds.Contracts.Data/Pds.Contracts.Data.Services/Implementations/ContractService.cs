@@ -242,7 +242,10 @@ namespace Pds.Contracts.Data.Services.Implementations
 
         private AuditModels.Audit GetAudit(UpdatedContractStatusResponse updatedContractStatusResponse)
         {
-            string message = $"Contract [{updatedContractStatusResponse.ContractNumber}] Version number [{updatedContractStatusResponse.ContractVersion}] with Id [{updatedContractStatusResponse.Id}] has been {updatedContractStatusResponse.NewStatus}. Additional Information Details: ContractId is: {updatedContractStatusResponse.Id}. Contract Status Before was {updatedContractStatusResponse.Status} . Contract Status After is {updatedContractStatusResponse.NewStatus}";
+            string oldStatusName = GetEnumDescription<ContractStatus>(updatedContractStatusResponse.Status);
+            string newStatusName = GetEnumDescription<ContractStatus>(updatedContractStatusResponse.NewStatus);
+
+            string message = $"Contract [{updatedContractStatusResponse.ContractNumber}] Version number [{updatedContractStatusResponse.ContractVersion}] with Id [{updatedContractStatusResponse.Id}] has been {newStatusName}. Additional Information Details: ContractId is: {updatedContractStatusResponse.Id}. Contract Status Before was {oldStatusName} . Contract Status After is {newStatusName}";
             return new AuditModels.Audit()
             {
                 Action = ActionType.ContractConfirmApproval,
@@ -251,6 +254,17 @@ namespace Pds.Contracts.Data.Services.Implementations
                 Message = message,
                 User = $"[{_appName}]"
             };
+        }
+
+        /// <summary>
+        /// Retrieve the description of an enum value.
+        /// </summary>
+        /// <typeparam name="T">Enum type to validate.</typeparam>
+        /// <param name="value">Enum value.</param>
+        /// <returns>returns the description of the value provided.</returns>
+        private string GetEnumDescription<T>(int value)
+        {
+            return Enum.Parse(typeof(T), value.ToString()).ToString();
         }
 
         private async Task ValidateForNewContractAsync(string contractNumber, int contractVersion)
