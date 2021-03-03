@@ -167,7 +167,11 @@ namespace Pds.Contracts.Data.Services.Implementations
         /// <inheritdoc/>
         public async Task<UpdatedContractStatusResponse> UpdateContractConfirmApprovalAsync(UpdateConfirmApprovalRequest request)
         {
-            _logger.LogInformation($"[UpdateContractConfirmApprovalAsync] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
+            _logger.LogInformation($"[{nameof(UpdateContractConfirmApprovalAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
+
+            var contract = await _repository.GetAsync(request.Id);
+            _contractValidator.Validate(contract, request);
+
             ContractStatus requiredContractStatus = ContractStatus.ApprovedWaitingConfirmation;
             ContractStatus newContractStatus = ContractStatus.Approved;
             var updatedContractStatusResponse = await _repository.UpdateContractStatusAsync(request.Id, requiredContractStatus, newContractStatus);
@@ -226,6 +230,9 @@ namespace Pds.Contracts.Data.Services.Implementations
         public async Task<UpdatedContractStatusResponse> UpdateContractWithdrawalAsync(UpdateContractWithdrawalRequest request)
         {
             _logger.LogInformation($"[{nameof(UpdateContractWithdrawalAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
+
+            var contract = await _repository.GetAsync(request.Id);
+            _contractValidator.Validate(contract, request);
 
             var updatedContractStatusResponse = await _repository.UpdateContractStatusAsync(request.Id, ContractStatus.PublishedToProvider, request.WithdrawalType);
             await _auditService.TrySendAuditAsync(GetAudit(updatedContractStatusResponse));

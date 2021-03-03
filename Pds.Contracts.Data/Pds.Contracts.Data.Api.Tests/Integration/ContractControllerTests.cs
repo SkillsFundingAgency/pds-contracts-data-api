@@ -296,7 +296,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             var content = new UpdateConfirmApprovalRequest()
             {
                 Id = 4,
-                ContractNumber = "Levy-0002",
+                ContractNumber = "Test-Contract-Number",
                 ContractVersion = 1
             };
 
@@ -432,7 +432,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             var content = new UpdateContractWithdrawalRequest()
             {
                 Id = 7,
-                ContractNumber = "Main-0001",
+                ContractNumber = "Test-Contract-Number",
                 ContractVersion = 1,
                 WithdrawalType = ContractStatus.WithdrawnByAgency
             };

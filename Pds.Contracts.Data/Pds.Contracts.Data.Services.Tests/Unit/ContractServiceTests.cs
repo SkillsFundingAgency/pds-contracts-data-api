@@ -424,6 +424,13 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
               .ReturnsAsync(mockDataModel)
               .Verifiable();
 
+            Mock.Get(mockRepo)
+              .Setup(r => r.GetAsync(It.IsAny<int>()))
+              .ReturnsAsync(It.IsAny<DataModels.Contract>())
+              .Verifiable();
+
+            SetMockkContractValidator_NoContent();
+
             string actionUrl = "action";
             var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
             Mock.Get(mockUriService)
@@ -462,6 +469,13 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
               .Throws(new ContractStatusException("Contract status is not ApprovedWaitingConfirmation."))
               .Verifiable();
 
+            Mock.Get(mockRepo)
+              .Setup(r => r.GetAsync(It.IsAny<int>()))
+              .ReturnsAsync(It.IsAny<DataModels.Contract>())
+              .Verifiable();
+
+            SetMockkContractValidator_NoContent_ContractStatusException();
+
             string actionUrl = "action";
             var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
             Mock.Get(mockUriService)
@@ -495,10 +509,18 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             // Arrange
             var mockDataModel = Mock.Of<UpdatedContractStatusResponse>();
             var mockRepo = Mock.Of<IContractRepository>(MockBehavior.Strict);
+
             Mock.Get(mockRepo)
               .Setup(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()))
               .Throws(new ContractNotFoundException("Contract was not found."))
               .Verifiable();
+
+            Mock.Get(mockRepo)
+              .Setup(r => r.GetAsync(It.IsAny<int>()))
+              .ReturnsAsync(It.IsAny<DataModels.Contract>())
+              .Verifiable();
+
+            SetMockkContractValidator_NoContent_ContractNotFoundException();
 
             string actionUrl = "action";
             var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
@@ -522,45 +544,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             // Assert
             act.Should().Throw<ContractNotFoundException>();
-            Mock.Get(mockRepo).Verify(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()), Times.Once);
-            _mockAuditService.Verify(e => e.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Never);
-            _mockLogger.Verify();
-        }
-
-        [TestMethod]
-        public void UpdateContractConfirmApprovalAsync_TestAsync_ResultGenericExceptionExpected()
-        {
-            // Arrange
-            var mockDataModel = Mock.Of<UpdatedContractStatusResponse>();
-            var mockRepo = Mock.Of<IContractRepository>(MockBehavior.Strict);
-            Mock.Get(mockRepo)
-              .Setup(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()))
-              .Throws(new Exception())
-              .Verifiable();
-
-            string actionUrl = "action";
-            var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
-            Mock.Get(mockUriService)
-                .Setup(m => m.GetUri(actionUrl))
-                .Returns(It.IsAny<Uri>())
-                .Verifiable();
-
-            SetupLogger_LogInformationMethod();
-
-            var mockMapper = Mock.Of<IMapper>();
-
-            SetupAuditService_AuditAsyncMethod();
-
-            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
-
-            var reminder = GetASingleUpdateConfirmApprovalRequest();
-
-            // Act
-            Func<Task> act = async () => await contractService.UpdateContractConfirmApprovalAsync(reminder);
-
-            // Assert
-            act.Should().Throw<Exception>();
-            Mock.Get(mockRepo).Verify(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()), Times.Once);
+            Mock.Get(mockRepo).Verify(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()), Times.Never);
             _mockAuditService.Verify(e => e.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Never);
             _mockLogger.Verify();
         }
@@ -747,6 +731,13 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
               .ReturnsAsync(mockDataModel)
               .Verifiable();
 
+            Mock.Get(mockRepo)
+              .Setup(r => r.GetAsync(It.IsAny<int>()))
+              .ReturnsAsync(It.IsAny<DataModels.Contract>())
+              .Verifiable();
+
+            SetMockkContractValidator_NoContent();
+
             string actionUrl = "action";
             var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
             Mock.Get(mockUriService)
@@ -784,6 +775,13 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
               .Setup(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()))
               .Throws(new ContractStatusException("Contract status is not PublishedByProvider."))
               .Verifiable();
+
+            Mock.Get(mockRepo)
+              .Setup(r => r.GetAsync(It.IsAny<int>()))
+              .ReturnsAsync(It.IsAny<DataModels.Contract>())
+              .Verifiable();
+
+            SetMockkContractValidator_NoContent_ContractStatusException();
 
             string actionUrl = "action";
             var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
@@ -823,6 +821,13 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
               .Throws(new ContractNotFoundException("Contract was not found."))
               .Verifiable();
 
+            Mock.Get(mockRepo)
+              .Setup(r => r.GetAsync(It.IsAny<int>()))
+              .ReturnsAsync(It.IsAny<DataModels.Contract>())
+              .Verifiable();
+
+            SetMockkContractValidator_NoContent_ContractNotFoundException();
+
             string actionUrl = "action";
             var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
             Mock.Get(mockUriService)
@@ -845,45 +850,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             // Assert
             act.Should().Throw<ContractNotFoundException>();
-            Mock.Get(mockRepo).Verify(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()), Times.Once);
-            _mockAuditService.Verify(e => e.AuditAsync(It.IsAny<AuditModels.Audit>()), Times.Never);
-            _mockLogger.Verify();
-        }
-
-        [TestMethod]
-        public void UpdateContractWithdrawalAsync_TestAsync_ResultGenericExceptionExpected()
-        {
-            // Arrange
-            var mockDataModel = Mock.Of<UpdatedContractStatusResponse>();
-            var mockRepo = Mock.Of<IContractRepository>(MockBehavior.Strict);
-            Mock.Get(mockRepo)
-              .Setup(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()))
-              .Throws(new Exception())
-              .Verifiable();
-
-            string actionUrl = "action";
-            var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
-            Mock.Get(mockUriService)
-                .Setup(m => m.GetUri(actionUrl))
-                .Returns(It.IsAny<Uri>())
-                .Verifiable();
-
-            SetupLogger_LogInformationMethod();
-
-            var mockMapper = Mock.Of<IMapper>();
-
-            SetupAuditService_AuditAsyncMethod();
-
-            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
-
-            var request = GetASingleUpdateContractWithdrawalRequest();
-
-            // Act
-            Func<Task> act = async () => await contractService.UpdateContractWithdrawalAsync(request);
-
-            // Assert
-            act.Should().Throw<Exception>();
-            Mock.Get(mockRepo).Verify(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()), Times.Once);
+            Mock.Get(mockRepo).Verify(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()), Times.Never);
             _mockAuditService.Verify(e => e.AuditAsync(It.IsAny<AuditModels.Audit>()), Times.Never);
             _mockLogger.Verify();
         }
@@ -1034,6 +1001,55 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Setup(v => v.ValidateStatusChange(It.IsAny<DataModels.Contract>(), It.IsAny<ContractStatus>(), true))
                 .Verifiable();
         }
+
+
+
+
+
+
+
+        private void SetMockkContractValidator_NoContent()
+        {
+            Mock.Get(_mockContractValidator)
+                .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()))
+                .Verifiable();
+        }
+
+        private void SetMockkContractValidator_NoContent_ContractStatusException()
+        {
+            Mock.Get(_mockContractValidator)
+                .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()))
+                .Verifiable();
+        }
+
+        private void SetMockkContractValidator_NoContent_ContractNotFoundException()
+        {
+            Mock.Get(_mockContractValidator)
+                .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()))
+                .Throws(new ContractNotFoundException("Contract status is not in a valid status."))
+                .Verifiable();
+        }
+
+        private void SetMockkContractValidator_NoContent_ContractExpectationFailedException()
+        {
+            Mock.Get(_mockContractValidator)
+                .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()))
+                .Throws(new ContractExpectationFailedException("acb", 1, 1, "null"))
+                .Verifiable();
+        }
+
+        private void SetMockkContractValidator_NoContent_InvalidContractRequestException()
+        {
+            Mock.Get(_mockContractValidator)
+                .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()))
+                .Throws(new InvalidContractRequestException("abc", 1, 1))
+                .Verifiable();
+        }
+
+
+
+
+
 
         private void SetupAuditService_AuditAsyncMethod()
         {

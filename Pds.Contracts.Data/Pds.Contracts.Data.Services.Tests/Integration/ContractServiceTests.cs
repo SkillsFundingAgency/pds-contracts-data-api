@@ -223,24 +223,12 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             //Arrange
             SetMapperHelper();
             string baseUrl = $"https://localhost:5001";
-            const string contractNumber = "main-000";
+            const string contractNumber = "main-0001";
             const string title = "Test Title";
-            int x = 0;
 
-            var working = new List<DataModels.Contract>
-            {
-                new DataModels.Contract { Id = 1, Title = title, ContractNumber = string.Empty, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.ApprovedWaitingConfirmation }
-            };
+            var working = new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.ApprovedWaitingConfirmation };
 
             var request = new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1 };
-
-            foreach (var item in working)
-            {
-                item.ContractNumber = $"{contractNumber}{x}";
-                item.Ukprn += x;
-                item.LastEmailReminderSent = null;
-                x += 1;
-            }
 
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
             ILoggerAdapter<ContractRepository> loggerRepo = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));
@@ -256,10 +244,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var contractValidationService = GetContractValidationService();
             var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService);
 
-            foreach (var item in working)
-            {
-                await repo.AddAsync(item);
-            }
+            await repo.AddAsync(working);
 
             await work.CommitAsync();
 
@@ -294,24 +279,12 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             //Arrange
             SetMapperHelper();
             string baseUrl = $"https://localhost:5001";
-            const string contractNumber = "main-000";
+            const string contractNumber = "main-0001";
             const string title = "Test Title";
-            int x = 0;
 
-            var working = new List<DataModels.Contract>
-            {
-                new DataModels.Contract { Id = 1, Title = title, ContractNumber = string.Empty, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.PublishedToProvider }
-            };
+            var working = new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.PublishedToProvider };
 
             var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
-
-            foreach (var item in working)
-            {
-                item.ContractNumber = $"{contractNumber}{x}";
-                item.Ukprn += x;
-                item.LastEmailReminderSent = null;
-                x += 1;
-            }
 
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
             ILoggerAdapter<ContractRepository> loggerRepo = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));
@@ -326,10 +299,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var uriService = new UriService(baseUrl);
             var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService);
 
-            foreach (var item in working)
-            {
-                await repo.AddAsync(item);
-            }
+            await repo.AddAsync(working);
 
             await work.CommitAsync();
 
