@@ -91,7 +91,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var badResult = result.Should().BeAssignableTo<ObjectResult>();
             badResult.Subject.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
 
-            badResult.Subject.Value.Should().BeEquivalentTo(validationProblemDetails);
+            badResult.Subject.Value.Should().Be(validationProblemDetails);
 
             VerifyAll();
         }
@@ -100,10 +100,16 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task Create_WhenContractAlreadyExists_Returns_409Conflict()
         {
             // Arrange
+            var expectedStatus = StatusCodes.Status409Conflict;
             var contractRequest = new CreateContractRequest();
+            var problem = new ProblemDetails
+            {
+                Status = expectedStatus
+            };
 
             SetupLoggerInfo();
             SetupLoggerError<DuplicateContractException>();
+            SetupCreateProblemDetails(problem);
 
             Mock.Get(_contractService)
                 .Setup(e => e.CreateAsync(contractRequest))
@@ -111,14 +117,15 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 .Verifiable();
 
             var controller = new ContractController(_logger, _contractService);
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
 
             // Act
             var result = await controller.CreateContract(contractRequest);
 
             // Assert
             var status = result.Should().BeAssignableTo<ObjectResult>();
-            status.Subject.StatusCode.Should().Be(StatusCodes.Status409Conflict);
-            status.Subject.Value.Should().NotBeNull();
+            status.Subject.StatusCode.Should().Be(expectedStatus);
+            status.Subject.Value.Should().Be(problem);
 
             VerifyAll();
         }
@@ -127,10 +134,16 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task Create_WhenContractAlreadyExists_Returns_412PreconditionFailed()
         {
             // Arrange
+            var expectedStatus = StatusCodes.Status412PreconditionFailed;
             var contractRequest = new CreateContractRequest();
+            var problem = new ProblemDetails
+            {
+                Status = expectedStatus
+            };
 
             SetupLoggerInfo();
             SetupLoggerError<ContractWithHigherVersionAlreadyExistsException>();
+            SetupCreateProblemDetails(problem);
 
             Mock.Get(_contractService)
                 .Setup(e => e.CreateAsync(contractRequest))
@@ -138,6 +151,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 .Verifiable();
 
             var controller = new ContractController(_logger, _contractService);
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
 
             // Act
             var result = await controller.CreateContract(contractRequest);
@@ -145,7 +159,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             // Assert
             var status = result.Should().BeAssignableTo<ObjectResult>();
             status.Subject.StatusCode.Should().Be(StatusCodes.Status412PreconditionFailed);
-            status.Subject.Value.Should().NotBeNull();
+            status.Subject.Value.Should().Be(problem);
 
             VerifyAll();
         }
@@ -154,10 +168,16 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task Create_WhenSaveToDbFails_Returns_500InternalServerError()
         {
             // Arrange
+            var expectedStatus = StatusCodes.Status500InternalServerError;
             var contractRequest = new CreateContractRequest();
+            var problem = new ProblemDetails
+            {
+                Status = expectedStatus
+            };
 
             SetupLoggerInfo();
             SetupLoggerError<Exception>();
+            SetupCreateProblemDetails(problem);
 
             Mock.Get(_contractService)
                 .Setup(e => e.CreateAsync(contractRequest))
@@ -165,12 +185,15 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 .Verifiable();
 
             var controller = new ContractController(_logger, _contractService);
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
 
             // Act
             var result = await controller.CreateContract(contractRequest);
 
             // Assert
-            result.Should().BeStatusCodeResult().WithStatusCode(StatusCodes.Status500InternalServerError);
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+            status.Subject.Value.Should().Be(problem);
 
             VerifyAll();
         }
@@ -1070,6 +1093,13 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 .Returns(validationProblemDetails);
         }
 
+        private void SetupCreateProblemDetails(ProblemDetails problemDetails)
+        {
+            Mock.Get(_problemDetailsFactory)
+                .Setup(p => p.CreateProblemDetails(It.IsAny<HttpContext>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .Returns(problemDetails);
+        }
+
         private ContractRequest GetContractRequest()
         {
             return new ContractRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
@@ -1159,6 +1189,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         {
             Mock.Get(_contractService).VerifyAll();
             Mock.Get(_logger).VerifyAll();
+            Mock.Get(_problemDetailsFactory).VerifyAll();
         }
 
         #endregion

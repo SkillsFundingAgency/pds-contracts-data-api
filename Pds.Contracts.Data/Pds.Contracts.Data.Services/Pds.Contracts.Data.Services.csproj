@@ -6,11 +6,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<None Remove="DocumentServices\Resources\Aspose.Total.lic" />
 		<None Remove="DocumentServices\Resources\Logo.png" />
 		<None Remove="Pds.Contracts.Data.Services.csproj.transform" />
 	</ItemGroup>
 
 	<ItemGroup>
+	  <EmbeddedResource Include="DocumentServices\Resources\Aspose.Total.lic" />
 	  <EmbeddedResource Include="DocumentServices\Resources\Logo.png" />
 	</ItemGroup>
 

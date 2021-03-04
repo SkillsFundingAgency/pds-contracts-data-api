@@ -351,18 +351,18 @@ namespace Pds.Contracts.Data.Api.Controllers
             {
                 _logger.LogError(dc, $"[{nameof(CreateContract)}] " + dc.Message);
 
-                return StatusCode(StatusCodes.Status409Conflict, dc.Message);
+                return Problem(detail: dc.Message, statusCode: StatusCodes.Status409Conflict);
             }
             catch (ContractWithHigherVersionAlreadyExistsException hva)
             {
                 _logger.LogError(hva, $"[{nameof(CreateContract)}] " + hva.Message);
 
-                return StatusCode(StatusCodes.Status412PreconditionFailed, hva.Message);
+                return Problem(detail: hva.Message, statusCode: StatusCodes.Status412PreconditionFailed);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"[{nameof(CreateContract)}] raised an error when creating new contract record.");
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                return Problem(statusCode: StatusCodes.Status500InternalServerError);
             }
         }
 

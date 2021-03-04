@@ -3,6 +3,7 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using Pds.Audit.Api.Client.Enumerations;
 using Pds.Audit.Api.Client.Interfaces;
 using Pds.Contracts.Data.Common.CustomExceptionHandlers;
 using Pds.Contracts.Data.Common.Enums;
@@ -56,13 +57,17 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
         #region CreateAsync
 
+
+        #region AmendmentType - None
+
         [TestMethod]
-        public async Task Create_WhenContractDoesNotAlreadyExist_Then_ContractIsAddedToDatabase()
+        public async Task Create_AmendmentTypeNone_WhenContractDoesNotAlreadyExist_Then_ContractIsAddedToDatabase()
         {
             // Arrange
             CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.None;
 
-            SetupAuditService_TrySendAuditAsyncMethod();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>();
@@ -76,6 +81,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
             SetupRepository_CreateAsyncMethod(contractRecord, Task.CompletedTask);
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
 
             var service = GetContractService();
 
@@ -87,12 +94,13 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         }
 
         [TestMethod]
-        public async Task Create_WhenContractAlreadyExists_WithALowerVersion_Then_ContractIsAddedToDatabase()
+        public async Task Create_AmendmentTypeNone_WhenContractAlreadyExists_WithALowerVersion_Then_ContractIsAddedToDatabase_And_NoStatusChangeHappen()
         {
             // Arrange
             CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.None;
 
-            SetupAuditService_TrySendAuditAsyncMethod();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
@@ -100,7 +108,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 new DataModels.Contract()
                 {
                     ContractNumber = createRequest.ContractNumber,
-                    ContractVersion = createRequest.ContractVersion - 1
+                    ContractVersion = createRequest.ContractVersion - 1,
+                    Status = (int)ContractStatus.PublishedToProvider
                 }
             };
 
@@ -113,6 +122,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
             SetupRepository_CreateAsyncMethod(contractRecord, Task.CompletedTask);
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
 
             var service = GetContractService();
 
@@ -121,13 +132,15 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             // Assert
             VerifyAll();
+            matchedRecords.First().Status.Should().Be((int)ContractStatus.PublishedToProvider);
         }
 
         [TestMethod]
-        public void Create_WhenContractAlreadyExists_WithTheSameContractVersion_Then_DuplicateContractExceptionIsRaised()
+        public void Create_AmendmentTypeNone_WhenContractAlreadyExists_WithTheSameContractVersion_Then_ExceptionIsRaised()
         {
             // Arrange
             CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.None;
 
             SetupLogger_LogInformationMethod();
 
@@ -141,6 +154,9 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             };
 
             SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords))
+                .Throws(new DuplicateContractException(createRequest.ContractNumber, createRequest.ContractVersion));
 
             var service = GetContractService();
 
@@ -154,10 +170,11 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         }
 
         [TestMethod]
-        public void Create_WhenContractAlreadyExists_WithAHigherContractVersion_Then_InvalidContractVersionExceptionIsRaised()
+        public void Create_AmendmentTypeNone_WhenContractAlreadyExists_WithAHigherContractVersion_Then_ExceptionIsRaised()
         {
             // Arrange
             CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.None;
 
             SetupLogger_LogInformationMethod();
 
@@ -171,6 +188,9 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             };
 
             SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords))
+                .Throws(new ContractWithHigherVersionAlreadyExistsException(createRequest.ContractNumber, createRequest.ContractVersion));
 
             var service = GetContractService();
 
@@ -183,13 +203,19 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             VerifyAll();
         }
 
+        #endregion
+
+
+        #region AmendmentType - Variation
+
         [TestMethod]
-        public async Task Create_IfCreateAuditFails_Then_NoExceptionIsRaised()
+        public async Task Create_AmendmentTypeVariation_WhenNoOtherVersionOfTheContractExist_Then_ContractIsAddedToDatabase_But_NoStatusChangesHappen()
         {
             // Arrange
             CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.Variation;
 
-            SetupAuditService_TrySendAuditAsyncMethod();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>();
@@ -203,6 +229,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
             SetupRepository_CreateAsyncMethod(contractRecord, Task.CompletedTask);
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
 
             var service = GetContractService();
 
@@ -213,8 +241,176 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             VerifyAll();
         }
 
+        [TestMethod]
+        public async Task Create_AmendmentTypeVariation_WhenOtherVersionOfTheContractExist_ButNotAtStatus0_Then_ContractIsAddedToDatabase_But_NoStatusChangesHappen()
+        {
+            // Arrange
+            int expectedStatus = (int)ContractStatus.Approved;
+            CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.Variation;
+
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
+            SetupLogger_LogInformationMethod();
+
+            IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
+            {
+                new DataModels.Contract()
+                {
+                    ContractNumber = createRequest.ContractNumber,
+                    ContractVersion = createRequest.ContractVersion - 1,
+                    Status = expectedStatus
+                }
+            };
+
+            var contractRecord = new DataModels.Contract();
+            contractRecord.ContractNumber = createRequest.ContractNumber;
+
+            Mock.Get(_mapper)
+                .Setup(p => p.Map<DataModels.Contract>(createRequest))
+                .Returns(contractRecord)
+                .Verifiable();
+
+            SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
+            SetupRepository_CreateAsyncMethod(contractRecord, Task.CompletedTask);
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
+
+            var service = GetContractService();
+
+            // Act
+            await service.CreateAsync(createRequest);
+
+            // Assert
+            VerifyAll();
+            matchedRecords.First().Status.Should().Be(expectedStatus);
+        }
+
+        [TestMethod]
+        public async Task Create_AmendmentTypeVariation_WhenOtherVersionOfTheContractExist_WithStatus0_Then_ContractIsAddedToDatabase_And_ContractIsReplaced()
+        {
+            // Arrange
+            int contractId = 123;
+            int expectedAuditCount = 2;
+
+            CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.Variation;
+
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated, ActionType.ContractReplaced });
+            SetupLogger_LogInformationMethod();
+
+            IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
+            {
+                new DataModels.Contract()
+                {
+                    Id = contractId,
+                    ContractNumber = createRequest.ContractNumber,
+                    ContractVersion = createRequest.ContractVersion - 1,
+                    Status = (int)ContractStatus.PublishedToProvider
+                }
+            };
+
+            var contractRecord = new DataModels.Contract();
+
+            Mock.Get(_mapper)
+                .Setup(p => p.Map<DataModels.Contract>(createRequest))
+                .Returns(contractRecord)
+                .Verifiable();
+
+            SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
+            SetupRepository_CreateAsyncMethod(contractRecord, Task.CompletedTask);
+
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
+
+            Mock.Get(_contractRepository)
+                .Setup(p => p.UpdateContractStatusAsync(contractId, ContractStatus.PublishedToProvider, ContractStatus.Replaced))
+                .Returns(Task.FromResult(new UpdatedContractStatusResponse()))
+                .Verifiable();
+
+            var service = GetContractService();
+
+            // Act
+            await service.CreateAsync(createRequest);
+
+            // Assert
+            VerifyAll();
+            _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Exactly(expectedAuditCount));
+        }
+
+        [TestMethod]
+        public async Task Create_AmendmentTypeVariation_WhenMultipleOtherVersionOfTheContractExist_WithSomeAtStatus0_Then_ContractIsAddedToDatabase_And_ContractAllRelevantPreviousReplaced()
+        {
+            // Arrange
+            int contractId = 123;
+            int expectedAuditCount = 3;
+
+            CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.Variation;
+
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated, ActionType.ContractReplaced });
+            SetupLogger_LogInformationMethod();
+
+            IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
+            {
+                new DataModels.Contract()
+                {
+                    Id = contractId,
+                    ContractNumber = createRequest.ContractNumber,
+                    ContractVersion = createRequest.ContractVersion - 1,
+                    Status = (int)ContractStatus.PublishedToProvider
+                },
+                new DataModels.Contract()
+                {
+                    Id = contractId - 1,
+                    ContractNumber = createRequest.ContractNumber,
+                    ContractVersion = createRequest.ContractVersion - 1,
+                    Status = (int)ContractStatus.PublishedToProvider
+                },
+                new DataModels.Contract()
+                {
+                    Id = contractId - 2,
+                    ContractNumber = createRequest.ContractNumber,
+                    ContractVersion = createRequest.ContractVersion - 2,
+                    Status = (int)ContractStatus.Approved
+                }
+            };
+
+            var contractRecord = new DataModels.Contract();
+
+            Mock.Get(_mapper)
+                .Setup(p => p.Map<DataModels.Contract>(createRequest))
+                .Returns(contractRecord)
+                .Verifiable();
+
+            SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
+            SetupRepository_CreateAsyncMethod(contractRecord, Task.CompletedTask);
+
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
+
+            Mock.Get(_contractRepository)
+                .Setup(p => p.UpdateContractStatusAsync(contractId, ContractStatus.PublishedToProvider, ContractStatus.Replaced))
+                .Returns(Task.FromResult(new UpdatedContractStatusResponse()))
+                .Verifiable();
+            Mock.Get(_contractRepository)
+                .Setup(p => p.UpdateContractStatusAsync(contractId - 1, ContractStatus.PublishedToProvider, ContractStatus.Replaced))
+                .Returns(Task.FromResult(new UpdatedContractStatusResponse()))
+                .Verifiable();
+
+            var service = GetContractService();
+
+            // Act
+            await service.CreateAsync(createRequest);
+
+            // Assert
+            VerifyAll();
+            _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Exactly(expectedAuditCount));
+        }
+
         #endregion
 
+
+        #endregion
 
 
         [TestMethod]
@@ -432,7 +628,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
               .ReturnsAsync(It.IsAny<DataModels.Contract>())
               .Verifiable();
 
-            SetMockkContractValidator_NoContent();
+            SetMockContractValidator_NoContent();
 
             string actionUrl = "action";
             var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
@@ -445,7 +641,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             var mockMapper = Mock.Of<IMapper>();
 
-            SetupAuditService_TrySendAuditAsyncMethod();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
 
             var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
@@ -477,7 +673,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
               .ReturnsAsync(It.IsAny<DataModels.Contract>())
               .Verifiable();
 
-            SetMockkContractValidator_NoContent_ContractStatusException();
+            SetMockContractValidator_NoContent_ContractStatusException();
 
             string actionUrl = "action";
             var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
@@ -535,7 +731,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             var mockMapper = Mock.Of<IMapper>();
 
             SetupAuditService_AuditAsyncMethod();
-            SetMockkContractValidator_NoContent_ContractNotFoundException();
+            SetMockContractValidator_NoContent_ContractNotFoundException();
             var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
             var reminder = GetASingleUpdateConfirmApprovalRequest();
@@ -599,8 +795,9 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             SetMockRepo_ApproveManuallyAsync_mockDataModel(dummyData);
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
             SetMockDocumentService();
-            SetMockkContractValidator();
+            SetMockContractValidator();
             SetupMediator_Publish();
             var contractService = GetContractService();
             var request = GetContractRequest();
@@ -631,10 +828,10 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             SetMockRepo_ApproveManuallyAsync_mockDataModel(dummyData);
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
-            SetupAuditService_TrySendAuditAsyncMethod();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
             SetMockDocumentService();
-            SetMockkContractValidator();
-            SetMockkContractValidator_ContractStatusException();
+            SetMockContractValidator();
+            SetMockContractValidator_ContractStatusException();
             var contractService = GetContractService();
             var request = GetContractRequest();
 
@@ -663,9 +860,9 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             SetMockRepo_ApproveManuallyAsync_mockDataModel(null);
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
-            SetupAuditService_TrySendAuditAsyncMethod();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
             SetMockDocumentService();
-            SetMockkContractValidator_ContractNotFoundException();
+            SetMockContractValidator_ContractNotFoundException();
             var contractService = GetContractService();
             var request = GetContractRequest();
 
@@ -696,9 +893,9 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             SetMockRepo_ApproveManuallyAsync_mockDataModel(dummyData);
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
-            SetupAuditService_TrySendAuditAsyncMethod();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
             SetMockDocumentService();
-            SetMockkContractValidator_ContractExpectationFailedException();
+            SetMockContractValidator_ContractExpectationFailedException();
             var contractService = GetContractService();
             var request = GetContractRequest();
 
@@ -729,9 +926,9 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             SetMockRepo_ApproveManuallyAsync_mockDataModel(dummyData);
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
-            SetupAuditService_TrySendAuditAsyncMethod();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
             SetMockDocumentService();
-            SetMockkContractValidator_InvalidContractRequestException();
+            SetMockContractValidator_InvalidContractRequestException();
             var contractService = GetContractService();
             var request = GetContractRequest();
 
@@ -775,7 +972,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
               .ReturnsAsync(It.IsAny<DataModels.Contract>())
               .Verifiable();
 
-            SetMockkContractValidator_NoContent();
+            SetMockContractValidator_NoContent();
 
             string actionUrl = "action";
             var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
@@ -788,7 +985,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             var mockMapper = Mock.Of<IMapper>();
 
-            SetupAuditService_TrySendAuditAsyncMethod();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
 
             var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
@@ -820,7 +1017,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
               .ReturnsAsync(It.IsAny<DataModels.Contract>())
               .Verifiable();
 
-            SetMockkContractValidator_NoContent_ContractStatusException();
+            SetMockContractValidator_NoContent_ContractStatusException();
 
             string actionUrl = "action";
             var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
@@ -873,7 +1070,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
               .ReturnsAsync(It.IsAny<DataModels.Contract>())
               .Verifiable();
 
-            SetMockkContractValidator_NoContent_ContractNotFoundException();
+            SetMockContractValidator_NoContent_ContractNotFoundException();
 
             var mockMapper = Mock.Of<IMapper>();
 
@@ -977,10 +1174,14 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
         }
 
-        private void SetupAuditService_TrySendAuditAsyncMethod()
+        private void SetupAuditService_TrySendAuditAsyncMethod(ActionType[] expectedActionTypes)
         {
             _mockAuditService
                 .Setup(e => e.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()))
+                .Callback((AuditModels.Audit audit) =>
+                {
+                    expectedActionTypes.Should().Contain(audit.Action);
+                })
                 .Returns(Task.CompletedTask)
                 .Verifiable();
         }
@@ -1024,7 +1225,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
         }
 
-        private void SetMockkContractValidator()
+        private void SetMockContractValidator()
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>(), c => c.ContractContent != null))
@@ -1034,7 +1235,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
         }
 
-        private void SetMockkContractValidator_ContractStatusException()
+        private void SetMockContractValidator_ContractStatusException()
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>(), c => c.ContractContent != null))
@@ -1045,7 +1246,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
         }
 
-        private void SetMockkContractValidator_ContractNotFoundException()
+        private void SetMockContractValidator_ContractNotFoundException()
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>(), c => c.ContractContent != null))
@@ -1056,7 +1257,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
         }
 
-        private void SetMockkContractValidator_ContractExpectationFailedException()
+        private void SetMockContractValidator_ContractExpectationFailedException()
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>(), c => c.ContractContent != null))
@@ -1067,7 +1268,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
         }
 
-        private void SetMockkContractValidator_InvalidContractRequestException()
+        private void SetMockContractValidator_InvalidContractRequestException()
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>(), c => c.ContractContent != null))
@@ -1078,27 +1279,21 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
         }
 
-
-
-
-
-
-
-        private void SetMockkContractValidator_NoContent()
+        private void SetMockContractValidator_NoContent()
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()))
                 .Verifiable();
         }
 
-        private void SetMockkContractValidator_NoContent_ContractStatusException()
+        private void SetMockContractValidator_NoContent_ContractStatusException()
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()))
                 .Verifiable();
         }
 
-        private void SetMockkContractValidator_NoContent_ContractNotFoundException()
+        private void SetMockContractValidator_NoContent_ContractNotFoundException()
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()))
@@ -1106,7 +1301,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
         }
 
-        private void SetMockkContractValidator_NoContent_ContractExpectationFailedException()
+        private void SetMockContractValidator_NoContent_ContractExpectationFailedException()
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()))
@@ -1114,32 +1309,19 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
         }
 
-        private void SetMockkContractValidator_NoContent_InvalidContractRequestException()
+        private void SetMockContractValidator_NoContent_InvalidContractRequestException()
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()))
                 .Throws(new InvalidContractRequestException("abc", 1, 1))
                 .Verifiable();
         }
-
-
-
-
-
 
         private void SetupAuditService_AuditAsyncMethod()
         {
             _mockAuditService
                 .Setup(e => e.AuditAsync(It.IsAny<AuditModels.Audit>()))
                 .Returns(Task.CompletedTask)
-                .Verifiable();
-        }
-
-        private void SetupAuditService_AuditAsyncThrowsExceptionMethod()
-        {
-            _mockAuditService
-                .Setup(e => e.AuditAsync(It.IsAny<AuditModels.Audit>()))
-                .Throws(new System.Exception())
                 .Verifiable();
         }
 
@@ -1214,6 +1396,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Mock.Get(_mockUriService).Verify();
             _mockLogger.Verify();
             _mockAuditService.Verify();
+            Mock.Get(_mockContractValidator).Verify();
         }
 
         #endregion

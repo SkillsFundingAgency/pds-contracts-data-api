@@ -4,6 +4,7 @@ using Pds.Contracts.Data.Repository.DataModels;
 using Pds.Contracts.Data.Services.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Pds.Contracts.Data.Services.Implementations
@@ -25,7 +26,7 @@ namespace Pds.Contracts.Data.Services.Implementations
             {
                 throw new InvalidContractRequestException(request.ContractNumber, request.ContractVersion, request.Id);
             }
-       }
+        }
 
         /// <inheritdoc/>
         public void Validate(Contract contract, Models.ContractRequest request, Expression<Func<Contract, bool>> validatePredicate)
@@ -72,6 +73,19 @@ namespace Pds.Contracts.Data.Services.Implementations
                     NewStatus = newStatus,
                     AllowedStatuses = allowedCurrentStatuses
                 };
+            }
+        }
+
+        /// <inheritdoc/>
+        public void ValidateForNewContract(Models.CreateContractRequest request, IEnumerable<Contract> existingContracts)
+        {
+            if (existingContracts?.Any(p => p.ContractNumber == request.ContractNumber && p.ContractVersion > request.ContractVersion) == true)
+            {
+                throw new ContractWithHigherVersionAlreadyExistsException(request.ContractNumber, request.ContractVersion);
+            }
+            else if (existingContracts?.Any(p => p.ContractNumber == request.ContractNumber && p.ContractVersion == request.ContractVersion) == true)
+            {
+                throw new DuplicateContractException(request.ContractNumber, request.ContractVersion);
             }
         }
     }

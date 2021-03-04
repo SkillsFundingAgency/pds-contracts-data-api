@@ -5,6 +5,7 @@ using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Services.Implementations;
 using Pds.Contracts.Data.Services.Models;
 using System;
+using System.Collections.Generic;
 using DataModels = Pds.Contracts.Data.Repository.DataModels;
 
 namespace Pds.Contracts.Data.Services.Tests.Unit
@@ -156,6 +157,82 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         #endregion ValidateStatusChange tests
 
 
+        #region ValidateForNewContract
+
+        [TestMethod]
+        public void Validate_ValidateForNewContract_WhenNoMatchesInExpected_RaisesNoExceptions()
+        {
+            // Arrange
+            var contractNumber = "Test123";
+            var contractVersion = 123;
+
+            var request = GetNewContractRequest(contractNumber, contractVersion);
+            var existingContracts = GetExistingContracts(contractNumber, contractVersion - 5, 3);
+
+            // Act
+            Action act = () => contractValidationService.ValidateForNewContract(request, existingContracts);
+
+            // Assert
+            act.Should().NotThrow();
+        }
+
+        [TestMethod]
+        public void Validate_ValidateForNewContract_WhenDifferntContractWithSameVersion_RaisesNoExceptions()
+        {
+            // Arrange
+            var contractNumber = "Test123";
+            var contractVersion = 123;
+
+            var request = GetNewContractRequest(contractNumber, contractVersion);
+            var existingContracts = GetExistingContracts(contractNumber, contractVersion - 5, 3);
+            existingContracts.Add(new DataModels.Contract() { ContractNumber = "SomeOther", ContractVersion = contractVersion });
+
+            // Act
+            Action act = () => contractValidationService.ValidateForNewContract(request, existingContracts);
+
+            // Assert
+            act.Should().NotThrow();
+        }
+
+        [TestMethod]
+        public void Validate_ValidateForNewContract_WhenCurrentContractVersionExists_RaisesDuplicateContractException()
+        {
+            // Arrange
+            var contractNumber = "Test123";
+            var contractVersion = 123;
+
+            var request = GetNewContractRequest(contractNumber, contractVersion);
+            var existingContracts = GetExistingContracts(contractNumber, contractVersion - 2, 3);
+
+            // Act
+            Action act = () => contractValidationService.ValidateForNewContract(request, existingContracts);
+
+            // Assert
+            act.Should().Throw<DuplicateContractException>();
+        }
+
+        [TestMethod]
+        public void Validate_ValidateForNewContract_WhenHigherContractVersionExists_RaisesContractWithHigherVersionAlreadyExistsException()
+        {
+            // Arrange
+            var contractNumber = "Test123";
+            var contractVersion = 123;
+
+            var request = GetNewContractRequest(contractNumber, contractVersion);
+            var existingContracts = GetExistingContracts(contractNumber, contractVersion + 1, 3);
+
+            // Act
+            Action act = () => contractValidationService.ValidateForNewContract(request, existingContracts);
+
+            // Assert
+            act.Should().Throw<ContractWithHigherVersionAlreadyExistsException>();
+        }
+
+        #endregion
+
+
+        #region Arrange Helpers
+
         private DataModels.Contract GetContract(ContractStatus newStatus = ContractStatus.PublishedToProvider)
         {
             return new DataModels.Contract() { Id = 1, ContractNumber = "abc", ContractVersion = 1, Status = (int)newStatus };
@@ -170,5 +247,29 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             return new ContractRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
         }
+
+        private CreateContractRequest GetNewContractRequest(string contractNumber, int contractVersion)
+            => new CreateContractRequest()
+            {
+                ContractNumber = contractNumber,
+                ContractVersion = contractVersion
+            };
+
+        private IList<DataModels.Contract> GetExistingContracts(string contractNumber, int startingContractVersion, int count)
+        {
+            var contracts = new List<DataModels.Contract>();
+            for (int i = 0; i < count; i++)
+            {
+                contracts.Add(new DataModels.Contract()
+                {
+                    ContractNumber = contractNumber,
+                    ContractVersion = startingContractVersion + i
+                });
+            }
+
+            return contracts;
+        }
+
+        #endregion
     }
 }

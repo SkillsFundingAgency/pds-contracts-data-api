@@ -82,28 +82,35 @@ namespace Pds.Contracts.Data.Services.Implementations
 
             try
             {
-                _logger.LogInformation($"Creating new contract [{request.ContractNumber}] version [{request.ContractVersion}] for [{request.UKPRN}].");
+                _logger.LogInformation($"[{nameof(CreateAsync)}] Creating new contract [{request.ContractNumber}] version [{request.ContractVersion}] for [{request.UKPRN}].");
 
-                await ValidateForNewContractAsync(request.ContractNumber, request.ContractVersion);
+                var existing = await _repository.GetByContractNumberAsync(request.ContractNumber);
+                _contractValidator.ValidateForNewContract(request, existing);
 
                 var newContract = _mapper.Map<Repository.DataModels.Contract>(request);
                 newContract.LastUpdatedAt = newContract.CreatedAt = DateTime.UtcNow;
 
                 await _repository.CreateAsync(newContract);
 
-                string message = $"Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created.  The contract status after is Ready to sign .";
+                string message = $"[{nameof(CreateAsync)}] Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created. " +
+                    $"The contract status after is Ready to sign.";
 
-                await _auditService.TrySendAuditAsync(
-                    new Audit.Api.Client.Models.Audit()
-                    {
-                        Action = ActionType.ContractCreated,
-                        Severity = SeverityLevel.Information,
-                        Ukprn = newContract.Ukprn,
-                        Message = message,
-                        User = $"[{_appName}]"
-                    });
+                await _auditService.TrySendAuditAsync(new AuditModels.Audit()
+                {
+                    Action = ActionType.ContractCreated,
+                    Severity = SeverityLevel.Information,
+                    Ukprn = newContract.Ukprn,
+                    Message = message,
+                    User = _appName
+                });
 
-                _logger.LogInformation($"Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created for [{newContract.Ukprn}].");
+                _logger.LogInformation($"[{nameof(CreateAsync)}] Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created for [{newContract.Ukprn}].");
+
+                // Update operations to existing records can be done outside the semaphore
+                if (request.AmendmentType == ContractAmendmentType.Variation)
+                {
+                    await ReplacePublishedToProviderContracts(existing);
+                }
             }
             finally
             {
@@ -274,19 +281,6 @@ namespace Pds.Contracts.Data.Services.Implementations
             return Enum.Parse(typeof(T), value.ToString()).ToString();
         }
 
-        private async Task ValidateForNewContractAsync(string contractNumber, int contractVersion)
-        {
-            var existing = await _repository.GetByContractNumberAsync(contractNumber);
-            if (existing?.Any(p => p.ContractVersion > contractVersion) == true)
-            {
-                throw new ContractWithHigherVersionAlreadyExistsException(contractNumber, contractVersion);
-            }
-            else if (existing?.Any(p => p.ContractVersion == contractVersion) == true)
-            {
-                throw new DuplicateContractException(contractNumber, contractVersion);
-            }
-        }
-
         /// <summary>
         /// Replace the templated page with page number.
         /// </summary>
@@ -296,6 +290,36 @@ namespace Pds.Contracts.Data.Services.Implementations
         private string SetPageValue(string templatedQueryString, int pageValue)
         {
             return templatedQueryString.Replace("{page}", pageValue.ToString());
+        }
+
+        private async Task ReplacePublishedToProviderContracts(IEnumerable<Repository.DataModels.Contract> previousContracts)
+        {
+            if (previousContracts.Any(p => p.Status == (int)ContractStatus.PublishedToProvider))
+            {
+                int ukprn = previousContracts.First().Ukprn;
+
+                // Contracts found
+                var listToUpdate = previousContracts.Where(p => p.Status == (int)ContractStatus.PublishedToProvider).ToList();
+                foreach (var item in listToUpdate)
+                {
+                    ContractStatus requiredContractStatus = ContractStatus.PublishedToProvider;
+                    ContractStatus newContractStatus = ContractStatus.Replaced;
+                    var response = await _repository.UpdateContractStatusAsync(item.Id, requiredContractStatus, newContractStatus);
+
+                    string msg = $"Contract [{response.ContractNumber}-{response.ContractVersion}] with Id [{response.Id}] has been replaced. " +
+                        $"The contract status before was {response.Status}. " +
+                        $"The contract status after is {response.NewStatus}.";
+
+                    await _auditService.TrySendAuditAsync(new AuditModels.Audit()
+                    {
+                        Action = ActionType.ContractReplaced,
+                        Severity = SeverityLevel.Information,
+                        Ukprn = ukprn,
+                        Message = msg,
+                        User = _appName
+                    });
+                }
+            }
         }
     }
 }

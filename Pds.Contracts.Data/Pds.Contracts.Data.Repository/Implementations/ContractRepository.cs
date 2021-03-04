@@ -117,17 +117,17 @@ namespace Pds.Contracts.Data.Repository.Implementations
                     contract.LastUpdatedAt = updatedDate;
                     await _work.CommitAsync();
                     updatedContractStatusResponse.NewStatus = contract.Status;
-                    _logger.LogInformation($"[UpdateContractConfirmApprovalAsync] - Updated successfully the contract status to {(ContractStatus)contract.Status} - Contract Id: {contractId}, Contract Number: {contract.ContractNumber}");
+                    _logger.LogInformation($"[{nameof(UpdateContractStatusAsync)}] - Updated successfully the contract status to {(ContractStatus)contract.Status} - Contract Id: {contractId}, Contract Number: {contract.ContractNumber}");
                 }
                 else
                 {
-                    _logger.LogError($"[UpdateContractConfirmApprovalAsync] Contract status is not {requiredContractStatus} - Contract Id {contractId} , the current status is {(ContractStatus)contract.Status}.");
+                    _logger.LogError($"[[{nameof(UpdateContractStatusAsync)}] Contract status is not {requiredContractStatus} - Contract Id {contractId} , the current status is {(ContractStatus)contract.Status}.");
                     throw new ContractStatusException($"Contract status is not {requiredContractStatus} - Contract Id {contractId} , the current status is {(ContractStatus)contract.Status}.");
                 }
             }
             else
             {
-                _logger.LogError($"[UpdateContractConfirmApprovalAsync] Contract not found - Contract Id {contractId}.");
+                _logger.LogError($"[[{nameof(UpdateContractStatusAsync)}] Contract not found - Contract Id {contractId}.");
                 throw new ContractNotFoundException($"Contract not found - Contract Id {contractId}.");
             }
 

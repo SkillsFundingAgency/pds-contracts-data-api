@@ -13,7 +13,7 @@ namespace Pds.Contracts.Data.Common.CustomExceptionHandlers
         /// <param name="contractNumber">The contract number.</param>
         /// <param name="contractVersion">The contract version.</param>
         public DuplicateContractException(string contractNumber, int contractVersion)
-            : base($"A contract with ContractNumber: {contractNumber} and ContractVersion: {contractVersion} already exists.")
+            : base($"A contract with ContractNumber [{contractNumber}] and ContractVersion [{contractVersion}] already exists.")
         {
         }
     }
