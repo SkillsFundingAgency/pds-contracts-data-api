@@ -31,6 +31,9 @@
     "sharedAppInsightsName": {
       "type": "string"
     },
+    "sharedServiceBusName": {
+      "type": "string"
+    },
     "AverageResponseTimeAlertThreshhold": {
       "type": "string",
       "defaultValue": "2"
@@ -98,6 +101,22 @@
     "HttpOptionsCircuitBreakerDuration": {
       "type": "string",
       "defaultValue": "0.00:00:15"
+    },
+    "NotificationTopicSBOptionsRetryCount": {
+      "type": "string",
+      "defaultValue": "3"
+    },
+    "NotificationTopicSBOptionsMinimumBackoff": {
+      "type": "string",
+      "defaultValue": "2"
+    },
+    "NotificationTopicSBOptionsMaximumBackoff": {
+      "type": "string",
+      "defaultValue": "5"
+    },
+    "servicebusAccessKeyName": {
+      "type": "string",
+      "defaultValue": "RootManagedAccessKey"
     }
   },
   "variables": {
@@ -107,6 +126,7 @@
     "appServicePlanName": "[concat(variables('resourceNamePrefix'), 'api-asp')]",
     "EnvironmentToEnableAlertsUpon": ["demo", "oat", "release"],
     "EnableAlertsAndMetrics": "[contains(variables('EnvironmentToEnableAlertsUpon'), toLower(parameters('resourceEnvironmentName')))]",
+    "contractNotificationTopicName": "[concat('contract-notification-topic-', parameters('resourceEnvironmentName'))]",
     "AppServiceMetricsToAlertUpon": [
       {
         "MetricName": "Http5xx",
@@ -276,8 +296,27 @@
               {
                 "name": "HttpPolicyOptions:CircuitBreakerDurationOfBreak",
                 "value": "[parameters('HttpOptionsCircuitBreakerDuration')]"
+              },
+              {
+                "name": "NotificationTopicSBOptions:ServiceBusConnectionString",
+                "value": "[listKeys(resourceId(parameters('sharedResourceGroupName'),'Microsoft.ServiceBus/namespaces/AuthorizationRules',parameters('sharedServiceBusName'), parameters('serviceBusAccessKeyName')),'2015-08-01').primaryConnectionString]"
+              },
+              {
+                "name": "NotificationTopicSBOptions:TopicName",
+                "value": "[variables('contractNotificationTopicName')]"
+              },
+              {
+                "name": "NotificationTopicSBOptions:RetryCount",
+                "value": "[parameters('NotificationTopicSBOptionsRetryCount')]"
+              },
+              {
+                "name": "NotificationTopicSBOptions:MinimumBackoff",
+                "value": "[parameters('NotificationTopicSBOptionsMinimumBackoff')]"
+              },
+              {
+                "name": "NotificationTopicSBOptions:MaximumBackoff",
+                "value": "[parameters('NotificationTopicSBOptionsMaximumBackoff')]"
               }
-
             ]
           },
           "appServiceConnectionStrings": {
