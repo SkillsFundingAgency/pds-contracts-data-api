@@ -394,7 +394,9 @@ namespace Pds.Contracts.Data.Api.Controllers
             _logger.LogInformation($"[{nameof(ManualApprove)}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} ");
             if (!ModelState.IsValid)
             {
-                return StatusCode(StatusCodes.Status400BadRequest);
+                _logger.LogError($"[{nameof(ManualApprove)}] provided data model failed validation check.");
+
+                return ValidationProblem();
             }
 
             try
@@ -404,22 +406,22 @@ namespace Pds.Contracts.Data.Api.Controllers
             catch (InvalidContractRequestException ex)
             {
                 _logger.LogError(ex, $"[{nameof(ManualApprove)}] Invalid contract request exception with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
-                return StatusCode(StatusCodes.Status400BadRequest);
+                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
             }
             catch (ContractNotFoundException ex)
             {
                 _logger.LogError(ex, $"[{nameof(ManualApprove)}] failed to find a contract with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
-                return StatusCode(StatusCodes.Status404NotFound);
+                return StatusCode(StatusCodes.Status404NotFound, ex.Message);
             }
             catch (ContractExpectationFailedException ex)
             {
                 _logger.LogError(ex, $"[{nameof(ManualApprove)}] Contract expectation failed exception with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
-                return StatusCode(StatusCodes.Status404NotFound);
+                return StatusCode(StatusCodes.Status404NotFound, ex.Message);
             }
             catch (ContractStatusException ex)
             {
                 _logger.LogError(ex, $"[{nameof(ManualApprove)}] failed contract status expectation. For the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
-                return StatusCode(StatusCodes.Status412PreconditionFailed);
+                return StatusCode(StatusCodes.Status412PreconditionFailed, ex.Message);
             }
             catch (Exception ex)
             {

@@ -1,10 +1,10 @@
 ﻿using AutoMapper;
+using MediatR;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.ServiceBus;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Pds.Audit.Api.Client.Implementations;
-using Pds.Audit.Api.Client.Interfaces;
 using Pds.Contracts.Data.Repository.Context;
 using Pds.Contracts.Data.Repository.DependencyInjection;
 using Pds.Contracts.Data.Services.DocumentServices;
@@ -13,8 +13,7 @@ using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
 using Pds.Core.ApiClient.Interfaces;
 using Pds.Core.ApiClient.Services;
-using Pds.Core.Utils.Implementations;
-using Pds.Core.Utils.Interfaces;
+
 
 namespace Pds.Contracts.Data.Services.DependencyInjection
 {
@@ -58,6 +57,11 @@ namespace Pds.Contracts.Data.Services.DependencyInjection
             });
 
             services.AddSingleton(typeof(ISemaphoreOnEntity<>), typeof(SemaphoreOnEntity<>));
+
+            services.AddSingleton<ITopicClient>(serviceProvider => ServiceBusHelper.GetTopicClient(configuration));
+            services.AddSingleton<IMessagePublisher, MessagePublisher>();
+
+            services.AddMediatR(typeof(FeatureServiceCollectionExtensions).Assembly);
 
             return services;
         }

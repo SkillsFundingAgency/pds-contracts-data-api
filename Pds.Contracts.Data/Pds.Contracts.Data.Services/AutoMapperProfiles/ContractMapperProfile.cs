@@ -1,8 +1,7 @@
 ﻿using AutoMapper;
+using Pds.Contracts.Data.Common.Responses;
 using Pds.Contracts.Data.Services.Models;
-using System.Collections.Generic;
 using DataModel = Pds.Contracts.Data.Repository.DataModels;
-
 using ServiceModel = Pds.Contracts.Data.Services.Models;
 
 namespace Pds.Contracts.Data.Services.AutoMapperProfiles
@@ -44,6 +43,9 @@ namespace Pds.Contracts.Data.Services.AutoMapperProfiles
                 .ForMember(p => p.HasNotificationBeenRead, opt => opt.Ignore())
                 .ForMember(p => p.NotificationReadBy, opt => opt.Ignore())
                 .ForMember(p => p.NotificationReadAt, opt => opt.Ignore());
+
+            CreateMap<UpdatedContractStatusResponse, ContractNotification>()
+                .ForMember(dest => dest.Status, u => u.MapFrom(src => src.NewStatus));
         }
     }
 }

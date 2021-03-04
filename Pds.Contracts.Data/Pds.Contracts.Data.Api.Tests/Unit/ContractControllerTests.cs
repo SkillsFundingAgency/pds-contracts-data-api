@@ -853,10 +853,18 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task ManualApprove_InputInvalid_ReturnsBadRequestResultAsync()
         {
             // Arrange
-            SetMockLogger();
+            SetupLoggerInfo();
+            SetupLoggerError();
+            var validationProblemDetails = new ValidationProblemDetails()
+            {
+                Detail = "One or more errors with the input",
+                Status = StatusCodes.Status400BadRequest
+            };
+            SetupProblemDetailsFactory(validationProblemDetails);
+
             SetMockContractService_ManualApprove();
             var controller = GetContractController();
-
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
             controller.ModelState.AddModelError("Id", "Id must be greater than zero");
 
             var request = GetContractRequest();
@@ -866,7 +874,9 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var actual = await controller.ManualApprove(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+            var status = actual.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+            status.Subject.Value.Should().NotBeNull();
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Never);
             Mock.Get(_logger).Verify();
         }
@@ -875,11 +885,9 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task ManualApprove_InputInvalid_InvalidContractRequestExceptionAsync()
         {
             // Arrange
-            SetMockLogger();
+            SetMockLogger_Error();
             SetMockContractService_ManualApprove_InvalidContractRequestException();
             var controller = GetContractController();
-
-            controller.ModelState.AddModelError("Id", "Id must be greater than zero");
 
             var request = GetContractRequest();
             request.ContractNumber = "xyz";
@@ -888,8 +896,10 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var actual = await controller.ManualApprove(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
-            Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Never);
+            var status = actual.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+            status.Subject.Value.Should().NotBeNull();
+            Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
 
@@ -906,7 +916,9 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var actual = await controller.ManualApprove(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
+            var status = actual.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+            status.Subject.Value.Should().NotBeNull();
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
@@ -924,7 +936,9 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var actual = await controller.ManualApprove(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
+            var status = actual.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+            status.Subject.Value.Should().NotBeNull();
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
@@ -942,7 +956,9 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var actual = await controller.ManualApprove(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.PreconditionFailed);
+            var status = actual.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status412PreconditionFailed);
+            status.Subject.Value.Should().NotBeNull();
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
@@ -1044,7 +1060,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         {
             Mock.Get(_problemDetailsFactory)
                 .Setup(p => p.CreateValidationProblemDetails(
-                    null,
+                    It.IsAny<DefaultHttpContext>(),
                     It.IsAny<ModelStateDictionary>(),
                     null,
                     null,

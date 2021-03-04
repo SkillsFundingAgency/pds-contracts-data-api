@@ -1,15 +1,21 @@
 ﻿using AutoMapper;
 using FluentAssertions;
+using MediatR;
+using Microsoft.Azure.ServiceBus;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Pds.Audit.Api.Client.Interfaces;
+using Pds.Audit.Api.Client.Registrations;
 using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Repository.Implementations;
 using Pds.Contracts.Data.Services.AutoMapperProfiles;
+using Pds.Contracts.Data.Services.DependencyInjection;
 using Pds.Contracts.Data.Services.DocumentServices;
 using Pds.Contracts.Data.Services.Implementations;
+using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
 using Pds.Contracts.Data.Services.Responses;
 using Pds.Contracts.Data.Services.Tests.Integration.DocumentServices;
@@ -58,7 +64,8 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var uriService = new UriService(baseUrl);
             var asposeDocumentManagementContractService = GetDocumentService();
             var contractValidationService = GetContractValidationService();
-            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService);
+            var mediator = BuildMediator();
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService, mediator);
 
             // Act
             var before = await contractRepo.GetByContractNumberAsync(request.ContractNumber);
@@ -129,7 +136,8 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var uriService = new UriService(baseUrl);
             var asposeDocumentManagementContractService = GetDocumentService();
             var contractValidationService = GetContractValidationService();
-            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService);
+            var mediator = BuildMediator();
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService, mediator);
 
             foreach (var item in working)
             {
@@ -182,7 +190,8 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var uriService = new UriService(baseUrl);
             var asposeDocumentManagementContractService = GetDocumentService();
             var contractValidationService = GetContractValidationService();
-            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService);
+            var mediator = BuildMediator();
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService, mediator);
 
             foreach (var item in working)
             {
@@ -242,7 +251,8 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var uriService = new UriService(baseUrl);
             var asposeDocumentManagementContractService = GetDocumentService();
             var contractValidationService = GetContractValidationService();
-            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService);
+            var mediator = BuildMediator();
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService, mediator);
 
             await repo.AddAsync(working);
 
@@ -297,7 +307,8 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
             var contractRepo = new ContractRepository(repo, work, loggerRepo);
             var uriService = new UriService(baseUrl);
-            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService);
+            var mediator = BuildMediator();
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService, mediator);
 
             await repo.AddAsync(working);
 
@@ -346,7 +357,8 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var uriService = new UriService(baseUrl);
             var asposeDocumentManagementContractService = GetDocumentService();
             var contractValidationService = GetContractValidationService();
-            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService);
+            var mediator = BuildMediator();
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService, mediator);
 
             //Act
             var beforeUpdate = await contractRepo.GetAsync(request.Id);
@@ -385,7 +397,8 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var uriService = new UriService(baseUrl);
             var asposeDocumentManagementContractService = GetDocumentService();
             var contractValidationService = GetContractValidationService();
-            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService);
+            var mediator = BuildMediator();
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService, mediator);
 
             //Act
             var beforeUpdate = await contractRepo.GetAsync(request.Id);
@@ -562,6 +575,28 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
         private ContractValidationService GetContractValidationService()
         {
             return new ContractValidationService();
+        }
+
+        private IMediator BuildMediator()
+        {
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.development.json", optional: false, reloadOnChange: true)
+                .Build();
+
+            var services = new ServiceCollection();
+            services.AddLoggerAdapter();
+            services.AddAutoMapper(typeof(FeatureServiceCollectionExtensions).Assembly);
+            var policyRegistry = services.AddPolicyRegistry();
+            services.AddAuditApiClient(configuration, policyRegistry);
+            services.AddSingleton<ITopicClient>(serviceProvider => ServiceBusHelper.GetTopicClient(configuration));
+            services.AddSingleton<IMessagePublisher, MessagePublisher>();
+
+            services.AddMediatR(typeof(FeatureServiceCollectionExtensions).Assembly);
+
+            var provider = services.BuildServiceProvider();
+
+            return provider.GetRequiredService<IMediator>();
         }
     }
 }

@@ -1,9 +1,11 @@
-﻿namespace Pds.Contracts.Data.Common.Responses
+﻿using MediatR;
+
+namespace Pds.Contracts.Data.Common.Responses
 {
     /// <summary>
     /// Updated Contract Status Response class.
     /// </summary>
-    public class UpdatedContractStatusResponse
+    public class UpdatedContractStatusResponse : INotification
     {
         /// <summary>
         /// Gets or sets the identifier.

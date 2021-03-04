@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using MediatR;
 using Pds.Audit.Api.Client.Enumerations;
 using Pds.Audit.Api.Client.Interfaces;
 using Pds.Contracts.Data.Common.CustomExceptionHandlers;
@@ -15,6 +16,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using AuditModels = Pds.Audit.Api.Client.Models;
+using DataModels = Pds.Contracts.Data.Repository.DataModels;
 
 namespace Pds.Contracts.Data.Services.Implementations
 {
@@ -37,6 +39,7 @@ namespace Pds.Contracts.Data.Services.Implementations
 
         private readonly IDocumentManagementContractService _documentService;
         private readonly IContractValidationService _contractValidator;
+        private readonly IMediator _mediator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContractService" /> class.
@@ -49,6 +52,7 @@ namespace Pds.Contracts.Data.Services.Implementations
         /// <param name="semaphoreOnEntity">The semaphore to use for locking.</param>
         /// <param name="documentService">The document management Contract Service.</param>
         /// <param name="contractValidator">The contract validator.</param>
+        /// <param name="mediator">The mediator.</param>
         public ContractService(
             IContractRepository repository,
             IMapper mapper,
@@ -57,7 +61,8 @@ namespace Pds.Contracts.Data.Services.Implementations
             IAuditService auditService,
             ISemaphoreOnEntity<string> semaphoreOnEntity,
             IDocumentManagementContractService documentService,
-            IContractValidationService contractValidator)
+            IContractValidationService contractValidator,
+            IMediator mediator)
         {
             _repository = repository;
             _mapper = mapper;
@@ -67,6 +72,7 @@ namespace Pds.Contracts.Data.Services.Implementations
             _semaphoreOnEntity = semaphoreOnEntity;
             _documentService = documentService;
             _contractValidator = contractValidator;
+            _mediator = mediator;
         }
 
         /// <inheritdoc/>
@@ -221,7 +227,8 @@ namespace Pds.Contracts.Data.Services.Implementations
             await _repository.UpdateContractAsync(contract);
 
             updatedContractStatusResponse.NewStatus = contract.Status;
-            await _auditService.TrySendAuditAsync(GetAudit(updatedContractStatusResponse));
+
+            await _mediator.Publish(updatedContractStatusResponse);
 
             return updatedContractStatusResponse;
         }

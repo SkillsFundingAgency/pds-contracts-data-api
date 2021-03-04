@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
 using FluentAssertions;
+using MediatR;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
-using Pds.Audit.Api.Client.Implementations;
 using Pds.Audit.Api.Client.Interfaces;
 using Pds.Contracts.Data.Common.CustomExceptionHandlers;
 using Pds.Contracts.Data.Common.Enums;
@@ -13,11 +13,11 @@ using Pds.Contracts.Data.Services.Implementations;
 using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
 using Pds.Contracts.Data.Services.Responses;
-using Pds.Core.ApiClient.Exceptions;
 using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AuditModels = Pds.Audit.Api.Client.Models;
 using DataModels = Pds.Contracts.Data.Repository.DataModels;
@@ -47,6 +47,9 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
         private readonly IContractValidationService _mockContractValidator
             = Mock.Of<IContractValidationService>(MockBehavior.Strict);
+
+        private readonly IMediator _mockMediator
+           = Mock.Of<IMediator>(MockBehavior.Strict);
 
         private IUriService _mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
 
@@ -238,7 +241,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupAuditService_AuditAsyncMethod();
 
-            var contractService = new ContractService(mockRepo, mockMapper, _mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
+            var contractService = new ContractService(mockRepo, mockMapper, _mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
             // Act
             var actual = await contractService.GetAsync(1);
@@ -273,7 +276,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupAuditService_AuditAsyncMethod();
 
-            var contractService = new ContractService(mockRepo, mockMapper, _mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
+            var contractService = new ContractService(mockRepo, mockMapper, _mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
             // Act
             var actual = await contractService.GetByContractNumberAsync("some-contract-number");
@@ -308,7 +311,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupAuditService_AuditAsyncMethod();
 
-            var contractService = new ContractService(mockRepo, mockMapper, _mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
+            var contractService = new ContractService(mockRepo, mockMapper, _mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
             // Act
             var actual = await contractService.GetByContractNumberAndVersionAsync("some-contract-number", 1);
@@ -360,7 +363,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupAuditService_AuditAsyncMethod();
 
-            var contractService = new ContractService(mockRepo, mockMapper, _mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
+            var contractService = new ContractService(mockRepo, mockMapper, _mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
             // Act
             var actual = await contractService.GetContractRemindersAsync(reminderInterval, pageNumber, pageSize, sort, order, routeTemplateURL);
@@ -399,7 +402,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupAuditService_AuditAsyncMethod();
 
-            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
+            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
             var reminder = GetASingleUpdateLastEmailReminderSentRequest();
 
@@ -444,7 +447,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupAuditService_TrySendAuditAsyncMethod();
 
-            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
+            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
             var reminder = GetASingleUpdateConfirmApprovalRequest();
 
@@ -489,7 +492,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupAuditService_AuditAsyncMethod();
 
-            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
+            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
             var reminder = GetASingleUpdateConfirmApprovalRequest();
 
@@ -520,7 +523,43 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
               .ReturnsAsync(It.IsAny<DataModels.Contract>())
               .Verifiable();
 
+            string actionUrl = "action";
+            var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
+            Mock.Get(mockUriService)
+                .Setup(m => m.GetUri(actionUrl))
+                .Returns(It.IsAny<Uri>())
+                .Verifiable();
+
+            SetupLogger_LogInformationMethod();
+
+            var mockMapper = Mock.Of<IMapper>();
+
+            SetupAuditService_AuditAsyncMethod();
             SetMockkContractValidator_NoContent_ContractNotFoundException();
+            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
+
+            var reminder = GetASingleUpdateConfirmApprovalRequest();
+
+            // Act
+            Func<Task> act = async () => await contractService.UpdateContractConfirmApprovalAsync(reminder);
+
+            // Assert
+            act.Should().Throw<ContractNotFoundException>();
+            Mock.Get(mockRepo).Verify(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()), Times.Never);
+            _mockAuditService.Verify(e => e.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Never);
+            _mockLogger.Verify();
+        }
+
+        [TestMethod]
+        public void UpdateContractConfirmApprovalAsync_TestAsync_ResultGenericExceptionExpected()
+        {
+            // Arrange
+            var mockDataModel = Mock.Of<UpdatedContractStatusResponse>();
+            var mockRepo = Mock.Of<IContractRepository>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+              .Setup(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()))
+              .Throws(new Exception())
+              .Verifiable();
 
             string actionUrl = "action";
             var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
@@ -535,7 +574,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupAuditService_AuditAsyncMethod();
 
-            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
+            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
             var reminder = GetASingleUpdateConfirmApprovalRequest();
 
@@ -543,7 +582,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Func<Task> act = async () => await contractService.UpdateContractConfirmApprovalAsync(reminder);
 
             // Assert
-            act.Should().Throw<ContractNotFoundException>();
+            act.Should().Throw<Exception>();
             Mock.Get(mockRepo).Verify(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()), Times.Never);
             _mockAuditService.Verify(e => e.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Never);
             _mockLogger.Verify();
@@ -560,9 +599,9 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             SetMockRepo_ApproveManuallyAsync_mockDataModel(dummyData);
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
-            SetupAuditService_TrySendAuditAsyncMethod();
             SetMockDocumentService();
             SetMockkContractValidator();
+            SetupMediator_Publish();
             var contractService = GetContractService();
             var request = GetContractRequest();
 
@@ -580,7 +619,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Mock.Get(_mockDocumentService)
                 .Verify(d => d.AddSignedDocumentPage(It.IsAny<byte[]>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DateTime>(), true, ContractFundingType.CityDeals, null), Times.Once);
             Mock.Get(_contractRepository).Verify(r => r.UpdateContractAsync(It.IsAny<DataModels.Contract>()), Times.Once);
-            _mockAuditService.Verify(e => e.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Once);
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once());
             _mockLogger.Verify();
         }
 
@@ -751,7 +790,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupAuditService_TrySendAuditAsyncMethod();
 
-            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
+            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
             var request = GetASingleUpdateContractWithdrawalRequest();
 
@@ -796,7 +835,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupAuditService_AuditAsyncMethod();
 
-            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
+            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
             var request = GetASingleUpdateContractWithdrawalRequest();
 
@@ -821,12 +860,49 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
               .Throws(new ContractNotFoundException("Contract was not found."))
               .Verifiable();
 
+            string actionUrl = "action";
+            var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
+            Mock.Get(mockUriService)
+                .Setup(m => m.GetUri(actionUrl))
+                .Returns(It.IsAny<Uri>())
+                .Verifiable();
+
+            SetupLogger_LogInformationMethod();
             Mock.Get(mockRepo)
               .Setup(r => r.GetAsync(It.IsAny<int>()))
               .ReturnsAsync(It.IsAny<DataModels.Contract>())
               .Verifiable();
 
             SetMockkContractValidator_NoContent_ContractNotFoundException();
+
+            var mockMapper = Mock.Of<IMapper>();
+
+            SetupAuditService_AuditAsyncMethod();
+
+            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
+
+            var request = GetASingleUpdateContractWithdrawalRequest();
+
+            // Act
+            Func<Task> act = async () => await contractService.UpdateContractWithdrawalAsync(request);
+
+            // Assert
+            act.Should().Throw<ContractNotFoundException>();
+            Mock.Get(mockRepo).Verify(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()), Times.Never);
+            _mockAuditService.Verify(e => e.AuditAsync(It.IsAny<AuditModels.Audit>()), Times.Never);
+            _mockLogger.Verify();
+        }
+
+        [TestMethod]
+        public void UpdateContractWithdrawalAsync_TestAsync_ResultGenericExceptionExpected()
+        {
+            // Arrange
+            var mockDataModel = Mock.Of<UpdatedContractStatusResponse>();
+            var mockRepo = Mock.Of<IContractRepository>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+              .Setup(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()))
+              .Throws(new Exception())
+              .Verifiable();
 
             string actionUrl = "action";
             var mockUriService = Mock.Of<IUriService>(MockBehavior.Strict);
@@ -841,7 +917,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupAuditService_AuditAsyncMethod();
 
-            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator);
+            var contractService = new ContractService(mockRepo, mockMapper, mockUriService, _mockLogger.Object, _mockAuditService.Object, _semaphoreOnEntity, _mockDocumentService, _mockContractValidator, _mockMediator);
 
             var request = GetASingleUpdateContractWithdrawalRequest();
 
@@ -849,7 +925,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Func<Task> act = async () => await contractService.UpdateContractWithdrawalAsync(request);
 
             // Assert
-            act.Should().Throw<ContractNotFoundException>();
+            act.Should().Throw<Exception>();
             Mock.Get(mockRepo).Verify(r => r.UpdateContractStatusAsync(It.IsAny<int>(), It.IsAny<ContractStatus>(), It.IsAny<ContractStatus>()), Times.Never);
             _mockAuditService.Verify(e => e.AuditAsync(It.IsAny<AuditModels.Audit>()), Times.Never);
             _mockLogger.Verify();
@@ -1067,6 +1143,14 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
         }
 
+        private void SetupMediator_Publish()
+        {
+            Mock.Get(_mockMediator)
+                .Setup(e => e.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+        }
+
         private ContractService GetContractService()
         {
             var contractService = new ContractService(
@@ -1077,7 +1161,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 _mockAuditService.Object,
                 _semaphoreOnEntity,
                 _mockDocumentService,
-                _mockContractValidator);
+                _mockContractValidator,
+                _mockMediator);
             return contractService;
         }
 
