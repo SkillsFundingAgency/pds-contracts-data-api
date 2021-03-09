@@ -294,48 +294,30 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
         public async Task UpdateContractWithdrawalAsync_ReturnsExpectedResult_Test()
         {
             //Arrange
-            SetMapperHelper();
             string baseUrl = $"https://localhost:5001";
-            const string contractNumber = "main-0001";
-            const string title = "Test Title";
-
-            var working = new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.PublishedToProvider };
+            SetMapperHelper();
+            var contracts = GetDataModel_Contracts();
 
             var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
-            ILoggerAdapter<ContractRepository> loggerRepo = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));
 
             MockAuditService();
+
+            var contractRepo = await GetContractRepository(contracts);
+            var uriService = new UriService(baseUrl);
             var asposeDocumentManagementContractService = GetDocumentService();
             var contractValidationService = GetContractValidationService();
-            var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
-            var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
-            var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
-            var contractRepo = new ContractRepository(repo, work, loggerRepo);
-            var uriService = new UriService(baseUrl);
             var mediator = BuildMediator();
             var contractDocumentService = BuildContractDocumentService();
             var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService, mediator, contractDocumentService);
 
-            await repo.AddAsync(working);
-
-            await work.CommitAsync();
-
             //Act
             var beforeUpdate = await contractRepo.GetAsync(request.Id);
 
-            // assigning to a new variable before this is an in memory db so the
-            // LastEmailReminderSent was being populated.
-            var actualBeforeUpdate = new DataModels.Contract()
-            {
-                Id = beforeUpdate.Id,
-                Title = beforeUpdate.Title,
-                ContractNumber = beforeUpdate.ContractNumber,
-                ContractVersion = beforeUpdate.ContractVersion,
-                Ukprn = beforeUpdate.Ukprn,
-                Status = beforeUpdate.Status
-            };
+            // assigning to a new variable before update because this is an in memory db the
+            // update will update the object.
+            var actualBeforeUpdate = GetClonedContract(beforeUpdate);
 
             var contract = await service.UpdateContractWithdrawalAsync(request);
 
@@ -346,6 +328,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             actualBeforeUpdate.Status.Should().Be((int)ContractStatus.PublishedToProvider);
             afterUpdate.Status.Should().Be((int)ContractStatus.WithdrawnByAgency);
         }
+
 
         [TestMethod]
         public async Task ApproveManuallyAsync_ReturnsExpectedResult_Test()
@@ -448,6 +431,28 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
                 Ukprn = contract.Ukprn,
                 Status = contract.Status
             };
+        }
+
+        private List<DataModels.Contract> GetDataModel_Contracts()
+        {
+            const string contractNumber = "main-000";
+            const string title = "Test Title";
+            int x = 1;
+
+            var contracts = new List<DataModels.Contract>
+            {
+                new DataModels.Contract
+                { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.CityDeals }
+            };
+
+            foreach (var item in contracts)
+            {
+                item.ContractNumber = $"{contractNumber}{x}";
+                item.Ukprn += x;
+                x += 1;
+            }
+
+            return contracts;
         }
 
         private List<DataModels.Contract> GetDataModel_ForManualApprove()

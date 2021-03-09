@@ -605,13 +605,55 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         #region UpdateContractWithdrawal
 
         [TestMethod]
-        public async Task UpdateContractWithdrawalAsync_ReturnsContractPreConditionFailedExceptionResult()
+        public async Task UpdateContractWithdrawalAsync_ReturnsOKResultAsync()
         {
             // Arrange
-            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            var expectedStatus = HttpStatusCode.OK;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
+            var mockDataModel = Mock.Of<UpdatedContractStatusResponse>(MockBehavior.Strict);
+
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
                 .Verifiable();
+
+            var mockContractService = new Mock<IContractService>();
+            mockContractService
+                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .ReturnsAsync(mockDataModel)
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object)
+            {
+                ControllerContext = CreateControllerContext(), ProblemDetailsFactory = _problemDetailsFactory
+            };
+
+            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+
+            // Act
+            var actual = await controller.UpdateContractWithdrawalAsync(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)expectedStatus);
+            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
+            mockLogger.Verify();
+        }
+
+        [TestMethod]
+        public async Task UpdateContractWithdrawalAsync_ReturnsContractPreConditionFailedExceptionResult()
+        {
+            // Arrange
+            var expectedStatus = HttpStatusCode.PreconditionFailed;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+            mockLogger
+             .Setup(logger => logger.LogError(It.IsAny<Exception>(), It.IsAny<string>()))
+             .Verifiable();
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
@@ -621,16 +663,18 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var controller = new ContractController(mockLogger.Object, mockContractService.Object)
             {
-                ControllerContext = CreateControllerContext()
+                ControllerContext = CreateControllerContext(), ProblemDetailsFactory = _problemDetailsFactory
             };
 
             var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
-            var actual = await controller.UpdateContractWithdrawalAsync(request);
+            var result = await controller.UpdateContractWithdrawalAsync(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.PreconditionFailed);
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
             mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             mockLogger.Verify();
         }
@@ -639,10 +683,16 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task UpdateContractWithdrawalAsync_ReturnsContractNotFoundExceptionResult()
         {
             // Arrange
-            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            var expectedStatus = HttpStatusCode.NotFound;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
                 .Verifiable();
+            mockLogger
+             .Setup(logger => logger.LogError(It.IsAny<Exception>(), It.IsAny<string>()))
+             .Verifiable();
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
@@ -652,16 +702,19 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var controller = new ContractController(mockLogger.Object, mockContractService.Object)
             {
-                ControllerContext = CreateControllerContext()
+                ControllerContext = CreateControllerContext(),
+                ProblemDetailsFactory = _problemDetailsFactory
             };
 
             var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
-            var actual = await controller.UpdateContractWithdrawalAsync(request);
+            var result = await controller.UpdateContractWithdrawalAsync(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
             mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             mockLogger.Verify();
         }
@@ -670,12 +723,15 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task UpdateContractWithdrawalAsync_ReturnsContractGenericExceptionResult()
         {
             // Arrange
-            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            var expectedStatus = HttpStatusCode.InternalServerError;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
                 .Verifiable();
             mockLogger
-                .Setup(logger => logger.LogError(It.IsAny<string>()))
+                .Setup(logger => logger.LogError(It.IsAny<Exception>(), It.IsAny<string>()))
                 .Verifiable();
 
             var mockContractService = new Mock<IContractService>();
@@ -686,16 +742,19 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var controller = new ContractController(mockLogger.Object, mockContractService.Object)
             {
-                ControllerContext = CreateControllerContext()
+                ControllerContext = CreateControllerContext(),
+                ProblemDetailsFactory = _problemDetailsFactory
             };
 
             var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
 
             // Act
-            var actual = await controller.UpdateContractWithdrawalAsync(request);
+            var result = await controller.UpdateContractWithdrawalAsync(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
             mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             mockLogger.Verify();
         }
@@ -704,8 +763,11 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task UpdateContractWithdrawalAsync_ReturnsContractNotFoundResult()
         {
             // Arrange
+            var expectedStatus = HttpStatusCode.NotFound;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
             UpdatedContractStatusResponse dummyModel = null;
-            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
                 .Verifiable();
@@ -718,16 +780,19 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var controller = new ContractController(mockLogger.Object, mockContractService.Object)
             {
-                ControllerContext = CreateControllerContext()
+                ControllerContext = CreateControllerContext(),
+                ProblemDetailsFactory = _problemDetailsFactory
             };
 
             var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
-            var actual = await controller.UpdateContractWithdrawalAsync(request);
+            var result = await controller.UpdateContractWithdrawalAsync(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
             mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             mockLogger.Verify();
         }
@@ -736,9 +801,17 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task UpdateContractWithdrawalAsync_ReturnsBadRequestResultAsync()
         {
             // Arrange
+            var expectedStatus = HttpStatusCode.BadRequest;
+            var validationProblemDetails = new ValidationProblemDetails()
+            {
+                Detail = "One or more errors with the input",
+                Status = (int)expectedStatus
+            };
+            SetupProblemDetailsFactory(validationProblemDetails);
+
             var expectedDataModel = Mock.Of<UpdatedContractStatusResponse>();
 
-            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
                 .Verifiable();
@@ -753,6 +826,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             {
                 ControllerContext = CreateControllerContext()
             };
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
 
             controller.ModelState.AddModelError("Id", "Id must be greater than zero");
 
@@ -760,11 +834,53 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             request.Id = 0;
 
             // Act
-            var actual = await controller.UpdateContractWithdrawalAsync(request);
+            var result = await controller.UpdateContractWithdrawalAsync(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(validationProblemDetails);
             mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Never);
+            mockLogger.Verify();
+        }
+
+        [TestMethod]
+        public async Task UpdateContractWithdrawalAsync_ReturnsContractUpdateConcurrencyException()
+        {
+            // Arrange
+            var expectedStatus = HttpStatusCode.Conflict;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
+            var expectedDataModel = Mock.Of<Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+            mockLogger
+             .Setup(logger => logger.LogError(It.IsAny<Exception>(), It.IsAny<string>()))
+             .Verifiable();
+
+            var mockContractService = new Mock<IContractService>();
+            mockContractService
+                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .Throws(new ContractUpdateConcurrencyException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<ContractStatus>()))
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object)
+            {
+                ControllerContext = CreateControllerContext(),
+                ProblemDetailsFactory = _problemDetailsFactory
+            };
+
+            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+
+            // Act
+            var result = await controller.UpdateContractWithdrawalAsync(request);
+
+            // Assert
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
+            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             mockLogger.Verify();
         }
 
@@ -777,6 +893,8 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task ManualApprove_ReturnsOKResultAsync()
         {
             // Arrange
+            var expectedStatus = HttpStatusCode.OK;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
             SetMockLogger();
 
             SetMockContractService_ManualApprove();
@@ -786,10 +904,10 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var request = GetContractRequest();
 
             // Act
-            var actual = await controller.ManualApprove(request);
+            var result = await controller.ManualApprove(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.OK);
+            result.Should().BeStatusCodeResult().WithStatusCode((int)expectedStatus);
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
@@ -798,6 +916,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task ManualApprove_InputInvalid_ReturnsBadRequestResultAsync()
         {
             // Arrange
+            var expectedStatus = HttpStatusCode.BadRequest;
             SetupLoggerInfo();
             SetupLoggerError();
             var validationProblemDetails = new ValidationProblemDetails()
@@ -816,12 +935,12 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             request.Id = 0;
 
             // Act
-            var actual = await controller.ManualApprove(request);
+            var result = await controller.ManualApprove(request);
 
             // Assert
-            var status = actual.Should().BeAssignableTo<ObjectResult>();
-            status.Subject.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
-            status.Subject.Value.Should().NotBeNull();
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(validationProblemDetails);
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Never);
             Mock.Get(_logger).Verify();
         }
@@ -830,6 +949,8 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task ManualApprove_InputInvalid_InvalidContractRequestExceptionAsync()
         {
             // Arrange
+            var expectedStatus = HttpStatusCode.BadRequest;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
             SetMockLogger_Error();
             SetMockContractService_ManualApprove_InvalidContractRequestException();
             var controller = GetContractController();
@@ -838,12 +959,12 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             request.ContractNumber = "xyz";
 
             // Act
-            var actual = await controller.ManualApprove(request);
+            var result = await controller.ManualApprove(request);
 
             // Assert
-            var status = actual.Should().BeAssignableTo<ObjectResult>();
-            status.Subject.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
-            status.Subject.Value.Should().NotBeNull();
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
@@ -852,18 +973,20 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task ManualApprove_ReturnsContractNotFoundExceptionResult()
         {
             // Arrange
+            var expectedStatus = HttpStatusCode.NotFound;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
             SetMockLogger_Error();
             SetMockContractService_ManualApprove_ContractNotFoundException();
             var controller = GetContractController();
             var request = GetContractRequest();
 
             // Act
-            var actual = await controller.ManualApprove(request);
+            var result = await controller.ManualApprove(request);
 
             // Assert
-            var status = actual.Should().BeAssignableTo<ObjectResult>();
-            status.Subject.StatusCode.Should().Be(StatusCodes.Status404NotFound);
-            status.Subject.Value.Should().NotBeNull();
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
@@ -872,18 +995,20 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task ManualApprove_ReturnsContractExpectationFailedExceptionResult()
         {
             // Arrange
+            var expectedStatus = HttpStatusCode.NotFound;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
             SetMockLogger_Error();
             SetMockContractService_ManualApprove_ContractExpectationFailedException();
             var controller = GetContractController();
             var request = GetContractRequest();
 
             // Act
-            var actual = await controller.ManualApprove(request);
+            var result = await controller.ManualApprove(request);
 
             // Assert
-            var status = actual.Should().BeAssignableTo<ObjectResult>();
-            status.Subject.StatusCode.Should().Be(StatusCodes.Status404NotFound);
-            status.Subject.Value.Should().NotBeNull();
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
@@ -892,18 +1017,20 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task ManualApprove_ReturnsContractStatusExceptionResult()
         {
             // Arrange
+            var expectedStatus = HttpStatusCode.PreconditionFailed;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
             SetMockLogger_Error();
             SetMockContractService_ManualApprove_ContractStatusException();
             var controller = GetContractController();
             var request = GetContractRequest();
 
             // Act
-            var actual = await controller.ManualApprove(request);
+            var result = await controller.ManualApprove(request);
 
             // Assert
-            var status = actual.Should().BeAssignableTo<ObjectResult>();
-            status.Subject.StatusCode.Should().Be(StatusCodes.Status412PreconditionFailed);
-            status.Subject.Value.Should().NotBeNull();
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
@@ -912,16 +1039,44 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task ManualApprove_ReturnsGeneralExceptionResult()
         {
             // Arrange
+            var expectedStatus = HttpStatusCode.InternalServerError;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
             SetMockLogger_Error();
             SetMockContractService_ManualApprove_GeneralException();
             var controller = GetContractController();
             var request = GetContractRequest();
 
             // Act
-            var actual = await controller.ManualApprove(request);
+            var result = await controller.ManualApprove(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
+            Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
+            Mock.Get(_logger).Verify();
+        }
+
+        [TestMethod]
+        public async Task ManualApprove_ReturnsContractUpdateConcurrencyException()
+        {
+            // Arrange
+            var expectedStatus = HttpStatusCode.Conflict;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
+            SetMockLogger_Error();
+
+            SetMockContractService_ManualApprove_ContractUpdateConcurrencyException();
+
+            var controller = GetContractController();
+            var request = GetContractRequest();
+
+            // Act
+            var result = await controller.ManualApprove(request);
+
+            // Assert
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
@@ -1031,7 +1186,8 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         {
             return new ContractController(_logger, _contractService)
             {
-                ControllerContext = CreateControllerContext()
+                ControllerContext = CreateControllerContext(),
+                ProblemDetailsFactory = _problemDetailsFactory
             };
         }
 
@@ -1127,6 +1283,27 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                  .Throws(new System.Exception())
                  .Verifiable();
         }
+
+        private void SetMockContractService_ManualApprove_ContractUpdateConcurrencyException()
+        {
+            Mock.Get(_contractService)
+                 .Setup(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()))
+                 .Throws(new ContractUpdateConcurrencyException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<ContractStatus>()))
+                 .Verifiable();
+        }
+
+        private ProblemDetails GetProblemDetailsAndSetup(HttpStatusCode expectedStatus)
+        {
+            var problem = new ProblemDetails
+            {
+                Status = (int)expectedStatus
+            };
+
+            SetupCreateProblemDetails(problem);
+
+            return problem;
+        }
+
 
         #endregion Arrange Helpers
 

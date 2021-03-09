@@ -109,14 +109,14 @@ namespace Pds.Contracts.Data.Repository.Implementations
             var contract = await _repository.GetByIdAsync(contractId);
             if (contract != null)
             {
-                updatedContractStatusResponse = new UpdatedContractStatusResponse() { Id = contract.Id, ContractNumber = contract.ContractNumber, ContractVersion = contract.ContractVersion, Ukprn = contract.Ukprn, Status = contract.Status };
+                updatedContractStatusResponse = new UpdatedContractStatusResponse() { Id = contract.Id, ContractNumber = contract.ContractNumber, ContractVersion = contract.ContractVersion, Ukprn = contract.Ukprn, Status = (ContractStatus)contract.Status };
 
                 if (contract.Status == (int)requiredContractStatus)
                 {
                     contract.Status = (int)newContractStatus;
                     contract.LastUpdatedAt = updatedDate;
                     await _work.CommitAsync();
-                    updatedContractStatusResponse.NewStatus = contract.Status;
+                    updatedContractStatusResponse.NewStatus = (ContractStatus)contract.Status;
                     _logger.LogInformation($"[{nameof(UpdateContractStatusAsync)}] - Updated successfully the contract status to {(ContractStatus)contract.Status} - Contract Id: {contractId}, Contract Number: {contract.ContractNumber}");
                 }
                 else
@@ -152,7 +152,14 @@ namespace Pds.Contracts.Data.Repository.Implementations
             contract.LastUpdatedAt = DateTime.UtcNow;
             if (_work.IsTracked(contract))
             {
+                try
+                {
                 await _work.CommitAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    throw new ContractUpdateConcurrencyException(contract.ContractNumber, contract.ContractVersion, contract.Id, (ContractStatus)contract.Status);
+                }
             }
             else
             {

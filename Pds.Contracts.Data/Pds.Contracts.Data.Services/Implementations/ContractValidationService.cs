@@ -41,6 +41,17 @@ namespace Pds.Contracts.Data.Services.Implementations
         }
 
         /// <inheritdoc/>
+        public void Validate(Contract contract, Models.UpdateContractWithdrawalRequest request)
+        {
+            Validate(contract, (Models.ContractRequest)request);
+
+            if (request.WithdrawalType != ContractStatus.WithdrawnByAgency && request.WithdrawalType != ContractStatus.WithdrawnByProvider)
+            {
+                throw new InvalidContractRequestException(request.ContractNumber, request.ContractVersion, request.Id, request.WithdrawalType);
+            }
+        }
+
+        /// <inheritdoc/>
         public void ValidateStatusChange(Contract contract, ContractStatus newStatus, bool isManualApproval = false)
         {
             var currentStatus = (ContractStatus)contract.Status;
@@ -53,10 +64,13 @@ namespace Pds.Contracts.Data.Services.Implementations
                     allowedCurrentStatuses.Add(isManualApproval ? ContractStatus.PublishedToProvider : ContractStatus.ApprovedWaitingConfirmation);
                     break;
 
-                case ContractStatus.PublishedToProvider:
-                case ContractStatus.Replaced:
                 case ContractStatus.WithdrawnByProvider:
                 case ContractStatus.WithdrawnByAgency:
+                    allowedCurrentStatuses.Add(ContractStatus.PublishedToProvider);
+                    break;
+
+                case ContractStatus.PublishedToProvider:
+                case ContractStatus.Replaced:
                 case ContractStatus.ApprovedWaitingConfirmation:
                     break;
 

@@ -84,8 +84,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 Id = 1,
                 ContractNumber = "abc",
                 ContractVersion = 1,
-                NewStatus = (int)ContractStatus.Approved,
-                Status = (int)ContractStatus.PublishedToProvider,
+                NewStatus = ContractStatus.Approved,
+                Status = ContractStatus.PublishedToProvider,
                 Ukprn = 12345678
             };
         }

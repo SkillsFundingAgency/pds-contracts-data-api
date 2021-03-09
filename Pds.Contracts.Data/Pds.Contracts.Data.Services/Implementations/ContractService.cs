@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Azure.Storage.Blobs;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Pds.Audit.Api.Client.Enumerations;
 using Pds.Audit.Api.Client.Interfaces;
 using Pds.Contracts.Data.Common.CustomExceptionHandlers;
@@ -20,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AuditModels = Pds.Audit.Api.Client.Models;
 using DataModels = Pds.Contracts.Data.Repository.DataModels;
+
 
 namespace Pds.Contracts.Data.Services.Implementations
 {
@@ -103,14 +105,15 @@ namespace Pds.Contracts.Data.Services.Implementations
                 string message = $"[{nameof(CreateAsync)}] Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created. " +
                     $"The contract status after is Ready to sign.";
 
-                await _auditService.TrySendAuditAsync(new AuditModels.Audit()
-                {
-                    Action = ActionType.ContractCreated,
-                    Severity = SeverityLevel.Information,
-                    Ukprn = newContract.Ukprn,
-                    Message = message,
-                    User = _appName
-                });
+                await _auditService.TrySendAuditAsync(
+                    new Audit.Api.Client.Models.Audit()
+                    {
+                        Action = ActionType.ContractCreated,
+                        Severity = SeverityLevel.Information,
+                        Ukprn = newContract.Ukprn,
+                        Message = message,
+                        User = $"[{_appName}]"
+                    });
 
                 _logger.LogInformation($"[{nameof(CreateAsync)}] Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created for [{newContract.Ukprn}].");
 
@@ -203,7 +206,7 @@ namespace Pds.Contracts.Data.Services.Implementations
                 ContractNumber = contract.ContractNumber,
                 ContractVersion = contract.ContractVersion,
                 Ukprn = contract.Ukprn,
-                Status = contract.Status
+                Status = (ContractStatus)contract.Status
             };
 
             contract.Status = (int)newContractStatus;
@@ -211,7 +214,7 @@ namespace Pds.Contracts.Data.Services.Implementations
             await _contractDocumentService.UpsertOriginalContractXmlAsync(contract, request);
             await _repository.UpdateContractAsync(contract);
 
-            updatedContractStatusResponse.NewStatus = contract.Status;
+            updatedContractStatusResponse.NewStatus = (ContractStatus)contract.Status;
             await _auditService.TrySendAuditAsync(GetAudit(updatedContractStatusResponse));
 
             return updatedContractStatusResponse;
@@ -237,7 +240,8 @@ namespace Pds.Contracts.Data.Services.Implementations
                 ContractNumber = contract.ContractNumber,
                 ContractVersion = contract.ContractVersion,
                 Ukprn = contract.Ukprn,
-                Status = contract.Status
+                Status = (ContractStatus)contract.Status,
+                Action = ActionType.ContractManualApproval
             };
 
             var contractRefernce = contract.ContractContent.FileName.Replace(".pdf", string.Empty);
@@ -256,7 +260,7 @@ namespace Pds.Contracts.Data.Services.Implementations
 
             await _repository.UpdateContractAsync(contract);
 
-            updatedContractStatusResponse.NewStatus = contract.Status;
+            updatedContractStatusResponse.NewStatus = (ContractStatus)contract.Status;
 
             await _mediator.Publish(updatedContractStatusResponse);
 
@@ -267,20 +271,36 @@ namespace Pds.Contracts.Data.Services.Implementations
         public async Task<UpdatedContractStatusResponse> UpdateContractWithdrawalAsync(UpdateContractWithdrawalRequest request)
         {
             _logger.LogInformation($"[{nameof(UpdateContractWithdrawalAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
+            UpdatedContractStatusResponse updatedContractStatusResponse = null;
 
             var contract = await _repository.GetAsync(request.Id);
             _contractValidator.Validate(contract, request);
+            _contractValidator.ValidateStatusChange(contract, request.WithdrawalType);
 
-            var updatedContractStatusResponse = await _repository.UpdateContractStatusAsync(request.Id, ContractStatus.PublishedToProvider, request.WithdrawalType);
-            await _auditService.TrySendAuditAsync(GetAudit(updatedContractStatusResponse));
+            updatedContractStatusResponse = new UpdatedContractStatusResponse
+            {
+                Id = contract.Id,
+                ContractNumber = contract.ContractNumber,
+                ContractVersion = contract.ContractVersion,
+                Ukprn = contract.Ukprn,
+                Status = (ContractStatus)contract.Status,
+                Action = ActionType.ContractWithdrawal
+            };
+            contract.Status = (int)request.WithdrawalType;
+
+            await _repository.UpdateContractAsync(contract);
+
+            updatedContractStatusResponse.NewStatus = (ContractStatus)contract.Status;
+
+            await _mediator.Publish(updatedContractStatusResponse);
 
             return updatedContractStatusResponse;
         }
 
         private AuditModels.Audit GetAudit(UpdatedContractStatusResponse updatedContractStatusResponse)
         {
-            string oldStatusName = GetEnumDescription<ContractStatus>(updatedContractStatusResponse.Status);
-            string newStatusName = GetEnumDescription<ContractStatus>(updatedContractStatusResponse.NewStatus);
+            string oldStatusName = updatedContractStatusResponse.Status.ToString("G");
+            string newStatusName = updatedContractStatusResponse.NewStatus.ToString("G");
 
             string message = $"Contract [{updatedContractStatusResponse.ContractNumber}] Version number [{updatedContractStatusResponse.ContractVersion}] with Id [{updatedContractStatusResponse.Id}] has been {newStatusName}. Additional Information Details: ContractId is: {updatedContractStatusResponse.Id}. Contract Status Before was {oldStatusName} . Contract Status After is {newStatusName}";
             return new AuditModels.Audit()

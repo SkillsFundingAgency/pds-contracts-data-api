@@ -8,6 +8,11 @@
         /// <summary>
         /// The contract is now approved.
         /// </summary>
-        Approved
+        Approved,
+
+        /// <summary>
+        /// The contract is now Withdrawn By Agency or Provider.
+        /// </summary>
+        Withdrawn,
     }
 }

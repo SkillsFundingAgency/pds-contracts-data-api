@@ -43,5 +43,12 @@ namespace Pds.Contracts.Data.Services.Interfaces
         /// <exception cref="Pds.Contracts.Data.Common.CustomExceptionHandlers.DuplicateContractException">Raised if a contract with a given contract number and version already exists.</exception>
         /// <exception cref="Pds.Contracts.Data.Common.CustomExceptionHandlers.ContractWithHigherVersionAlreadyExistsException">Raised if a contract with a given contract number but a higher version already exists.</exception>
         void ValidateForNewContract(Models.CreateContractRequest request, IEnumerable<Contract> existingContracts);
+
+        /// <summary>
+        /// Validates the contract from database for the request.
+        /// </summary>
+        /// <param name="contract">The contract.</param>
+        /// <param name="request">The contract request used to find contract.</param>
+        void Validate(Contract contract, Models.UpdateContractWithdrawalRequest request);
     }
 }

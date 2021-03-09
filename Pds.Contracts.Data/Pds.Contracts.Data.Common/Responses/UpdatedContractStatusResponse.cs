@@ -1,4 +1,6 @@
 ﻿using MediatR;
+using Pds.Audit.Api.Client.Enumerations;
+using Pds.Contracts.Data.Common.Enums;
 
 namespace Pds.Contracts.Data.Common.Responses
 {
@@ -35,12 +37,18 @@ namespace Pds.Contracts.Data.Common.Responses
         /// Gets or sets the status.
         /// </summary>
         /// <value>The status.</value>
-        public int Status { get; set; }
+        public ContractStatus Status { get; set; }
 
         /// <summary>
         /// Gets or sets the new status.
         /// </summary>
         /// <value>The status.</value>
-        public int NewStatus { get; set; }
+        public ContractStatus NewStatus { get; set; }
+
+        /// <summary>
+        /// Gets or sets the new Action.
+        /// </summary>
+        /// <value>The Action Type.</value>
+        public ActionType Action { get; set; }
     }
 }

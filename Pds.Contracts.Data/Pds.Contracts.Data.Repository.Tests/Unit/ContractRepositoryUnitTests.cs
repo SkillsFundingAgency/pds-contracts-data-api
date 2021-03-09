@@ -1,5 +1,6 @@
 ﻿using EntityFrameworkCoreMock;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Pds.Contracts.Data.Common.CustomExceptionHandlers;
@@ -379,6 +380,42 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
 
             //Assert
             act.Should().NotThrow();
+            Mock.Get(mockUnitOfWork).Verify(u => u.IsTracked(expected), Times.Once);
+            Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Once);
+            Mock.Get(mockRepo).Verify(r => r.PatchAsync(It.IsAny<int>(), It.IsAny<Contract>()), Times.Never);
+            _mockLogger.VerifyAll();
+        }
+
+        [TestMethod]
+        public void UpdateContractAsync_ContractUpdateConcurrencyExceptionResultTest()
+        {
+            //Arrange
+            var updatedAt = DateTime.UtcNow.AddSeconds(-1);
+            var expected = new Contract { Id = 1, ContractNumber = "expected-contract-number", ContractVersion = 1, LastUpdatedAt = updatedAt, ContractContent = new ContractContent() { Id = 1 } };
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            Mock.Get(mockUnitOfWork)
+               .Setup(u => u.IsTracked(expected))
+               .Returns(true)
+               .Verifiable();
+            Mock.Get(mockUnitOfWork)
+                .Setup(u => u.CommitAsync())
+                .Throws(new DbUpdateConcurrencyException())
+                .Verifiable();
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetByIdAsync(It.IsAny<int>()))
+                .ReturnsAsync(expected);
+            Mock.Get(mockRepo)
+                .Setup(r => r.PatchAsync(It.IsAny<int>(), It.IsAny<Contract>()))
+                .Returns(Task.CompletedTask);
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            expected.LastUpdatedAt = DateTime.UtcNow;
+
+            //Act
+            Func<Task> act = async () => await contractRepo.UpdateContractAsync(expected);
+
+            //Assert
+            var result = act.Should().Throw<ContractUpdateConcurrencyException>();
             Mock.Get(mockUnitOfWork).Verify(u => u.IsTracked(expected), Times.Once);
             Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Once);
             Mock.Get(mockRepo).Verify(r => r.PatchAsync(It.IsAny<int>(), It.IsAny<Contract>()), Times.Never);

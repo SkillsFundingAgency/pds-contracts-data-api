@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Pds.Contracts.Data.Common.Enums;
+using System;
 using System.Runtime.Serialization;
 
 namespace Pds.Contracts.Data.Common.CustomExceptionHandlers
@@ -22,6 +23,22 @@ namespace Pds.Contracts.Data.Common.CustomExceptionHandlers
             ContractId = contractId;
             ContractNumber = contractNumber;
         }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InvalidContractRequestException"/> class.
+        /// </summary>
+        /// <param name="contractNumber">Contract number.</param>
+        /// <param name="versionNumber">Contract version number.</param>
+        /// <param name="contractId">Contract internal identifier.</param>
+        /// <param name="withdrawalType">Contract status.</param>
+        public InvalidContractRequestException(string contractNumber, int versionNumber, int contractId, ContractStatus withdrawalType)
+            : base($"Invalid contract status request. The contract withdrawal type request: {withdrawalType.ToString("G")} The contract number: {contractNumber}, contract version: {versionNumber}, contract Id: {contractId}.")
+        {
+            VersionNumber = versionNumber;
+            ContractId = contractId;
+            ContractNumber = contractNumber;
+        }
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InvalidContractRequestException"/> class.

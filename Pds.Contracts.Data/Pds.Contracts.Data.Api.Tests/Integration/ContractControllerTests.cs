@@ -298,7 +298,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
                 Id = 4,
                 ContractNumber = "Test-Contract-Number",
                 ContractVersion = 1,
-                FileName = "Main-0002_v2_637503726040684393.xml"
+                FileName = "sample-blob-file.xml"
             };
 
             // Act

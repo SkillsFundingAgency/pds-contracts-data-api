@@ -55,6 +55,10 @@ namespace Pds.Contracts.Data.Services.NotificationHandlers
                 case ContractStatus.Approved:
                     properties.Add("Status", MessageStatus.Approved.ToString("G"));
                     break;
+                case ContractStatus.WithdrawnByAgency:
+                case ContractStatus.WithdrawnByProvider:
+                    properties.Add("Status", MessageStatus.Withdrawn.ToString("G"));
+                    break;
                 default:
                     break;
             }

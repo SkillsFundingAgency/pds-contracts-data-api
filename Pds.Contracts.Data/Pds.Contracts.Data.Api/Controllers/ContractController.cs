@@ -268,6 +268,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         /// <response code="400">One or more parameters supplied are not valid.</response>
         /// <response code="401">Supplied authorisation credentials are not valid.</response>
         /// <response code="404">Contract was not found for the provided contract id.</response>
+        /// <response code="409">Contract with the given number and version already exists.</response>
         /// <response code="412">Contract pre checks failed.</response>
         /// <response code="500">Application error, invalid operation attempted.</response>
         /// <response code="503">Service is un-available, retry the operation later.</response>
@@ -277,6 +278,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status412PreconditionFailed)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
@@ -286,7 +288,7 @@ namespace Pds.Contracts.Data.Api.Controllers
             _logger.LogInformation($"[{methodName}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} ");
             if (!ModelState.IsValid)
             {
-                return StatusCode(StatusCodes.Status400BadRequest);
+                return ValidationProblem();
             }
 
             try
@@ -294,26 +296,31 @@ namespace Pds.Contracts.Data.Api.Controllers
                 var result = await _contractService.UpdateContractWithdrawalAsync(request);
                 if (result == null)
                 {
-                    return StatusCode(StatusCodes.Status404NotFound);
+                    return Problem(statusCode: StatusCodes.Status404NotFound);
                 }
-            }
-            catch (ContractStatusException ex)
-            {
-                _logger.LogError($"[{methodName}] ContractStatusException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
-                return StatusCode(StatusCodes.Status412PreconditionFailed);
             }
             catch (ContractNotFoundException ex)
             {
-                _logger.LogError($"[{methodName}] ContractNotFoundException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
-                return StatusCode(StatusCodes.Status404NotFound);
+                _logger.LogError(ex, $"[{methodName}] ContractNotFoundException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status404NotFound);
+            }
+            catch (ContractUpdateConcurrencyException ex)
+            {
+                _logger.LogError(ex, $"[{nameof(methodName)}] Contract may have been modified or deleted since Contract were loaded - Contract Id {request.Id}, Contract Number: {request.ContractNumber}, ContractVersion: {request.ContractVersion}.");
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status409Conflict);
+            }
+            catch (ContractStatusException ex)
+            {
+                _logger.LogError(ex, $"[{methodName}] ContractStatusException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status412PreconditionFailed);
             }
             catch (System.Exception ex)
             {
-                _logger.LogError($"[{methodName}] Internal server exception has occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                _logger.LogError(ex, $"[{methodName}] Internal server exception has occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                return Problem(statusCode: StatusCodes.Status500InternalServerError);
             }
 
-            return StatusCode(StatusCodes.Status200OK);
+            return new StatusCodeResult(StatusCodes.Status200OK);
         }
 
         /// <summary>
@@ -385,6 +392,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         /// <response code="400">One or more parameters supplied are not valid.</response>
         /// <response code="401">Supplied authorisation credentials are not valid.</response>
         /// <response code="404">Contract was not found for the provided contract id.</response>
+        /// <response code="409">Contract may have been modified or deleted since Contract were loaded.</response>
         /// <response code="412">Contract pre checks failed.</response>
         /// <response code="500">Application error, invalid operation attempted.</response>
         /// <response code="503">Service is un-available, retry the operation later.</response>
@@ -394,6 +402,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesResponseType(StatusCodes.Status412PreconditionFailed)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
@@ -414,30 +423,35 @@ namespace Pds.Contracts.Data.Api.Controllers
             catch (InvalidContractRequestException ex)
             {
                 _logger.LogError(ex, $"[{nameof(ManualApprove)}] Invalid contract request exception with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
-                return StatusCode(StatusCodes.Status400BadRequest, ex.Message);
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
             }
             catch (ContractNotFoundException ex)
             {
                 _logger.LogError(ex, $"[{nameof(ManualApprove)}] failed to find a contract with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
-                return StatusCode(StatusCodes.Status404NotFound, ex.Message);
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status404NotFound);
             }
             catch (ContractExpectationFailedException ex)
             {
                 _logger.LogError(ex, $"[{nameof(ManualApprove)}] Contract expectation failed exception with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
-                return StatusCode(StatusCodes.Status404NotFound, ex.Message);
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status404NotFound);
+            }
+            catch (ContractUpdateConcurrencyException ex)
+            {
+                _logger.LogError(ex, $"[{nameof(ManualApprove)}] Contract may have been modified or deleted since Contract were loaded - Contract Id {request.Id}, Contract Number: {request.ContractNumber}, ContractVersion: {request.ContractVersion}.");
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status409Conflict);
             }
             catch (ContractStatusException ex)
             {
                 _logger.LogError(ex, $"[{nameof(ManualApprove)}] failed contract status expectation. For the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
-                return StatusCode(StatusCodes.Status412PreconditionFailed, ex.Message);
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status412PreconditionFailed);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"[{nameof(ManualApprove)}] Un-expected exception for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
-                return StatusCode(StatusCodes.Status500InternalServerError);
+                return Problem(statusCode: StatusCodes.Status500InternalServerError);
             }
 
-            return StatusCode(StatusCodes.Status200OK);
+            return new StatusCodeResult(StatusCodes.Status200OK);
         }
     }
 }
