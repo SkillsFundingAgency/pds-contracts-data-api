@@ -100,10 +100,21 @@ namespace Pds.Contracts.Data.Services.Implementations
                 var newContract = _mapper.Map<Repository.DataModels.Contract>(request);
                 newContract.LastUpdatedAt = newContract.CreatedAt = DateTime.UtcNow;
 
+                // For amendment type notification the default status has to be approved
+                // For None and Variation, it should be published to provider
+                if (request.AmendmentType == ContractAmendmentType.Notfication)
+                {
+                    newContract.Status = (int)ContractStatus.Approved;
+                }
+                else if (request.AmendmentType == ContractAmendmentType.None || request.AmendmentType == ContractAmendmentType.Variation)
+                {
+                    newContract.Status = (int)ContractStatus.PublishedToProvider;
+                }
+
                 await _repository.CreateAsync(newContract);
 
                 string message = $"[{nameof(CreateAsync)}] Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created. " +
-                    $"The contract status after is Ready to sign.";
+                    $"The contract status after is [{GetEnumDescription<ContractStatus>(newContract.Status)}].";
 
                 await _auditService.TrySendAuditAsync(
                     new Audit.Api.Client.Models.Audit()
@@ -120,7 +131,23 @@ namespace Pds.Contracts.Data.Services.Implementations
                 // Update operations to existing records can be done outside the semaphore
                 if (request.AmendmentType == ContractAmendmentType.Variation)
                 {
-                    await ReplacePublishedToProviderContracts(existing);
+                    var statuses = new int[]
+                        {
+                            (int)ContractStatus.PublishedToProvider
+                        };
+
+                    await ReplaceContractsWithGivenStatuses(existing, statuses);
+                }
+                else if (request.AmendmentType == ContractAmendmentType.Notfication)
+                {
+                    var statuses = new int[]
+                        {
+                            (int)ContractStatus.Approved,
+                            (int)ContractStatus.ApprovedWaitingConfirmation,
+                            (int)ContractStatus.PublishedToProvider
+                        };
+
+                    await ReplaceContractsWithGivenStatuses(existing, statuses);
                 }
             }
             finally
@@ -335,23 +362,29 @@ namespace Pds.Contracts.Data.Services.Implementations
             return templatedQueryString.Replace("{page}", pageValue.ToString());
         }
 
-        private async Task ReplacePublishedToProviderContracts(IEnumerable<Repository.DataModels.Contract> previousContracts)
+        /// <summary>
+        /// Sets the statues of contracts to replaced where they match the given list of statuses.
+        /// </summary>
+        /// <param name="previousContracts">List of contracts to update.</param>
+        /// <param name="replaceableStatuses">list of statuses to filter by.</param>
+        /// <returns>Async Task.</returns>
+        private async Task ReplaceContractsWithGivenStatuses(IEnumerable<Repository.DataModels.Contract> previousContracts, int[] replaceableStatuses)
         {
-            if (previousContracts.Any(p => p.Status == (int)ContractStatus.PublishedToProvider))
+            if (previousContracts.Any(p => replaceableStatuses.Contains(p.Status)))
             {
                 int ukprn = previousContracts.First().Ukprn;
 
                 // Contracts found
-                var listToUpdate = previousContracts.Where(p => p.Status == (int)ContractStatus.PublishedToProvider).ToList();
+                var listToUpdate = previousContracts.Where(p => replaceableStatuses.Contains(p.Status)).ToList();
                 foreach (var item in listToUpdate)
                 {
-                    ContractStatus requiredContractStatus = ContractStatus.PublishedToProvider;
+                    ContractStatus requiredContractStatus = (ContractStatus)item.Status;
                     ContractStatus newContractStatus = ContractStatus.Replaced;
                     var response = await _repository.UpdateContractStatusAsync(item.Id, requiredContractStatus, newContractStatus);
 
                     string msg = $"Contract [{response.ContractNumber}-{response.ContractVersion}] with Id [{response.Id}] has been replaced. " +
-                        $"The contract status before was {response.Status}. " +
-                        $"The contract status after is {response.NewStatus}.";
+                        $"The contract status before was {response.Status.ToString("G")}. " +
+                        $"The contract status after is {response.NewStatus.ToString("G")}.";
 
                     await _auditService.TrySendAuditAsync(new AuditModels.Audit()
                     {

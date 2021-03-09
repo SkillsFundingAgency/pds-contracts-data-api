@@ -47,13 +47,6 @@ namespace Pds.Contracts.Data.Services.Models
         public decimal Value { get; set; }
 
         /// <summary>
-        /// Gets or sets the current status of the contract.
-        /// </summary>
-        [Required]
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        public ContractStatus Status { get; set; }
-
-        /// <summary>
         /// Gets or sets the funding type associated with the contract.
         /// </summary>
         [Required]

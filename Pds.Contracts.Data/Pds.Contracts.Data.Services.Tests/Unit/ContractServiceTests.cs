@@ -43,7 +43,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             = new Mock<ILoggerAdapter<ContractService>>(MockBehavior.Strict);
 
         private readonly ISemaphoreOnEntity<string> _semaphoreOnEntity
-            = Mock.Of<ISemaphoreOnEntity<string>>();
+            = Mock.Of<ISemaphoreOnEntity<string>>(MockBehavior.Strict);
 
         private readonly IDocumentManagementContractService _mockDocumentService
             = Mock.Of<IDocumentManagementContractService>(MockBehavior.Strict);
@@ -68,15 +68,18 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         public async Task Create_AmendmentTypeNone_WhenContractDoesNotAlreadyExist_Then_ContractIsAddedToDatabase()
         {
             // Arrange
+            DateTime timeCheckUTC = DateTime.UtcNow;
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.None;
 
+            SetupSemaphoreOnEntity();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>();
 
             var contractRecord = new DataModels.Contract();
+            contractRecord.Status = -1;
 
             Mock.Get(_mapper)
                 .Setup(p => p.Map<DataModels.Contract>(createRequest))
@@ -95,6 +98,9 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             // Assert
             VerifyAll();
+            contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
+            contractRecord.CreatedAt.Should().BeAfter(timeCheckUTC);
+            contractRecord.LastUpdatedAt.Should().BeAfter(timeCheckUTC);
         }
 
         [TestMethod]
@@ -104,6 +110,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.None;
 
+            SetupSemaphoreOnEntity();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
@@ -118,6 +125,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             };
 
             var contractRecord = new DataModels.Contract();
+            contractRecord.Status = -1;
 
             Mock.Get(_mapper)
                 .Setup(p => p.Map<DataModels.Contract>(createRequest))
@@ -136,6 +144,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             // Assert
             VerifyAll();
+            contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
             matchedRecords.First().Status.Should().Be((int)ContractStatus.PublishedToProvider);
         }
 
@@ -146,6 +155,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.None;
 
+            SetupSemaphoreOnEntity();
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
@@ -180,6 +190,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.None;
 
+            SetupSemaphoreOnEntity();
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
@@ -219,12 +230,14 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Variation;
 
+            SetupSemaphoreOnEntity();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>();
 
             var contractRecord = new DataModels.Contract();
+            contractRecord.Status = -1;
 
             Mock.Get(_mapper)
                 .Setup(p => p.Map<DataModels.Contract>(createRequest))
@@ -243,6 +256,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             // Assert
             VerifyAll();
+            contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
         }
 
         [TestMethod]
@@ -253,6 +267,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Variation;
 
+            SetupSemaphoreOnEntity();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
@@ -267,7 +282,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             };
 
             var contractRecord = new DataModels.Contract();
-            contractRecord.ContractNumber = createRequest.ContractNumber;
+            contractRecord.Status = -1;
 
             Mock.Get(_mapper)
                 .Setup(p => p.Map<DataModels.Contract>(createRequest))
@@ -286,6 +301,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             // Assert
             VerifyAll();
+            contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
             matchedRecords.First().Status.Should().Be(expectedStatus);
         }
 
@@ -299,6 +315,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Variation;
 
+            SetupSemaphoreOnEntity();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated, ActionType.ContractReplaced });
             SetupLogger_LogInformationMethod();
 
@@ -314,6 +331,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             };
 
             var contractRecord = new DataModels.Contract();
+            contractRecord.Status = -1;
 
             Mock.Get(_mapper)
                 .Setup(p => p.Map<DataModels.Contract>(createRequest))
@@ -338,6 +356,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             // Assert
             VerifyAll();
+            contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
             _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Exactly(expectedAuditCount));
         }
 
@@ -351,6 +370,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Variation;
 
+            SetupSemaphoreOnEntity();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated, ActionType.ContractReplaced });
             SetupLogger_LogInformationMethod();
 
@@ -380,6 +400,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             };
 
             var contractRecord = new DataModels.Contract();
+            contractRecord.Status = -1;
 
             Mock.Get(_mapper)
                 .Setup(p => p.Map<DataModels.Contract>(createRequest))
@@ -408,6 +429,269 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             // Assert
             VerifyAll();
+            contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
+            _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Exactly(expectedAuditCount));
+        }
+
+        #endregion
+
+
+        #region AmendmentType - Notification
+
+        [TestMethod]
+        public async Task Create_AmendmentTypeNotification_WhenContractAlreadyExists_WithALowerVersion_Then_ContractIsAddedToDatabase_And_NoStatusChangeHappen()
+        {
+            // Arrange
+            int expectedStatus = (int)ContractStatus.Replaced;
+            CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.Notfication;
+
+            SetupSemaphoreOnEntity();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
+            SetupLogger_LogInformationMethod();
+
+            IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
+            {
+                new DataModels.Contract()
+                {
+                    ContractNumber = createRequest.ContractNumber,
+                    ContractVersion = createRequest.ContractVersion - 1,
+                    Status = expectedStatus
+                }
+            };
+
+            var contractRecord = new DataModels.Contract();
+            contractRecord.Status = -1;
+            contractRecord.AmendmentType = (int)createRequest.AmendmentType;
+
+            Mock.Get(_mapper)
+                .Setup(p => p.Map<DataModels.Contract>(createRequest))
+                .Returns(contractRecord)
+                .Verifiable();
+
+            SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
+            SetupRepository_CreateAsyncMethod(contractRecord, Task.CompletedTask);
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
+
+            var service = GetContractService();
+
+            // Act
+            await service.CreateAsync(createRequest);
+
+            // Assert
+            VerifyAll();
+            contractRecord.Status.Should().Be((int)ContractStatus.Approved);
+            matchedRecords.First().Status.Should().Be(expectedStatus);
+            _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task Create_AmendmentTypeNotification_WhenNoOtherVersionOfTheContractExist_Then_ContractIsAddedToDatabase_But_NoStatusChangesHappen()
+        {
+            // Arrange
+            CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.Notfication;
+
+            SetupSemaphoreOnEntity();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
+            SetupLogger_LogInformationMethod();
+
+            IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>();
+
+            var contractRecord = new DataModels.Contract();
+            contractRecord.Status = -1;
+            contractRecord.AmendmentType = (int)createRequest.AmendmentType;
+
+            Mock.Get(_mapper)
+                .Setup(p => p.Map<DataModels.Contract>(createRequest))
+                .Returns(contractRecord)
+                .Verifiable();
+
+            SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
+            SetupRepository_CreateAsyncMethod(contractRecord, Task.CompletedTask);
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
+
+            var service = GetContractService();
+
+            // Act
+            await service.CreateAsync(createRequest);
+
+            // Assert
+            VerifyAll();
+            contractRecord.Status.Should().Be((int)ContractStatus.Approved);
+            _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task Create_AmendmentTypeNotification_WhenOtherVersionOfTheContractExist_WithStatus0_Then_ContractIsAddedToDatabase_And_ContractIsReplaced()
+        {
+            // Arrange
+            int contractId = 123;
+            int expectedAuditCount = 2;
+            ContractStatus existingContractStatus = ContractStatus.PublishedToProvider;
+
+            CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.Notfication;
+
+            SetupSemaphoreOnEntity();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated, ActionType.ContractReplaced });
+            SetupLogger_LogInformationMethod();
+
+            IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
+            {
+                new DataModels.Contract()
+                {
+                    Id = contractId,
+                    ContractNumber = createRequest.ContractNumber,
+                    ContractVersion = createRequest.ContractVersion - 1,
+                    Status = (int)existingContractStatus
+                }
+            };
+
+            var contractRecord = new DataModels.Contract();
+            contractRecord.Status = -1;
+            contractRecord.AmendmentType = (int)createRequest.AmendmentType;
+
+            Mock.Get(_mapper)
+                .Setup(p => p.Map<DataModels.Contract>(createRequest))
+                .Returns(contractRecord)
+                .Verifiable();
+
+            SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
+            SetupRepository_CreateAsyncMethod(contractRecord, Task.CompletedTask);
+
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
+
+            Mock.Get(_contractRepository)
+                .Setup(p => p.UpdateContractStatusAsync(contractId, existingContractStatus, ContractStatus.Replaced))
+                .Returns(Task.FromResult(new UpdatedContractStatusResponse()))
+                .Verifiable();
+
+            var service = GetContractService();
+
+            // Act
+            await service.CreateAsync(createRequest);
+
+            // Assert
+            VerifyAll();
+            contractRecord.Status.Should().Be((int)ContractStatus.Approved);
+            _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Exactly(expectedAuditCount));
+        }
+
+        [TestMethod]
+        public async Task Create_AmendmentTypeNotification_WhenOtherVersionOfTheContractExist_WithStatus4_Then_ContractIsAddedToDatabase_And_ContractIsReplaced()
+        {
+            // Arrange
+            int contractId = 123;
+            int expectedAuditCount = 2;
+            ContractStatus existingContractStatus = ContractStatus.Approved;
+
+            CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.Notfication;
+
+            SetupSemaphoreOnEntity();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated, ActionType.ContractReplaced });
+            SetupLogger_LogInformationMethod();
+
+            IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
+            {
+                new DataModels.Contract()
+                {
+                    Id = contractId,
+                    ContractNumber = createRequest.ContractNumber,
+                    ContractVersion = createRequest.ContractVersion - 1,
+                    Status = (int)existingContractStatus
+                }
+            };
+
+            var contractRecord = new DataModels.Contract();
+            contractRecord.Status = -1;
+            contractRecord.AmendmentType = (int)createRequest.AmendmentType;
+
+            Mock.Get(_mapper)
+                .Setup(p => p.Map<DataModels.Contract>(createRequest))
+                .Returns(contractRecord)
+                .Verifiable();
+
+            SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
+            SetupRepository_CreateAsyncMethod(contractRecord, Task.CompletedTask);
+
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
+
+            Mock.Get(_contractRepository)
+                .Setup(p => p.UpdateContractStatusAsync(contractId, existingContractStatus, ContractStatus.Replaced))
+                .Returns(Task.FromResult(new UpdatedContractStatusResponse()))
+                .Verifiable();
+
+            var service = GetContractService();
+
+            // Act
+            await service.CreateAsync(createRequest);
+
+            // Assert
+            VerifyAll();
+            contractRecord.Status.Should().Be((int)ContractStatus.Approved);
+            _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Exactly(expectedAuditCount));
+        }
+
+        [TestMethod]
+        public async Task Create_AmendmentTypeNotification_WhenOtherVersionOfTheContractExist_WithStatus5_Then_ContractIsAddedToDatabase_And_ContractIsReplaced()
+        {
+            // Arrange
+            int contractId = 123;
+            int expectedAuditCount = 2;
+            ContractStatus existingContractStatus = ContractStatus.ApprovedWaitingConfirmation;
+
+            CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.Notfication;
+
+            SetupSemaphoreOnEntity();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated, ActionType.ContractReplaced });
+            SetupLogger_LogInformationMethod();
+
+            IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
+            {
+                new DataModels.Contract()
+                {
+                    Id = contractId,
+                    ContractNumber = createRequest.ContractNumber,
+                    ContractVersion = createRequest.ContractVersion - 1,
+                    Status = (int)existingContractStatus
+                }
+            };
+
+            var contractRecord = new DataModels.Contract();
+            contractRecord.Status = -1;
+            contractRecord.AmendmentType = (int)createRequest.AmendmentType;
+
+            Mock.Get(_mapper)
+                .Setup(p => p.Map<DataModels.Contract>(createRequest))
+                .Returns(contractRecord)
+                .Verifiable();
+
+            SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
+            SetupRepository_CreateAsyncMethod(contractRecord, Task.CompletedTask);
+
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
+
+            Mock.Get(_contractRepository)
+                .Setup(p => p.UpdateContractStatusAsync(contractId, existingContractStatus, ContractStatus.Replaced))
+                .Returns(Task.FromResult(new UpdatedContractStatusResponse()))
+                .Verifiable();
+
+            var service = GetContractService();
+
+            // Act
+            await service.CreateAsync(createRequest);
+
+            // Assert
+            VerifyAll();
+            contractRecord.Status.Should().Be((int)ContractStatus.Approved);
             _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Exactly(expectedAuditCount));
         }
 
@@ -1684,6 +1968,17 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             SetMockkContractValidator_ValidateStatusChange();
         }
 
+        private void SetupSemaphoreOnEntity()
+        {
+            Mock.Get(_semaphoreOnEntity)
+                .Setup(p => p.WaitAsync(It.IsAny<string>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            Mock.Get(_semaphoreOnEntity)
+                .Setup(p => p.Release(It.IsAny<string>()))
+                .Verifiable();
+        }
         #endregion
 
         #region Verify
@@ -1696,6 +1991,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             _mockLogger.Verify();
             _mockAuditService.Verify();
             Mock.Get(_mockContractValidator).Verify();
+            Mock.Get(_semaphoreOnEntity).Verify();
         }
 
         #endregion

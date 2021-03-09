@@ -556,7 +556,6 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
                 ContractNumber = "Test123",
                 ContractVersion = 1,
                 Value = 1000m,
-                Status = ContractStatus.PublishedToProvider,
                 FundingType = ContractFundingType.Unknown,
                 Year = "2021",
                 Type = ContractType.ConditionsOfFundingGrant,

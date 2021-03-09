@@ -32,6 +32,7 @@ namespace Pds.Contracts.Data.Services.AutoMapperProfiles
             CreateMap<ServiceModel.CreateContractRequest, DataModel.Contract>()
                 .ForMember(p => p.ContractData, opt => opt.Ignore())
                 .ForMember(p => p.Id, opt => opt.Ignore())
+                .ForMember(p => p.Status, opt => opt.Ignore())
                 .ForMember(p => p.SignedBy, opt => opt.Ignore())
                 .ForMember(p => p.SignedOn, opt => opt.Ignore())
                 .ForMember(p => p.SignedByDisplayName, opt => opt.Ignore())
