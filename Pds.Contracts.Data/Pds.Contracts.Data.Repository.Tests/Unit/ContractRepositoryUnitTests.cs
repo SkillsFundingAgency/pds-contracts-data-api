@@ -178,7 +178,6 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
         {
             //Arrange
             int searchContractId = 99;
-            DateTime updatedDate = DateTime.UtcNow;
             Contract dummyContract = null;
 
             var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
@@ -272,7 +271,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             Func<Task> act = async () => await contractRepo.UpdateContractStatusAsync(searchContractId, requiredContractStatus, newContractStatus);
 
             //Assert
-            var result = act.Should().Throw<ContractStatusException>();
+            act.Should().Throw<ContractStatusException>();
             Mock.Get(mockRepo).Verify(r => r.GetByIdAsync(searchContractId), Times.Once);
             dummyContract.Status.Should().Be((int)ContractStatus.WithdrawnByAgency);
             dummyContract.LastUpdatedAt.Should().BeSameDateAs(lastUpdatedDate);
@@ -287,7 +286,6 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             ContractStatus requiredContractStatus = ContractStatus.ApprovedWaitingConfirmation;
             ContractStatus newContractStatus = ContractStatus.Approved;
             int searchContractId = 1;
-            DateTime lastUpdatedDate = DateTime.UtcNow;
             Contract dummyContract = null;
 
             var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
@@ -308,7 +306,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             Func<Task> act = async () => await contractRepo.UpdateContractStatusAsync(searchContractId, requiredContractStatus, newContractStatus);
 
             //Assert
-            var result = act.Should().Throw<ContractNotFoundException>();
+            act.Should().Throw<ContractNotFoundException>();
             Mock.Get(mockRepo).Verify(r => r.GetByIdAsync(searchContractId), Times.Once);
             Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Never);
             _mockLogger.VerifyAll();
@@ -328,6 +326,27 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             //Act
             var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
             var actual = await contractRepo.GetContractWithContractContentAsync(expected.Id);
+
+            //Assert
+            actual.Should().Be(expected);
+            Mock.Get(mockRepo).VerifyAll();
+            _mockLogger.VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task GetContractWithContractDataAsync_ReturnsExpectedResultTest()
+        {
+            //Arrange
+            var expected = new Contract { Id = 1, ContractNumber = "expected-contract-number", ContractVersion = 1, ContractData = new ContractData() { Id = 1 } };
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetByPredicateWithIncludeAsync(It.IsAny<Expression<Func<Contract, bool>>>(), It.IsAny<Expression<Func<Contract, ContractData>>>()))
+                .ReturnsAsync(expected);
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            var actual = await contractRepo.GetContractWithContractDataAsync(expected.Id);
 
             //Assert
             actual.Should().Be(expected);

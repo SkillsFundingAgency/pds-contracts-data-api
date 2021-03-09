@@ -22,13 +22,14 @@
 		<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.0" />
 		<PackageReference Include="MediatR" Version="9.0.0" />
 		<PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="9.0.0" />
+		<PackageReference Include="Azure.Storage.Blobs" Version="12.8.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.Abstractions" Version="2.2.0" />
 		<PackageReference Include="Microsoft.Azure.ServiceBus" Version="5.1.2" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="5.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="5.0.1" /> 
 		<PackageReference Include="Pds.Audit.Api.Client" Version="1.0.4" />
 		<PackageReference Include="Pds.Core.CodeAnalysis.StyleCop" Version="2.0.0" />
 		<PackageReference Include="Pds.Core.ApiClient" Version="4.0.0" />

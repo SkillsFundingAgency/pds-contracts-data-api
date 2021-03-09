@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Azure.Storage.Blobs;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.ServiceBus;
@@ -13,7 +14,7 @@ using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
 using Pds.Core.ApiClient.Interfaces;
 using Pds.Core.ApiClient.Services;
-
+using Pds.Core.Logging;
 
 namespace Pds.Contracts.Data.Services.DependencyInjection
 {
@@ -62,6 +63,9 @@ namespace Pds.Contracts.Data.Services.DependencyInjection
             services.AddSingleton<IMessagePublisher, MessagePublisher>();
 
             services.AddMediatR(typeof(FeatureServiceCollectionExtensions).Assembly);
+
+            services.AddSingleton(s => Helpers.BlobHelper.GetBlobContainerClient(configuration));
+            services.AddSingleton<IContractDocumentService, ContractDocumentService>();
 
             return services;
         }

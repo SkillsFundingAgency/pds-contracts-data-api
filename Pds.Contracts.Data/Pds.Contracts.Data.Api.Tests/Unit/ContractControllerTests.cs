@@ -411,7 +411,6 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         {
             // Arrange
             Contract dummyModel = null;
-            var expectedDataModel = Mock.Of<Contract>();
             var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
@@ -474,7 +473,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         #region UpdateContractConfirmApproval
 
         [TestMethod]
-        public async Task UpdateContractConfirmApproval_ReturnsOKResultAsync()
+        public async Task ConfirmApprovalAsync_ReturnsOKResultAsync()
         {
             // Arrange
             var expectedDataModel = Mock.Of<UpdatedContractStatusResponse>();
@@ -485,7 +484,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateContractConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
+                .Setup(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
                 .ReturnsAsync(expectedDataModel)
                 .Verifiable();
 
@@ -497,180 +496,107 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var request = new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
 
             // Act
-            var actual = await controller.UpdateContractConfirmApproval(request);
+            var actual = await controller.ConfirmApprovalAsync(request);
 
             // Assert
             actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.OK);
-            mockContractService.Verify(e => e.UpdateContractConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Once);
+            mockContractService.Verify(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Once);
             mockLogger.Verify();
         }
 
         [TestMethod]
-        public async Task UpdateContractConfirmApprovalAsync_ReturnsContractPreConditionFailedExceptionResult()
+        public async Task ConfirmApprovalAsync_ReturnsContractStatusExceptionResult()
         {
-            // Arrange
-            var expectedDataModel = Mock.Of<Contract>();
-            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
-            mockLogger
-                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
-                .Verifiable();
-
-            var mockContractService = new Mock<IContractService>();
-            mockContractService
-                .Setup(e => e.UpdateContractConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
-                .Throws(new ContractStatusException("Contract status is not ApprovedWaitingConfirmation."))
-                .Verifiable();
-
-            var controller = new ContractController(mockLogger.Object, mockContractService.Object)
+            var problem = new ProblemDetails
             {
-                ControllerContext = CreateControllerContext()
+                Status = StatusCodes.Status412PreconditionFailed
             };
 
-            var request = new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+            SetupLoggerInfo();
+            SetupLoggerError();
+            SetMockContractService_ConfirmApprove_ContractStatusException();
+            SetupCreateProblemDetails(problem);
+
+            var controller = GetContractController();
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "dfgdfg.xml", Id = 7 };
 
             // Act
-            var actual = await controller.UpdateContractConfirmApproval(request);
+            var actual = await controller.ConfirmApprovalAsync(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.PreconditionFailed);
-            mockContractService.Verify(e => e.UpdateContractConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Once);
-            mockLogger.Verify();
+            var status = actual.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status412PreconditionFailed);
+            status.Subject.Value.Should().NotBeNull();
+            Mock.Get(_contractService).Verify(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Once);
+            Mock.Get(_logger).Verify();
         }
 
         [TestMethod]
-        public async Task UpdateContractConfirmApprovalAsync_ReturnsContractNotFoundExceptionResult()
+        public async Task ConfirmApprovalAsync_ReturnsContractNotFoundExceptionResult()
         {
             // Arrange
-            var expectedDataModel = Mock.Of<Contract>();
-            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
-            mockLogger
-                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
-                .Verifiable();
-
-            var mockContractService = new Mock<IContractService>();
-            mockContractService
-                .Setup(e => e.UpdateContractConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
-                .Throws(new ContractNotFoundException("Contract was not found."))
-                .Verifiable();
-
-            var controller = new ContractController(mockLogger.Object, mockContractService.Object)
+            string key = "Id";
+            string error = "Contract not found.";
+            var validationProblemDetails = new ValidationProblemDetails()
             {
-                ControllerContext = CreateControllerContext()
+                Detail = "One or more errors with the input",
+                Status = StatusCodes.Status404NotFound
             };
+            validationProblemDetails.Errors.Add(key, new string[] { error });
 
-            var request = new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+            SetupLoggerInfo();
+            SetupLoggerError();
+            SetMockContractService_ConfirmApprove_ContractNotFoundException();
+            SetupProblemDetailsFactory(validationProblemDetails);
+
+            var controller = GetContractController();
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
+            controller.ModelState.AddModelError(key, error);
+
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, Id = 0, FileName = "sdfgsdfg.xml" };
 
             // Act
-            var actual = await controller.UpdateContractConfirmApproval(request);
+            var actual = await controller.ConfirmApprovalAsync(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
-            mockContractService.Verify(e => e.UpdateContractConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Once);
-            mockLogger.Verify();
+            var status = actual.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+            status.Subject.Value.Should().NotBeNull();
+            Mock.Get(_contractService).Verify(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Never);
+            Mock.Get(_logger).Verify();
         }
 
         [TestMethod]
-        public async Task UpdateContractConfirmApprovalAsync_ReturnsContractGenericExceptionResult()
+        public async Task ConfirmApprovalAsync_InputInvalid_ReturnsBadRequestResultAsync()
         {
             // Arrange
-            var expectedDataModel = Mock.Of<Contract>();
-            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
-            mockLogger
-                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
-                .Verifiable();
-            mockLogger
-                .Setup(logger => logger.LogError(It.IsAny<string>()))
-                .Verifiable();
-
-            var mockContractService = new Mock<IContractService>();
-            mockContractService
-                .Setup(e => e.UpdateContractConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
-                .Throws(new System.Exception())
-                .Verifiable();
-
-            var controller = new ContractController(mockLogger.Object, mockContractService.Object)
+            SetupLoggerInfo();
+            SetupLoggerError();
+            var validationProblemDetails = new ValidationProblemDetails()
             {
-                ControllerContext = CreateControllerContext()
+                Detail = "One or more errors with the input",
+                Status = StatusCodes.Status400BadRequest
             };
+            SetupProblemDetailsFactory(validationProblemDetails);
 
-            var request = new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
-
-            // Act
-            var actual = await controller.UpdateContractConfirmApproval(request);
-
-            // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.InternalServerError);
-            mockContractService.Verify(e => e.UpdateContractConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Once);
-            mockLogger.Verify();
-        }
-
-        [TestMethod]
-        public async Task UpdateContractConfirmApprovalAsync_ReturnsContractNotFoundResult()
-        {
-            // Arrange
-            UpdatedContractStatusResponse dummyModel = null;
-            var expectedDataModel = Mock.Of<Contract>();
-            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
-            mockLogger
-                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
-                .Verifiable();
-
-            var mockContractService = new Mock<IContractService>();
-            mockContractService
-                .Setup(e => e.UpdateContractConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
-                .ReturnsAsync(dummyModel)
-                .Verifiable();
-
-            var controller = new ContractController(mockLogger.Object, mockContractService.Object)
-            {
-                ControllerContext = CreateControllerContext()
-            };
-
-            var request = new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
-
-            // Act
-            var actual = await controller.UpdateContractConfirmApproval(request);
-
-            // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
-            mockContractService.Verify(e => e.UpdateContractConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Once);
-            mockLogger.Verify();
-        }
-
-        [TestMethod]
-        public async Task UpdateContractConfirmApproval_ReturnsBadRequestResultAsync()
-        {
-            // Arrange
-            var expectedDataModel = Mock.Of<UpdatedContractStatusResponse>();
-
-            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
-            mockLogger
-                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
-                .Verifiable();
-
-            var mockContractService = new Mock<IContractService>();
-            mockContractService
-                .Setup(e => e.UpdateContractConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
-                .ReturnsAsync(expectedDataModel)
-                .Verifiable();
-
-            var controller = new ContractController(mockLogger.Object, mockContractService.Object)
-            {
-                ControllerContext = CreateControllerContext()
-            };
-
+            SetMockContractService_ConfirmApprove();
+            var controller = GetContractController();
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
             controller.ModelState.AddModelError("Id", "Id must be greater than zero");
 
-            var request = new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", Id = 7, ContractVersion = 2, FileName = "dfgsdfg.xml" };
             request.Id = 0;
 
             // Act
-            var actual = await controller.UpdateContractConfirmApproval(request);
+            var actual = await controller.ConfirmApprovalAsync(request);
 
             // Assert
-            actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
-            mockContractService.Verify(e => e.UpdateContractConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Never);
-            mockLogger.Verify();
+            var status = actual.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+            status.Subject.Value.Should().NotBeNull();
+            Mock.Get(_contractService).Verify(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Never);
+            Mock.Get(_logger).Verify();
         }
 
         #endregion
@@ -682,7 +608,6 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task UpdateContractWithdrawalAsync_ReturnsContractPreConditionFailedExceptionResult()
         {
             // Arrange
-            var expectedDataModel = Mock.Of<Contract>();
             var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
@@ -714,7 +639,6 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task UpdateContractWithdrawalAsync_ReturnsContractNotFoundExceptionResult()
         {
             // Arrange
-            var expectedDataModel = Mock.Of<Contract>();
             var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
@@ -746,7 +670,6 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         public async Task UpdateContractWithdrawalAsync_ReturnsContractGenericExceptionResult()
         {
             // Arrange
-            var expectedDataModel = Mock.Of<Contract>();
             var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
@@ -782,7 +705,6 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         {
             // Arrange
             UpdatedContractStatusResponse dummyModel = null;
-            var expectedDataModel = Mock.Of<Contract>();
             var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
@@ -1127,6 +1049,32 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 .Verifiable();
             Mock.Get(_logger)
                 .Setup(logger => logger.LogError(It.IsAny<Exception>(), It.IsAny<string>()))
+                .Verifiable();
+        }
+
+        private void SetMockContractService_ConfirmApprove()
+        {
+            var mockDataModel = Mock.Of<UpdatedContractStatusResponse>(MockBehavior.Strict);
+
+            Mock.Get(_contractService)
+                .Setup(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
+                .ReturnsAsync(mockDataModel)
+                .Verifiable();
+        }
+
+        private void SetMockContractService_ConfirmApprove_ContractNotFoundException()
+        {
+            Mock.Get(_contractService)
+                .Setup(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
+                .Throws(new ContractNotFoundException("Contract was not found."))
+                .Verifiable();
+        }
+
+        private void SetMockContractService_ConfirmApprove_ContractStatusException()
+        {
+            Mock.Get(_contractService)
+                .Setup(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
+                .Throws(new ContractStatusException("Contract status is not ApprovedWaitingConfirmation."))
                 .Verifiable();
         }
 

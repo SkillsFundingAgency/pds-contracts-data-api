@@ -36,5 +36,10 @@ namespace Pds.Contracts.Data.Services.Models
         [Required]
         [Range(1, int.MaxValue, ErrorMessage = "Please enter a value greater than zero.")]
         public int ContractVersion { get; set; }
+
+        /// <summary>
+        /// Gets or sets the blob file name.
+        /// </summary>
+        public string FileName { get; set; }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Azure.Storage.Blobs;
 using MediatR;
 using Pds.Audit.Api.Client.Enumerations;
 using Pds.Audit.Api.Client.Interfaces;
@@ -12,7 +13,9 @@ using Pds.Contracts.Data.Services.Responses;
 using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 using System.Threading.Tasks;
 using AuditModels = Pds.Audit.Api.Client.Models;
@@ -41,6 +44,8 @@ namespace Pds.Contracts.Data.Services.Implementations
         private readonly IContractValidationService _contractValidator;
         private readonly IMediator _mediator;
 
+        private readonly IContractDocumentService _contractDocumentService;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ContractService" /> class.
         /// </summary>
@@ -53,6 +58,7 @@ namespace Pds.Contracts.Data.Services.Implementations
         /// <param name="documentService">The document management Contract Service.</param>
         /// <param name="contractValidator">The contract validator.</param>
         /// <param name="mediator">The mediator.</param>
+        /// <param name="contractDocumentService">The blob container used to communicate with azure storage.</param>
         public ContractService(
             IContractRepository repository,
             IMapper mapper,
@@ -62,7 +68,8 @@ namespace Pds.Contracts.Data.Services.Implementations
             ISemaphoreOnEntity<string> semaphoreOnEntity,
             IDocumentManagementContractService documentService,
             IContractValidationService contractValidator,
-            IMediator mediator)
+            IMediator mediator,
+            IContractDocumentService contractDocumentService)
         {
             _repository = repository;
             _mapper = mapper;
@@ -73,6 +80,7 @@ namespace Pds.Contracts.Data.Services.Implementations
             _documentService = documentService;
             _contractValidator = contractValidator;
             _mediator = mediator;
+            _contractDocumentService = contractDocumentService;
         }
 
         /// <inheritdoc/>
@@ -178,17 +186,32 @@ namespace Pds.Contracts.Data.Services.Implementations
         }
 
         /// <inheritdoc/>
-        public async Task<UpdatedContractStatusResponse> UpdateContractConfirmApprovalAsync(UpdateConfirmApprovalRequest request)
+        public async Task<UpdatedContractStatusResponse> ConfirmApprovalAsync(UpdateConfirmApprovalRequest request)
         {
-            _logger.LogInformation($"[{nameof(UpdateContractConfirmApprovalAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
+            _logger.LogInformation($"[{nameof(ConfirmApprovalAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
 
-            var contract = await _repository.GetAsync(request.Id);
-            _contractValidator.Validate(contract, request);
+            var contract = await _repository.GetContractWithContractDataAsync(request.Id);
 
-            ContractStatus requiredContractStatus = ContractStatus.ApprovedWaitingConfirmation;
             ContractStatus newContractStatus = ContractStatus.Approved;
-            var updatedContractStatusResponse = await _repository.UpdateContractStatusAsync(request.Id, requiredContractStatus, newContractStatus);
 
+            _contractValidator.Validate(contract, request);
+            _contractValidator.ValidateStatusChange(contract, newContractStatus);
+
+            var updatedContractStatusResponse = new UpdatedContractStatusResponse
+            {
+                Id = contract.Id,
+                ContractNumber = contract.ContractNumber,
+                ContractVersion = contract.ContractVersion,
+                Ukprn = contract.Ukprn,
+                Status = contract.Status
+            };
+
+            contract.Status = (int)newContractStatus;
+
+            await _contractDocumentService.UpsertOriginalContractXmlAsync(contract, request);
+            await _repository.UpdateContractAsync(contract);
+
+            updatedContractStatusResponse.NewStatus = contract.Status;
             await _auditService.TrySendAuditAsync(GetAudit(updatedContractStatusResponse));
 
             return updatedContractStatusResponse;

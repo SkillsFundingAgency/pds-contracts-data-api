@@ -141,6 +141,12 @@ namespace Pds.Contracts.Data.Repository.Implementations
         }
 
         /// <inheritdoc/>
+        public async Task<Contract> GetContractWithContractDataAsync(int id)
+        {
+            return await _repository.GetByPredicateWithIncludeAsync(c => c.Id == id, c => c.ContractData);
+        }
+
+        /// <inheritdoc/>
         public async Task UpdateContractAsync(Contract contract)
         {
             contract.LastUpdatedAt = DateTime.UtcNow;

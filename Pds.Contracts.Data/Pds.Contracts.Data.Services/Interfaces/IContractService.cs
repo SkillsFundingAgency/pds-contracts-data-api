@@ -70,7 +70,7 @@ namespace Pds.Contracts.Data.Services.Interfaces
         /// An UpdateConfirmApprovalRequest model containing id, contract number and contract version.
         /// </param>
         /// <returns>Returns a Updated Contract Status Response model.</returns>
-        Task<UpdatedContractStatusResponse> UpdateContractConfirmApprovalAsync(UpdateConfirmApprovalRequest request);
+        Task<UpdatedContractStatusResponse> ConfirmApprovalAsync(UpdateConfirmApprovalRequest request);
 
 
         /// <summary>

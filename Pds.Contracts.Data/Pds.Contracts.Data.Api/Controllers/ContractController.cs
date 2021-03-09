@@ -198,8 +198,8 @@ namespace Pds.Contracts.Data.Api.Controllers
         /// <param name="request">
         /// An UpdateConfirmApprovalRequest model containing id, contract number and contract version.
         /// </param>
-        /// <returns>A list of contracts that are overdue.</returns>
-        /// <response code="204">No contracts need reminders to be issued.</response>
+        /// <returns>Returns a void.</returns>
+        /// <response code="204">Blob document has no content.</response>
         /// <response code="400">One or more parameters supplied are not valid.</response>
         /// <response code="401">Supplied authorisation credentials are not valid.</response>
         /// <response code="404">Contract was not found for the provided contract id.</response>
@@ -215,35 +215,43 @@ namespace Pds.Contracts.Data.Api.Controllers
         [ProducesResponseType(StatusCodes.Status412PreconditionFailed)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-        public async Task<ActionResult> UpdateContractConfirmApproval(UpdateConfirmApprovalRequest request)
+        public async Task<ActionResult> ConfirmApprovalAsync(UpdateConfirmApprovalRequest request)
         {
-            _logger.LogInformation($"[UpdateContractConfirmApproval] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} ");
+            _logger.LogInformation($"[{nameof(ConfirmApprovalAsync)}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} ");
             if (!ModelState.IsValid)
             {
-                return StatusCode(StatusCodes.Status400BadRequest);
+                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] provided data model failed validation check.");
+
+                return ValidationProblem();
             }
 
             try
             {
-                var result = await _contractService.UpdateContractConfirmApprovalAsync(request);
-                if (result == null)
-                {
-                    return StatusCode(StatusCodes.Status404NotFound);
-                }
+                await _contractService.ConfirmApprovalAsync(request);
+            }
+            catch (BlobException ex)
+            {
+                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] BlobException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} and fileName: {request.FileName}. The Error: {ex.Message}");
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+            catch (BlobNoContentException ex)
+            {
+                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] ContractBlobNoContentException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} and fileName: {request.FileName}. The Error: {ex.Message}");
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status500InternalServerError);
             }
             catch (ContractStatusException ex)
             {
-                _logger.LogError($"[UpdateContractConfirmApproval] ContractStatusException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
-                return StatusCode(StatusCodes.Status412PreconditionFailed);
+                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] ContractStatusException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status412PreconditionFailed);
             }
             catch (ContractNotFoundException ex)
             {
-                _logger.LogError($"[UpdateContractConfirmApproval] ContractNotFoundException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
-                return StatusCode(StatusCodes.Status404NotFound);
+                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] ContractNotFoundException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                return Problem(statusCode: StatusCodes.Status404NotFound);
             }
             catch (System.Exception ex)
             {
-                _logger.LogError($"[UpdateContractConfirmApproval] Internal server exception has occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] Internal server exception has occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
 

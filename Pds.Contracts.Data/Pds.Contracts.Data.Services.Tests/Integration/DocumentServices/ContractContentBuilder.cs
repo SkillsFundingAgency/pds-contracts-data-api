@@ -8,7 +8,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration.DocumentServices
     {
         private static readonly byte[] DefaultDocumentBytes = GetDocumentBytes("12345678_CityDeals-0002_v1.pdf");
 
-        public ContractContentBuilder()
+        protected ContractContentBuilder()
         {
         }
 
