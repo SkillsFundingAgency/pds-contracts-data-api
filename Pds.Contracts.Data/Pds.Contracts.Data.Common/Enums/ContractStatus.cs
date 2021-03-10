@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Pds.Contracts.Data.Common.Enums
 {
     /// <summary>
     /// Represents the states a contract can be in.
     /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum ContractStatus
     {
         /// <summary>

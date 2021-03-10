@@ -5,27 +5,24 @@
 		<IsPackable>false</IsPackable>
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 	</PropertyGroup>
-	<PropertyGroup>
-		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <None Remove="Integration\Resources\Aspose.Total.lic" />
-	  <None Remove="Integration\Resources\test.pdf" />
+		<None Remove="appsettings.development.json" />
+		<None Remove="Integration\Resources\Aspose.Total.lic" />
+		<None Remove="Integration\Resources\test.pdf" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Include="Integration\Resources\Aspose.Total.lic" />
-	  <EmbeddedResource Include="Integration\Resources\test.pdf" />
+		<EmbeddedResource Include="Integration\Resources\Aspose.Total.lic" />
+		<EmbeddedResource Include="Integration\Resources\test.pdf" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="FluentAssertions" Version="5.10.3" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.11" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.12" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
 		<PackageReference Include="Moq" Version="4.15.2" />
 		<PackageReference Include="MSTest.TestAdapter" Version="2.1.2" />
@@ -44,7 +41,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Documents\" />
+		<Folder Include="Documents\" />
 	</ItemGroup>
 
 </Project>

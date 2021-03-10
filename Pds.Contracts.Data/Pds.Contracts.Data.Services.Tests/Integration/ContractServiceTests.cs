@@ -26,6 +26,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using AuditModels = Pds.Audit.Api.Client.Models;
 using DataModels = Pds.Contracts.Data.Repository.DataModels;
@@ -43,6 +44,13 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
         private Mock<IAuditService> _mockAuditService;
 
         private IMapper _mapper = null;
+
+
+        [TestInitialize]
+        public void TestInitiaize()
+        {
+            BlobHelper.CreateSampleBlobFile();
+        }
 
         #region Create
 
@@ -243,7 +251,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             var working = new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.ApprovedWaitingConfirmation };
 
-            var request = new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "Main-0001", ContractVersion = 1, FileName = "Main-0002_v2_637503726040684393.xml" };
+            var request = new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "Main-0001", ContractVersion = 1, FileName = BlobHelper.BlobName };
 
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
             ILoggerAdapter<ContractRepository> loggerRepo = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));

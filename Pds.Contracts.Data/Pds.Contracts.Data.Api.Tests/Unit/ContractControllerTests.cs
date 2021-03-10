@@ -632,7 +632,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
-            var actual = await controller.UpdateContractWithdrawalAsync(request);
+            var actual = await controller.WithdrawAsync(request);
 
             // Assert
             actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)expectedStatus);
@@ -669,7 +669,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
-            var result = await controller.UpdateContractWithdrawalAsync(request);
+            var result = await controller.WithdrawAsync(request);
 
             // Assert
             var status = result.Should().BeAssignableTo<ObjectResult>();
@@ -709,7 +709,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
-            var result = await controller.UpdateContractWithdrawalAsync(request);
+            var result = await controller.WithdrawAsync(request);
 
             // Assert
             var status = result.Should().BeAssignableTo<ObjectResult>();
@@ -749,7 +749,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
 
             // Act
-            var result = await controller.UpdateContractWithdrawalAsync(request);
+            var result = await controller.WithdrawAsync(request);
 
             // Assert
             var status = result.Should().BeAssignableTo<ObjectResult>();
@@ -787,7 +787,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
-            var result = await controller.UpdateContractWithdrawalAsync(request);
+            var result = await controller.WithdrawAsync(request);
 
             // Assert
             var status = result.Should().BeAssignableTo<ObjectResult>();
@@ -834,7 +834,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             request.Id = 0;
 
             // Act
-            var result = await controller.UpdateContractWithdrawalAsync(request);
+            var result = await controller.WithdrawAsync(request);
 
             // Assert
             var status = result.Should().BeAssignableTo<ObjectResult>();
@@ -874,7 +874,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
-            var result = await controller.UpdateContractWithdrawalAsync(request);
+            var result = await controller.WithdrawAsync(request);
 
             // Assert
             var status = result.Should().BeAssignableTo<ObjectResult>();

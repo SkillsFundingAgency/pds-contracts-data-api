@@ -282,10 +282,9 @@ namespace Pds.Contracts.Data.Api.Controllers
         [ProducesResponseType(StatusCodes.Status412PreconditionFailed)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-        public async Task<ActionResult> UpdateContractWithdrawalAsync(UpdateContractWithdrawalRequest request)
+        public async Task<ActionResult> WithdrawAsync(UpdateContractWithdrawalRequest request)
         {
-            string methodName = "UpdateContractWithdrawalAsync";
-            _logger.LogInformation($"[{methodName}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} ");
+            _logger.LogInformation($"[{nameof(WithdrawAsync)}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} ");
             if (!ModelState.IsValid)
             {
                 return ValidationProblem();
@@ -301,22 +300,22 @@ namespace Pds.Contracts.Data.Api.Controllers
             }
             catch (ContractNotFoundException ex)
             {
-                _logger.LogError(ex, $"[{methodName}] ContractNotFoundException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] ContractNotFoundException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status404NotFound);
             }
             catch (ContractUpdateConcurrencyException ex)
             {
-                _logger.LogError(ex, $"[{nameof(methodName)}] Contract may have been modified or deleted since Contract were loaded - Contract Id {request.Id}, Contract Number: {request.ContractNumber}, ContractVersion: {request.ContractVersion}.");
+                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] Contract may have been modified or deleted since Contract were loaded - Contract Id {request.Id}, Contract Number: {request.ContractNumber}, ContractVersion: {request.ContractVersion}.");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status409Conflict);
             }
             catch (ContractStatusException ex)
             {
-                _logger.LogError(ex, $"[{methodName}] ContractStatusException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] ContractStatusException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status412PreconditionFailed);
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, $"[{methodName}] Internal server exception has occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] Internal server exception has occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
                 return Problem(statusCode: StatusCodes.Status500InternalServerError);
             }
 

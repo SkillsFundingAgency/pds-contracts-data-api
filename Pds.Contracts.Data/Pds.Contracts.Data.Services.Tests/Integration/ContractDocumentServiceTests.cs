@@ -8,6 +8,7 @@ using Pds.Contracts.Data.Services.DependencyInjection;
 using Pds.Contracts.Data.Services.DocumentServices;
 using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
+using Pds.Contracts.Data.Services.Tests.Integration.DocumentServices;
 using Pds.Core.Logging;
 using System.IO;
 using System.Threading.Tasks;
@@ -19,6 +20,12 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
     [TestCategory("Integration")]
     public class ContractDocumentServiceTests
     {
+        [TestInitialize]
+        public void TestInitiaize()
+        {
+            BlobHelper.CreateSampleBlobFile();
+        }
+
         [TestMethod]
         public async Task UpsertOriginalContractXmlAsync_ExpectedResult_Test()
         {

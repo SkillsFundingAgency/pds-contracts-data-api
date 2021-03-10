@@ -1,5 +1,7 @@
 ﻿using Pds.Contracts.Data.Common.Enums;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Pds.Contracts.Data.Services.Models
 {

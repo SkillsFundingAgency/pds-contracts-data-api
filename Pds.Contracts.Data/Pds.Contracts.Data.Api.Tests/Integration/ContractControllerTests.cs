@@ -1,6 +1,8 @@
-﻿using FluentAssertions;
+﻿using Azure.Storage.Blobs;
+using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
@@ -16,6 +18,8 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using DataModels = Pds.Contracts.Data.Repository.DataModels;
 
@@ -28,6 +32,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         private readonly HttpClient _testClient;
 
         private readonly string _manualApproveUrl = "/api/Contract/manualApprove";
+
+        private readonly string _blobName = "sample-blob-file.xml";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContractControllerTests"/> class.
@@ -75,6 +81,12 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             _testClient.BaseAddress = new Uri("http://localhost:5001");
             _testClient.DefaultRequestHeaders.Accept.Clear();
             _testClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        }
+
+        [TestInitialize]
+        public void TestInitiaize()
+        {
+            CreateSampleBlobFile();
         }
 
         #region Create Tests
@@ -238,7 +250,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             {
                 Id = 1,
                 ContractNumber = "Levy-0002",
-                ContractVersion = 1
+                ContractVersion = 1,
+                FileName = _blobName
             };
 
             // Act
@@ -256,7 +269,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             {
                 Id = 0,
                 ContractNumber = "Levy-0002",
-                ContractVersion = 0
+                ContractVersion = 0,
+                FileName = _blobName
             };
 
             // Act
@@ -274,7 +288,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             {
                 Id = 99,
                 ContractNumber = "Levy-0002",
-                ContractVersion = 1
+                ContractVersion = 1,
+                FileName = _blobName
             };
 
             // Act
@@ -298,7 +313,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
                 Id = 4,
                 ContractNumber = "Test-Contract-Number",
                 ContractVersion = 1,
-                FileName = "sample-blob-file.xml"
+                FileName = _blobName
             };
 
             // Act
@@ -316,7 +331,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             {
                 Id = 0,
                 ContractNumber = "Levy-0002",
-                ContractVersion = 0
+                ContractVersion = 0,
+                FileName = _blobName
             };
 
             // Act
@@ -334,7 +350,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             {
                 Id = 99,
                 ContractNumber = "Levy-0002",
-                ContractVersion = 1
+                ContractVersion = 1,
+                FileName = _blobName
             };
 
             // Act
@@ -393,7 +410,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         #endregion
 
 
-        #region Arrange Helpers
+        #region ManualApprove tests.
 
         [TestMethod]
         public async Task ManualApprove_ContractExpectationFailedException_Returns404Response()
@@ -426,8 +443,44 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         #endregion ManualApprove tests.
 
 
+        #region WithdrawalAsync
         [TestMethod]
-        public async Task UpdateContractWithdrawalAsync_WithDefaultParameters_ReturnsResponse()
+        public async Task WithdrawalAsync_WithContractStatusAsString_ReturnsResponse()
+        {
+            // Arrange
+            var options = new JsonWriterOptions
+            {
+                Indented = true
+            };
+            string json = null;
+            using (var stream = new MemoryStream())
+            {
+                using (var writer = new Utf8JsonWriter(stream, options))
+                {
+                    writer.WriteStartObject();
+                    writer.WriteNumber("id", 10);
+                    writer.WriteString("contractNumber", "Test-Contract-High");
+                    writer.WriteNumber("contractVersion", 1);
+                    writer.WriteString("withdrawalType", "WithdrawnByAgency");
+                    writer.WriteString("fileName", _blobName);
+                    writer.WriteEndObject();
+                }
+
+                json = Encoding.UTF8.GetString(stream.ToArray());
+                Console.WriteLine(json);
+            }
+
+            StringContent content = new StringContent(json, Encoding.Default, "application/json");
+
+            // Act
+            var response = await _testClient.PatchAsync("/api/withdraw", content);
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        [TestMethod]
+        public async Task WithdrawalAsync_WithDefaultParameters_ReturnsResponse()
         {
             // Arrange
             var content = new UpdateContractWithdrawalRequest()
@@ -435,7 +488,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
                 Id = 7,
                 ContractNumber = "Test-Contract-Number",
                 ContractVersion = 1,
-                WithdrawalType = ContractStatus.WithdrawnByAgency
+                WithdrawalType = ContractStatus.WithdrawnByAgency,
+                FileName = _blobName
             };
 
             // Act
@@ -446,7 +500,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         }
 
         [TestMethod]
-        public async Task UpdateContractWithdrawalAsync_WithDefaultParameters_Returns400Response()
+        public async Task WithdrawalAsync_WithDefaultParameters_Returns400Response()
         {
             // Arrange
             var content = new UpdateContractWithdrawalRequest()
@@ -454,7 +508,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
                 Id = 0,
                 ContractNumber = "Levy-0002",
                 ContractVersion = 0,
-                WithdrawalType = ContractStatus.WithdrawnByAgency
+                WithdrawalType = ContractStatus.WithdrawnByAgency,
+                FileName = _blobName
             };
 
             // Act
@@ -465,7 +520,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         }
 
         [TestMethod]
-        public async Task UpdateContractWithdrawalAsync_WithDefaultParameters_Returns404Response()
+        public async Task WithdrawalAsync_WithDefaultParameters_Returns404Response()
         {
             // Arrange
             var content = new UpdateContractWithdrawalRequest()
@@ -473,7 +528,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
                 Id = 99,
                 ContractNumber = "Levy-0002",
                 ContractVersion = 1,
-                WithdrawalType = ContractStatus.WithdrawnByAgency
+                WithdrawalType = ContractStatus.WithdrawnByAgency,
+                FileName = _blobName
             };
 
             // Act
@@ -483,8 +539,10 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
+        #endregion
+
         private StringContent GetStringContent(object obj)
-            => new StringContent(JsonConvert.SerializeObject(obj), Encoding.Default, "application/json");
+            => new StringContent(System.Text.Json.JsonSerializer.Serialize(obj, new JsonSerializerOptions() { Converters = { new JsonStringEnumConverter() } }), Encoding.Default, "application/json");
 
         private List<DataModels.Contract> GetDataModelContracts()
         {
@@ -501,7 +559,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
                 new DataModels.Contract { Id = 6, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 123456786, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, ContractContent = GetDataModelContractContent(6) },
                 new DataModels.Contract { Id = 7, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
                 new DataModels.Contract { Id = 8, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
-                new DataModels.Contract { Id = 9, Title = title, ContractNumber = "Test-Contract-High", ContractVersion = 10, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans }
+                new DataModels.Contract { Id = 9, Title = title, ContractNumber = "Test-Contract-High", ContractVersion = 10, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 10, Title = title, ContractNumber = "Test-Contract-High", ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, ContractData = new DataModels.ContractData() { Id = 10, OriginalContractXml = "<contract>sample.xml.data</contract>" } }
             };
         }
 
@@ -573,8 +632,24 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             {
                 Id = 5,
                 ContractNumber = "Test-Contract-Number",
-                ContractVersion = 1
+                ContractVersion = 1,
+                FileName = _blobName
             };
+        }
+
+        private void CreateSampleBlobFile()
+        {
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.development.json", optional: false, reloadOnChange: true)
+                .Build();
+            var sampleBlobFileContent = "<contract xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns='urn:sfa:schemas:contract'></contract>";
+            BlobContainerClient containerClient = new BlobContainerClient(configuration.GetSection("AzureBlobConfiguration").GetSection("ConnectionString").Value, "contractevents");
+            containerClient.CreateIfNotExists();
+            UTF8Encoding encoding = new UTF8Encoding();
+            using MemoryStream memoryStream = new MemoryStream(encoding.GetBytes(sampleBlobFileContent));
+            containerClient.DeleteBlobIfExists(_blobName);
+            containerClient.UploadBlob(_blobName, memoryStream);
         }
     }
 }

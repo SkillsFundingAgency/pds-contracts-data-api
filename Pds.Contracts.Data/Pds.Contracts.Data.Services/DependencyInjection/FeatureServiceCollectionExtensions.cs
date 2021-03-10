@@ -1,10 +1,10 @@
 ﻿using AutoMapper;
-using Azure.Storage.Blobs;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Azure.ServiceBus;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Pds.Contracts.Data.Repository.Context;
 using Pds.Contracts.Data.Repository.DependencyInjection;
@@ -14,7 +14,6 @@ using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
 using Pds.Core.ApiClient.Interfaces;
 using Pds.Core.ApiClient.Services;
-using Pds.Core.Logging;
 
 namespace Pds.Contracts.Data.Services.DependencyInjection
 {

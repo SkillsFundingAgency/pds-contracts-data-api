@@ -1293,7 +1293,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Func<Task> act = async () => await contractService.ApproveManuallyAsync(request);
 
             // Assert
-            var result = act.Should().Throw<ContractUpdateConcurrencyException>();
+            act.Should().Throw<ContractUpdateConcurrencyException>();
             Mock.Get(_contractRepository)
                .Verify(r => r.GetContractWithContractContentAsync(It.IsAny<int>()), Times.Once);
             Mock.Get(_mockContractValidator)
@@ -1507,7 +1507,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Func<Task> act = async () => await contractService.UpdateContractWithdrawalAsync(request);
 
             // Assert
-            var result = act.Should().Throw<ContractUpdateConcurrencyException>();
+            act.Should().Throw<ContractUpdateConcurrencyException>();
 
             Mock.Get(_contractRepository)
               .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Once);
