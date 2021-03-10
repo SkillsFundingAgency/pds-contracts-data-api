@@ -73,7 +73,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             createRequest.AmendmentType = ContractAmendmentType.None;
 
             SetupSemaphoreOnEntity();
-            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>();
@@ -91,6 +90,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Mock.Get(_mockContractValidator)
                 .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -101,6 +102,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
             contractRecord.CreatedAt.Should().BeAfter(timeCheckUTC);
             contractRecord.LastUpdatedAt.Should().BeAfter(timeCheckUTC);
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once());
         }
 
         [TestMethod]
@@ -111,7 +113,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             createRequest.AmendmentType = ContractAmendmentType.None;
 
             SetupSemaphoreOnEntity();
-            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
@@ -137,6 +138,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Mock.Get(_mockContractValidator)
                 .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -146,6 +149,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             VerifyAll();
             contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
             matchedRecords.First().Status.Should().Be((int)ContractStatus.PublishedToProvider);
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once());
         }
 
         [TestMethod]
@@ -172,6 +176,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords))
                 .Throws(new DuplicateContractException(createRequest.ContractNumber, createRequest.ContractVersion));
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -181,6 +187,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             act.Should().Throw<DuplicateContractException>();
 
             VerifyAll();
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [TestMethod]
@@ -207,6 +214,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords))
                 .Throws(new ContractWithHigherVersionAlreadyExistsException(createRequest.ContractNumber, createRequest.ContractVersion));
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -216,6 +225,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             act.Should().Throw<ContractWithHigherVersionAlreadyExistsException>();
 
             VerifyAll();
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         #endregion
@@ -231,7 +241,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             createRequest.AmendmentType = ContractAmendmentType.Variation;
 
             SetupSemaphoreOnEntity();
-            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>();
@@ -249,6 +258,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Mock.Get(_mockContractValidator)
                 .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -257,6 +268,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             // Assert
             VerifyAll();
             contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -268,7 +280,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             createRequest.AmendmentType = ContractAmendmentType.Variation;
 
             SetupSemaphoreOnEntity();
-            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
@@ -294,6 +305,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Mock.Get(_mockContractValidator)
                 .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -303,6 +316,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             VerifyAll();
             contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
             matchedRecords.First().Status.Should().Be(expectedStatus);
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -310,13 +324,13 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             int contractId = 123;
-            int expectedAuditCount = 2;
+            int expectedAuditCount = 1;
 
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Variation;
 
             SetupSemaphoreOnEntity();
-            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated, ActionType.ContractReplaced });
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractReplaced });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
@@ -349,6 +363,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Returns(Task.FromResult(new UpdatedContractStatusResponse()))
                 .Verifiable();
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -358,6 +374,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             VerifyAll();
             contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
             _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Exactly(expectedAuditCount));
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -365,13 +382,13 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             int contractId = 123;
-            int expectedAuditCount = 3;
+            int expectedAuditCount = 2;
 
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Variation;
 
             SetupSemaphoreOnEntity();
-            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated, ActionType.ContractReplaced });
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractReplaced });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
@@ -422,6 +439,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Returns(Task.FromResult(new UpdatedContractStatusResponse()))
                 .Verifiable();
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -431,6 +450,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             VerifyAll();
             contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
             _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Exactly(expectedAuditCount));
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         #endregion
@@ -447,7 +467,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             createRequest.AmendmentType = ContractAmendmentType.Notfication;
 
             SetupSemaphoreOnEntity();
-            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
@@ -474,6 +493,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Mock.Get(_mockContractValidator)
                 .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -483,7 +504,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             VerifyAll();
             contractRecord.Status.Should().Be((int)ContractStatus.Approved);
             matchedRecords.First().Status.Should().Be(expectedStatus);
-            _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Once);
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -494,7 +515,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             createRequest.AmendmentType = ContractAmendmentType.Notfication;
 
             SetupSemaphoreOnEntity();
-            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>();
@@ -513,6 +533,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Mock.Get(_mockContractValidator)
                 .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -521,7 +543,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             // Assert
             VerifyAll();
             contractRecord.Status.Should().Be((int)ContractStatus.Approved);
-            _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Once);
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -529,14 +551,14 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             int contractId = 123;
-            int expectedAuditCount = 2;
+            int expectedAuditCount = 1;
             ContractStatus existingContractStatus = ContractStatus.PublishedToProvider;
 
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Notfication;
 
             SetupSemaphoreOnEntity();
-            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated, ActionType.ContractReplaced });
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractReplaced });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
@@ -570,6 +592,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Returns(Task.FromResult(new UpdatedContractStatusResponse()))
                 .Verifiable();
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -579,6 +603,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             VerifyAll();
             contractRecord.Status.Should().Be((int)ContractStatus.Approved);
             _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Exactly(expectedAuditCount));
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -586,14 +611,14 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             int contractId = 123;
-            int expectedAuditCount = 2;
+            int expectedAuditCount = 1;
             ContractStatus existingContractStatus = ContractStatus.Approved;
 
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Notfication;
 
             SetupSemaphoreOnEntity();
-            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated, ActionType.ContractReplaced });
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractReplaced });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
@@ -627,6 +652,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Returns(Task.FromResult(new UpdatedContractStatusResponse()))
                 .Verifiable();
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -636,6 +663,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             VerifyAll();
             contractRecord.Status.Should().Be((int)ContractStatus.Approved);
             _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Exactly(expectedAuditCount));
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -643,14 +671,14 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             int contractId = 123;
-            int expectedAuditCount = 2;
+            int expectedAuditCount = 1;
             ContractStatus existingContractStatus = ContractStatus.ApprovedWaitingConfirmation;
 
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Notfication;
 
             SetupSemaphoreOnEntity();
-            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractCreated, ActionType.ContractReplaced });
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractReplaced });
             SetupLogger_LogInformationMethod();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
@@ -684,6 +712,8 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Returns(Task.FromResult(new UpdatedContractStatusResponse()))
                 .Verifiable();
 
+            SetupMediator_Publish();
+
             var service = GetContractService();
 
             // Act
@@ -693,6 +723,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             VerifyAll();
             contractRecord.Status.Should().Be((int)ContractStatus.Approved);
             _mockAuditService.Verify(p => p.TrySendAuditAsync(It.IsAny<AuditModels.Audit>()), Times.Exactly(expectedAuditCount));
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         #endregion

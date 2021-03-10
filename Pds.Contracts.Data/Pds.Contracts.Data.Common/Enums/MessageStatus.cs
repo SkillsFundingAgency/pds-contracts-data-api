@@ -14,5 +14,15 @@
         /// The contract is now Withdrawn By Agency or Provider.
         /// </summary>
         Withdrawn,
+
+        /// <summary>
+        /// The contract is now ready to sign.
+        /// </summary>
+        ReadyToSign,
+
+        /// <summary>
+        /// The contract is now ready to review.
+        /// </summary>
+        ReadyToReview,
     }
 }

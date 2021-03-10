@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using MediatR;
+using Pds.Audit.Api.Client.Enumerations;
 using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Common.Responses;
 using Pds.Contracts.Data.Services.Interfaces;
@@ -50,14 +51,25 @@ namespace Pds.Contracts.Data.Services.NotificationHandlers
             var notificationMessage = _mapper.Map<ContractNotification>(updatedContractStatusResponse);
 
             IDictionary<string, string> properties = new Dictionary<string, string>();
-            switch (notificationMessage.Status)
+            switch (updatedContractStatusResponse.Action)
             {
-                case ContractStatus.Approved:
+                case ActionType.ContractConfirmApproval:
+                case ActionType.ContractManualApproval:
                     properties.Add("Status", MessageStatus.Approved.ToString("G"));
                     break;
-                case ContractStatus.WithdrawnByAgency:
-                case ContractStatus.WithdrawnByProvider:
+                case ActionType.ContractWithdrawal:
                     properties.Add("Status", MessageStatus.Withdrawn.ToString("G"));
+                    break;
+                case ActionType.ContractCreated:
+                    if (notificationMessage.Status == ContractStatus.Approved)
+                    {
+                        properties.Add("Status", MessageStatus.ReadyToReview.ToString("G"));
+                    }
+                    else if (notificationMessage.Status == ContractStatus.PublishedToProvider)
+                    {
+                        properties.Add("Status", MessageStatus.ReadyToSign.ToString("G"));
+                    }
+
                     break;
                 default:
                     break;
@@ -65,13 +77,13 @@ namespace Pds.Contracts.Data.Services.NotificationHandlers
 
             if (properties.Count > 0)
             {
-                _logger.LogInformation($"[SendNotification] contract number: {notificationMessage.ContractNumber}, contract version: {notificationMessage.ContractVersion}, Contract is in {notificationMessage.Status.ToString("G")} status, Notification sending.");
+                _logger.LogInformation($"[SendNotification] Action type: {updatedContractStatusResponse.Action}, contract number: {notificationMessage.ContractNumber}, contract version: {notificationMessage.ContractVersion}, Contract is in {notificationMessage.Status.ToString("G")} status, Notification sending.");
                 await _messagePublisher.PublisherAsync<ContractNotification>(notificationMessage, properties);
-                _logger.LogInformation($"[SendNotification] contract number: {notificationMessage.ContractNumber}, contract version: {notificationMessage.ContractVersion}, Contract is in {notificationMessage.Status.ToString("G")} status, Notification sent.");
+                _logger.LogInformation($"[SendNotification] Action type: {updatedContractStatusResponse.Action}, contract number: {notificationMessage.ContractNumber}, contract version: {notificationMessage.ContractVersion}, Contract is in {notificationMessage.Status.ToString("G")} status, Notification sent.");
             }
             else
             {
-                _logger.LogInformation($"[SendNotification] contract number: {notificationMessage.ContractNumber}, contract version: {notificationMessage.ContractVersion}, Contract is in {notificationMessage.Status.ToString("G")} status, so no notification will be sent.");
+                _logger.LogInformation($"[SendNotification] Action type: {updatedContractStatusResponse.Action}, contract number: {notificationMessage.ContractNumber}, contract version: {notificationMessage.ContractVersion}, Contract is in {notificationMessage.Status.ToString("G")} status, Notification will not be sent.");
             }
         }
     }

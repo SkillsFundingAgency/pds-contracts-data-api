@@ -113,18 +113,15 @@ namespace Pds.Contracts.Data.Services.Implementations
 
                 await _repository.CreateAsync(newContract);
 
-                string message = $"[{nameof(CreateAsync)}] Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created. " +
-                    $"The contract status after is [{GetEnumDescription<ContractStatus>(newContract.Status)}].";
-
-                await _auditService.TrySendAuditAsync(
-                    new Audit.Api.Client.Models.Audit()
-                    {
-                        Action = ActionType.ContractCreated,
-                        Severity = SeverityLevel.Information,
-                        Ukprn = newContract.Ukprn,
-                        Message = message,
-                        User = $"[{_appName}]"
-                    });
+                var updatedContractStatusResponse = new UpdatedContractStatusResponse
+                {
+                    Id = newContract.Id,
+                    ContractNumber = newContract.ContractNumber,
+                    ContractVersion = newContract.ContractVersion,
+                    Ukprn = newContract.Ukprn,
+                    NewStatus = (ContractStatus)newContract.Status,
+                    Action = ActionType.ContractCreated
+                };
 
                 _logger.LogInformation($"[{nameof(CreateAsync)}] Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created for [{newContract.Ukprn}].");
 
@@ -149,6 +146,8 @@ namespace Pds.Contracts.Data.Services.Implementations
 
                     await ReplaceContractsWithGivenStatuses(existing, statuses);
                 }
+
+                await _mediator.Publish(updatedContractStatusResponse);
             }
             finally
             {
@@ -233,7 +232,8 @@ namespace Pds.Contracts.Data.Services.Implementations
                 ContractNumber = contract.ContractNumber,
                 ContractVersion = contract.ContractVersion,
                 Ukprn = contract.Ukprn,
-                Status = (ContractStatus)contract.Status
+                Status = (ContractStatus)contract.Status,
+                Action = ActionType.ContractConfirmApproval
             };
 
             contract.Status = (int)newContractStatus;

@@ -47,7 +47,11 @@ namespace Pds.Contracts.Data.Services.NotificationHandlers
 
         private AuditModels.Audit GetAudit(UpdatedContractStatusResponse updatedContractStatusResponse)
         {
-            string message = $"Contract [{updatedContractStatusResponse.ContractNumber}] Version number [{updatedContractStatusResponse.ContractVersion}] with Id [{updatedContractStatusResponse.Id}] has been {updatedContractStatusResponse.NewStatus}. Additional Information Details: ContractId is: {updatedContractStatusResponse.Id}. Contract Status Before was {updatedContractStatusResponse.Status} . Contract Status After is {updatedContractStatusResponse.NewStatus}";
+            string message = updatedContractStatusResponse.Action == ActionType.ContractCreated ?
+                $"Contract [{updatedContractStatusResponse.ContractNumber}] version [{updatedContractStatusResponse.ContractVersion}] has been created. " +
+                    $"The contract status after is [{updatedContractStatusResponse.Status}]."
+                :
+                $"Contract [{updatedContractStatusResponse.ContractNumber}] Version number [{updatedContractStatusResponse.ContractVersion}] with Id [{updatedContractStatusResponse.Id}] has been {updatedContractStatusResponse.NewStatus}. Additional Information Details: ContractId is: {updatedContractStatusResponse.Id}. Contract Status Before was {updatedContractStatusResponse.Status} . Contract Status After is {updatedContractStatusResponse.NewStatus}";
             return new AuditModels.Audit()
             {
                 Action = updatedContractStatusResponse.Action,
