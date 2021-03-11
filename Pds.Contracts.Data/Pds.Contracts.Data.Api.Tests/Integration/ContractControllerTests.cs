@@ -597,7 +597,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
                     FileName = "Test file"
                 },
                 PageCount = 0,
-                ContractData = "http://www.uri.com",
+                ContractData = _blobName,
                 ContractFundingStreamPeriodCodes = new CreateContractCode[] { new CreateContractCode() { Code = "Test" } }
             };
             return request;

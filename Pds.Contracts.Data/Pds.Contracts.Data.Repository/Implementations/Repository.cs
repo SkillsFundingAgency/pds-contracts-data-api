@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 using Pds.Contracts.Data.Repository.Interfaces;
 using System;
 using System.Linq;
@@ -46,5 +47,14 @@ namespace Pds.Contracts.Data.Repository.Implementations
 
         /// <inheritdoc/>
         public async Task PatchAsync(int id, T current) => _dbContext.Entry<T>(await GetByIdAsync(id)).CurrentValues.SetValues(current);
+
+        /// <inheritdoc/>
+        public async Task<T> GetFirstOrDefault(
+                                            Expression<Func<T, bool>> predicate,
+                                            Func<IQueryable<T>, IIncludableQueryable<T, object>> includes)
+        {
+            IQueryable<T> query = _dbContext.Set<T>();
+            return await includes(query).Where(predicate).FirstOrDefaultAsync();
+        }
     }
 }

@@ -111,6 +111,8 @@ namespace Pds.Contracts.Data.Services.Implementations
                     newContract.Status = (int)ContractStatus.PublishedToProvider;
                 }
 
+                await _contractDocumentService.UpsertOriginalContractXmlAsync(newContract, new ContractRequest() { FileName = request.ContractData, ContractNumber = request.ContractNumber, ContractVersion = request.ContractVersion });
+
                 await _repository.CreateAsync(newContract);
 
                 var updatedContractStatusResponse = new UpdatedContractStatusResponse
@@ -219,7 +221,7 @@ namespace Pds.Contracts.Data.Services.Implementations
         {
             _logger.LogInformation($"[{nameof(ConfirmApprovalAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
 
-            var contract = await _repository.GetContractWithContractDataAsync(request.Id);
+            var contract = await _repository.GetContractWithDatasAsync(request.Id);
 
             ContractStatus newContractStatus = ContractStatus.Approved;
 
@@ -256,7 +258,7 @@ namespace Pds.Contracts.Data.Services.Implementations
             var manullyApproved = true;
             var newContractStatus = ContractStatus.Approved;
 
-            var contract = await _repository.GetContractWithContractContentAsync(request.Id);
+            var contract = await _repository.GetContractWithContentAndDatasAsync(request.Id);
 
             _contractValidator.Validate(contract, request, c => c.ContractContent != null);
             _contractValidator.ValidateStatusChange(contract, newContractStatus, manullyApproved);
@@ -285,6 +287,8 @@ namespace Pds.Contracts.Data.Services.Implementations
             contract.SignedByDisplayName = signer;
             contract.WasManuallyApproved = manullyApproved;
 
+            await _contractDocumentService.UpsertOriginalContractXmlAsync(contract, request);
+
             await _repository.UpdateContractAsync(contract);
 
             updatedContractStatusResponse.NewStatus = (ContractStatus)contract.Status;
@@ -299,7 +303,7 @@ namespace Pds.Contracts.Data.Services.Implementations
         {
             _logger.LogInformation($"[{nameof(WithdrawalAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
 
-            var contract = await _repository.GetContractWithContractDataAsync(request.Id);
+            var contract = await _repository.GetContractWithDatasAsync(request.Id);
 
             ContractStatus newContractStatus = request.WithdrawalType;
 

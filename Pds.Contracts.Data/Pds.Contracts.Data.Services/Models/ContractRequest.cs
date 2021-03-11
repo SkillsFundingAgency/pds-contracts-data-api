@@ -40,6 +40,7 @@ namespace Pds.Contracts.Data.Services.Models
         /// <summary>
         /// Gets or sets the blob file name.
         /// </summary>
+        [Required]
         public string FileName { get; set; }
     }
 }

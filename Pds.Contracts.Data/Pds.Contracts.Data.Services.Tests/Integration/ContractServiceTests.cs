@@ -49,6 +49,8 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
         [TestInitialize]
         public void TestInitiaize()
         {
+            // Creates a sample-blob-file.xml file in blob storage for integration testing purposes.
+            // Set your file name property to BlobHelper.BlobName
             BlobHelper.CreateSampleBlobFile();
         }
 
@@ -296,6 +298,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             contract.Should().NotBeNull();
             actualBeforeUpdate.Status.Should().Be((int)ContractStatus.ApprovedWaitingConfirmation);
             afterUpdate.Status.Should().Be((int)ContractStatus.Approved);
+            afterUpdate.ContractData.OriginalContractXml.Should().Be(BlobHelper.BlobSampleContent);
         }
 
         [TestMethod]
@@ -335,6 +338,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             contract.Should().NotBeNull();
             actualBeforeUpdate.Status.Should().Be((int)ContractStatus.PublishedToProvider);
             afterUpdate.Status.Should().Be((int)ContractStatus.WithdrawnByAgency);
+            afterUpdate.ContractData.OriginalContractXml.Should().Be(BlobHelper.BlobSampleContent);
         }
 
 
@@ -346,7 +350,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             SetMapperHelper();
             var contracts = GetDataModel_ForManualApprove();
 
-            var request = new ContractRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1 };
+            var request = new ContractRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1, FileName = BlobHelper.BlobName };
 
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
 
@@ -375,6 +379,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             contract.Should().NotBeNull();
             actualBeforeUpdate.Status.Should().Be((int)ContractStatus.PublishedToProvider);
             afterUpdate.Status.Should().Be((int)ContractStatus.Approved);
+            afterUpdate.ContractData.OriginalContractXml.Should().Be(BlobHelper.BlobSampleContent);
         }
 
         [TestMethod]
@@ -387,7 +392,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             SetMapperHelper();
             var contracts = GetDataModel_ForManualApprove();
 
-            var request = new ContractRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1 };
+            var request = new ContractRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1, FileName = BlobHelper.BlobName };
 
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
 
@@ -410,7 +415,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             var contract = await service.ApproveManuallyAsync(request);
 
-            var afterUpdate = await contractRepo.GetContractWithContractContentAsync(request.Id);
+            var afterUpdate = await contractRepo.GetContractWithContentAndDatasAsync(request.Id);
 
 
 
@@ -419,6 +424,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             actualBeforeUpdate.Status.Should().Be((int)ContractStatus.PublishedToProvider);
             afterUpdate.Status.Should().Be((int)ContractStatus.Approved);
             afterUpdate.ContractContent.Content.ShouldHaveSignedPage("testDoc", signer, afterUpdate.SignedOn.Value, true, afterUpdate.ContractContent.FileName, ContractFundingType.CityDeals, null);
+            afterUpdate.ContractData.OriginalContractXml.Should().Be(BlobHelper.BlobSampleContent);
         }
 
         private void SetAsposeLicense()
@@ -582,7 +588,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
                     FileName = "Test file"
                 },
                 PageCount = 0,
-                ContractData = "http://www.uri.com",
+                ContractData = BlobHelper.BlobName,
                 ContractFundingStreamPeriodCodes = new CreateContractCode[] { new CreateContractCode() { Code = "Test" } }
             };
             return request;

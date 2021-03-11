@@ -1,4 +1,5 @@
-﻿using Pds.Contracts.Data.Repository.DataModels;
+﻿using Microsoft.EntityFrameworkCore.Query;
+using Pds.Contracts.Data.Repository.DataModels;
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -69,5 +70,15 @@ namespace Pds.Contracts.Data.Repository.Interfaces
         /// <param name="current">The current entity.</param>
         /// <returns>Async completion task.</returns>
         Task PatchAsync(int id, T current);
+
+        /// <summary>
+        /// Gets the first or default entity based on a predicate and include delegate.
+        /// </summary>
+        /// <param name="predicate">A function to test each element for a condition.</param>
+        /// <param name="includes">A function to include navigation properties.</param>
+        /// <returns>An <see cref="{T}"/> that contains elements that satisfy the condition specified by <paramref name="predicate"/>.</returns>
+        Task<T> GetFirstOrDefault(
+                                    Expression<Func<T, bool>> predicate,
+                                    Func<IQueryable<T>, IIncludableQueryable<T, object>> includes);
     }
 }

@@ -75,14 +75,14 @@ namespace Pds.Contracts.Data.Repository.Interfaces
         /// </summary>
         /// <param name="id">The  Contract Id.</param>
         /// <returns>An instance of <see cref="Contract"/> with <see cref="ContractContent"/> pre-populated.</returns>
-        Task<Contract> GetContractWithContractContentAsync(int id);
+        Task<Contract> GetContractWithContentAndDatasAsync(int id);
 
         /// <summary>
         /// Gets the Contract with Contract datas egar loaded by contract Id asynchronously.
         /// </summary>
         /// <param name="id">The  Contract Id.</param>
         /// <returns>An instance of <see cref="Contract"/> with <see cref="ContractData"/> pre-populated.</returns>
-        Task<Contract> GetContractWithContractDataAsync(int id);
+        Task<Contract> GetContractWithDatasAsync(int id);
 
         /// <summary>
         /// Update contract.

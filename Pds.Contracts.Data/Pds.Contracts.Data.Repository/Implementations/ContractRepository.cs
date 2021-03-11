@@ -135,15 +135,15 @@ namespace Pds.Contracts.Data.Repository.Implementations
         }
 
         /// <inheritdoc/>
-        public async Task<Contract> GetContractWithContractContentAsync(int id)
+        public async Task<Contract> GetContractWithContentAndDatasAsync(int id)
         {
-            return await _repository.GetByPredicateWithIncludeAsync(c => c.Id == id, c => c.ContractContent);
+            return await _repository.GetFirstOrDefault(c => c.Id == id, q => q.Include(c => c.ContractContent).Include(c => c.ContractData));
         }
 
         /// <inheritdoc/>
-        public async Task<Contract> GetContractWithContractDataAsync(int id)
+        public async Task<Contract> GetContractWithDatasAsync(int id)
         {
-            return await _repository.GetByPredicateWithIncludeAsync(c => c.Id == id, c => c.ContractData);
+            return await _repository.GetFirstOrDefault(c => c.Id == id, q => q.Include(c => c.ContractData));
         }
 
         /// <inheritdoc/>
