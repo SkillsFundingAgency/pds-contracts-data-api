@@ -10,7 +10,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Remove="appsettings.development.json" />
 		<None Remove="Integration\Resources\Aspose.Total.lic" />
 		<None Remove="Integration\Resources\test.pdf" />
 	</ItemGroup>
