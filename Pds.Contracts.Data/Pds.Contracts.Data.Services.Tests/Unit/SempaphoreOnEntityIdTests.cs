@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 namespace Pds.Contracts.Data.Services.Tests.Unit
 {
     [TestClass]
+    [TestCategory("Unit")]
     public class SempaphoreOnEntityIdTests
     {
         private const int LongSleepInterval = 1000;

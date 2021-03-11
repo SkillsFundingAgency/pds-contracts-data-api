@@ -30,9 +30,8 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
         public async Task UpsertOriginalContractXmlAsync_ExpectedResult_Test()
         {
             //Arrange
-            var sampleContent = "<contract xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns='urn:sfa:schemas:contract'></contract>";
             var contractDocumentService = BuildContractDocumentService();
-            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "sample-blob-file.xml", Id = 7 };
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = BlobHelper.BlobName, Id = 7 };
             var contract = new DataModels.Contract()
             {
                 Id = 7,
@@ -50,7 +49,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             //Assert
             contractDocumentService.Should().NotBeNull();
-            contract.ContractData.OriginalContractXml.Should().Be(sampleContent);
+            contract.ContractData.OriginalContractXml.Should().Be(BlobHelper.BlobSampleContent);
         }
 
         private IContractDocumentService BuildContractDocumentService()

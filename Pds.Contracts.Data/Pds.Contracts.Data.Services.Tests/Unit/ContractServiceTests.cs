@@ -945,11 +945,12 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             var dummyData = GetDummyDataModelsContract_Datas();
-            SetMockRepo_ConfirmApprovalAsync_mockDataModel(dummyData);
+            SetMockRepo_GetContractWithContractDataAsync_mockDataModel(dummyData);
+            SetMockRepo_UpdateContractAsync();
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
-            SetMockContractDocumentService();
+            SetMockContractDocumentService_ConfirmApproval();
             SetMockContractValidator_Validate();
             SetupMediator_Publish();
             var contractService = GetContractService();
@@ -977,11 +978,12 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             var dummyData = GetDummyDataModelsContract_Datas();
-            SetMockRepo_ConfirmApprovalAsync_mockDataModel(dummyData);
+            SetMockRepo_GetContractWithContractDataAsync_mockDataModel(dummyData);
+            SetMockRepo_UpdateContractAsync();
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
-            SetMockContractDocumentService();
+            SetMockContractDocumentService_ConfirmApproval();
             SetMockContractValidator_Validate();
             SetMockContractValidator_Validate_ContractStatusException();
             var contractService = GetContractService();
@@ -1009,11 +1011,12 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         public void ConfirmApprovalAsync_ContractNullTest_ResultContractNotFoundExceptionExpected()
         {
             // Arrange
-            SetMockRepo_ConfirmApprovalAsync_mockDataModel(null);
+            SetMockRepo_GetContractWithContractDataAsync_mockDataModel(null);
+            SetMockRepo_UpdateContractAsync();
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
-            SetMockContractDocumentService();
+            SetMockContractDocumentService_ConfirmApproval();
             SetMockContractValidator_Validate_ContractNotFoundException();
             var contractService = GetContractService();
             var request = new UpdateConfirmApprovalRequest() { Id = 7, ContractNumber = "Main-0002", ContractVersion = 2, FileName = "Main-0002_v2_637503726040684393.xml" };
@@ -1042,11 +1045,12 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             // Arrange
             var dummyData = GetDummyDataModelsContract_Datas();
             dummyData.ContractData.OriginalContractXml = null;
-            SetMockRepo_ConfirmApprovalAsync_mockDataModel(dummyData);
+            SetMockRepo_GetContractWithContractDataAsync_mockDataModel(dummyData);
+            SetMockRepo_UpdateContractAsync();
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
-            SetMockContractDocumentService();
+            SetMockContractDocumentService_ConfirmApproval();
             SetMockContractValidator_Validate();
             SetMockContractValidator_Validate_BlobNoContentException();
             var contractService = GetContractService();
@@ -1075,11 +1079,12 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             var dummyData = GetDummyDataModelsContract_Datas();
-            SetMockRepo_ConfirmApprovalAsync_mockDataModel(dummyData);
+            SetMockRepo_GetContractWithContractDataAsync_mockDataModel(dummyData);
+            SetMockRepo_UpdateContractAsync();
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
-            SetMockContractDocumentService();
+            SetMockContractDocumentService_ConfirmApproval();
             SetMockContractValidator_Validate();
             SetMockContractValidator_Validate_BlobException();
             var contractService = GetContractService();
@@ -1319,25 +1324,30 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             var mockDataModel = GetDataModelsContract();
+            SetMockRepo_GetContractWithContractDataAsync_mockDataModel(mockDataModel);
             SetMockRepo_GetAsyncUpdateContractAsync(mockDataModel);
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
             SetMockkContractValidator_WithdrawalRequest();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractConfirmApproval });
             SetupMediator_Publish();
+            SetMockContractDocumentService_Withdrawal();
             var contractService = GetContractService();
             var request = GetASingleUpdateContractWithdrawalRequest();
 
             // Act
-            var result = await contractService.UpdateContractWithdrawalAsync(request);
+            var result = await contractService.WithdrawalAsync(request);
 
             // Assert
             result.Should().NotBeNull();
             Mock.Get(_contractRepository)
-              .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Once);
+              .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Never);
             Mock.Get(_mockContractValidator)
             .Verify(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             Mock.Get(_mockContractValidator)
               .Verify(v => v.ValidateStatusChange(It.IsAny<DataModels.Contract>(), It.IsAny<ContractStatus>(), false), Times.Once);
+            Mock.Get(_contractDocumentService)
+                .Verify(d => d.UpsertOriginalContractXmlAsync(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             Mock.Get(_contractRepository).Verify(r => r.UpdateContractAsync(It.IsAny<DataModels.Contract>()), Times.Once);
             Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once);
             _mockLogger.Verify();
@@ -1348,6 +1358,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             var mockDataModel = GetDataModelsContract();
+            SetMockRepo_GetContractWithContractDataAsync_mockDataModel(mockDataModel);
             SetMockRepo_GetAsyncUpdateContractAsync(mockDataModel);
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
@@ -1357,12 +1368,14 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             var request = GetASingleUpdateContractWithdrawalRequest();
 
             // Act
-            Func<Task> act = async () => await contractService.UpdateContractWithdrawalAsync(request);
+            Func<Task> act = async () => await contractService.WithdrawalAsync(request);
 
             // Assert
             act.Should().Throw<ContractStatusException>();
             Mock.Get(_contractRepository)
-                .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Once);
+                .Verify(r => r.GetContractWithContractDataAsync(It.IsAny<int>()), Times.Once);
+            Mock.Get(_contractRepository)
+                .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Never);
             Mock.Get(_mockContractValidator)
                 .Verify(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             Mock.Get(_mockContractValidator)
@@ -1377,21 +1390,28 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             var mockDataModel = GetDataModelsContract();
+            SetMockRepo_GetContractWithContractDataAsync_mockDataModel(mockDataModel);
             SetMockRepo_GetAsyncUpdateContractAsync(mockDataModel);
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
             SetMockkContractValidator_WithdrawalRequest_ContractNotFoundException();
             SetupMediator_Publish();
+            SetMockContractDocumentService_Withdrawal();
+
+            //SetMockContractValidator_Validate_ContractNotFoundException();
             var contractService = GetContractService();
             var request = GetASingleUpdateContractWithdrawalRequest();
 
             // Act
-            Func<Task> act = async () => await contractService.UpdateContractWithdrawalAsync(request);
+            Func<Task> act = async () => await contractService.WithdrawalAsync(request);
 
             // Assert
             act.Should().Throw<ContractNotFoundException>();
+
             Mock.Get(_contractRepository)
-                .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Once);
+                .Verify(r => r.GetContractWithContractDataAsync(It.IsAny<int>()), Times.Once);
+            Mock.Get(_contractRepository)
+                .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Never);
             Mock.Get(_mockContractValidator)
                 .Verify(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             Mock.Get(_mockContractValidator)
@@ -1407,21 +1427,25 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             // Arrange
             var mockDataModel = GetDataModelsContract();
             mockDataModel.ContractNumber = "xyz";
+            SetMockRepo_GetContractWithContractDataAsync_mockDataModel(mockDataModel);
             SetMockRepo_GetAsyncUpdateContractAsync(mockDataModel);
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
+            SetMockContractDocumentService_Withdrawal();
             SetMockkContractValidator_WithdrawalRequest_InvalidContractRequestException();
             SetupMediator_Publish();
             var contractService = GetContractService();
             var request = GetASingleUpdateContractWithdrawalRequest();
 
             // Act
-            Func<Task> act = async () => await contractService.UpdateContractWithdrawalAsync(request);
+            Func<Task> act = async () => await contractService.WithdrawalAsync(request);
 
             // Assert
             act.Should().Throw<InvalidContractRequestException>();
             Mock.Get(_contractRepository)
-                .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Once);
+                .Verify(r => r.GetContractWithContractDataAsync(It.IsAny<int>()), Times.Once);
+            Mock.Get(_contractRepository)
+                .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Never);
             Mock.Get(_mockContractValidator)
                 .Verify(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             Mock.Get(_mockContractValidator)
@@ -1436,9 +1460,11 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             var mockDataModel = GetDataModelsContract();
+            SetMockRepo_GetContractWithContractDataAsync_mockDataModel(mockDataModel);
             SetMockRepo_GetAsyncUpdateContractAsync(mockDataModel);
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
+            SetMockContractDocumentService_Withdrawal();
             SetMockkContractValidator_WithdrawalRequest_InvalidContractRequestException();
             SetupMediator_Publish();
             var contractService = GetContractService();
@@ -1446,12 +1472,14 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             request.WithdrawalType = ContractStatus.Approved;
 
             // Act
-            Func<Task> act = async () => await contractService.UpdateContractWithdrawalAsync(request);
+            Func<Task> act = async () => await contractService.WithdrawalAsync(request);
 
             // Assert
             act.Should().Throw<InvalidContractRequestException>();
             Mock.Get(_contractRepository)
-                .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Once);
+                .Verify(r => r.GetContractWithContractDataAsync(It.IsAny<int>()), Times.Once);
+            Mock.Get(_contractRepository)
+                .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Never);
             Mock.Get(_mockContractValidator)
                 .Verify(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             Mock.Get(_mockContractValidator)
@@ -1475,18 +1503,19 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             var request = GetASingleUpdateContractWithdrawalRequest();
 
             // Act
-            Func<Task> act = async () => await contractService.UpdateContractWithdrawalAsync(request);
+            Func<Task> act = async () => await contractService.WithdrawalAsync(request);
 
             // Assert
             act.Should().Throw<Exception>();
-            Mock.Get(_contractRepository)
-              .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Once);
-            Mock.Get(_mockContractValidator)
-            .Verify(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
-            Mock.Get(_mockContractValidator)
-              .Verify(v => v.ValidateStatusChange(It.IsAny<DataModels.Contract>(), It.IsAny<ContractStatus>(), false), Times.Once);
-            Mock.Get(_contractRepository).Verify(r => r.UpdateContractAsync(It.IsAny<DataModels.Contract>()), Times.Once);
-            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once);
+
+            //Mock.Get(_contractRepository)
+            //  .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Once);
+            //Mock.Get(_mockContractValidator)
+            //.Verify(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
+            //Mock.Get(_mockContractValidator)
+            //  .Verify(v => v.ValidateStatusChange(It.IsAny<DataModels.Contract>(), It.IsAny<ContractStatus>(), false), Times.Once);
+            //Mock.Get(_contractRepository).Verify(r => r.UpdateContractAsync(It.IsAny<DataModels.Contract>()), Times.Once);
+            //Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once);
             _mockLogger.Verify();
         }
 
@@ -1495,26 +1524,31 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             // Arrange
             var mockDataModel = GetDataModelsContract();
+            SetMockRepo_GetContractWithContractDataAsync_mockDataModel(mockDataModel);
             SetMockRepo_GetAsyncUpdateContractAsync_ContractUpdateConcurrencyException(mockDataModel);
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
             SetMockkContractValidator_WithdrawalRequest();
             SetupMediator_Publish();
+            SetMockContractDocumentService_Withdrawal();
             var contractService = GetContractService();
             var request = GetASingleUpdateContractWithdrawalRequest();
 
             // Act
-            Func<Task> act = async () => await contractService.UpdateContractWithdrawalAsync(request);
+            Func<Task> act = async () => await contractService.WithdrawalAsync(request);
 
             // Assert
             act.Should().Throw<ContractUpdateConcurrencyException>();
-
             Mock.Get(_contractRepository)
-              .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Once);
+                .Verify(r => r.GetContractWithContractDataAsync(It.IsAny<int>()), Times.Once);
+            Mock.Get(_contractRepository)
+              .Verify(r => r.GetAsync(It.IsAny<int>()), Times.Never);
             Mock.Get(_mockContractValidator)
             .Verify(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             Mock.Get(_mockContractValidator)
               .Verify(v => v.ValidateStatusChange(It.IsAny<DataModels.Contract>(), It.IsAny<ContractStatus>(), false), Times.Once);
+            Mock.Get(_contractDocumentService)
+                .Verify(d => d.UpsertOriginalContractXmlAsync(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             Mock.Get(_contractRepository).Verify(r => r.UpdateContractAsync(It.IsAny<DataModels.Contract>()), Times.Once);
             Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Never);
             _mockLogger.Verify();
@@ -1537,7 +1571,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
         private UpdateContractWithdrawalRequest GetASingleUpdateContractWithdrawalRequest()
         {
-            return new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+            return new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency, FileName = "sample-blob-file.xml" };
         }
 
         private ContractRequest GetContractRequest()
@@ -1622,7 +1656,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
         }
 
-        private void SetMockRepo_ConfirmApprovalAsync_mockDataModel(DataModels.Contract contract)
+        private void SetMockRepo_GetContractWithContractDataAsync_mockDataModel(DataModels.Contract contract)
         {
             Mock.Get(_contractRepository)
               .Setup(r => r.GetAsync(It.IsAny<int>()))
@@ -1633,8 +1667,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Setup(r => r.GetContractWithContractDataAsync(It.IsAny<int>()))
                 .ReturnsAsync(contract)
                 .Verifiable();
-
-            SetMockRepo_UpdateContractAsync();
         }
 
         private void SetMockRepo_UpdateContractAsync()
@@ -1674,7 +1706,15 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
         }
 
-        private void SetMockContractDocumentService()
+        private void SetMockContractDocumentService_Withdrawal()
+        {
+            Mock.Get(_contractDocumentService)
+                .Setup(d => d.UpsertOriginalContractXmlAsync(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateContractWithdrawalRequest>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+        }
+
+        private void SetMockContractDocumentService_ConfirmApproval()
         {
             Mock.Get(_contractDocumentService)
                 .Setup(d => d.UpsertOriginalContractXmlAsync(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateConfirmApprovalRequest>()))

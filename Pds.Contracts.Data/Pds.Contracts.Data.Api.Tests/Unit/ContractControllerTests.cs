@@ -620,7 +620,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .Setup(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
                 .ReturnsAsync(mockDataModel)
                 .Verifiable();
 
@@ -636,7 +636,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             // Assert
             actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)expectedStatus);
-            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
+            mockContractService.Verify(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             mockLogger.Verify();
         }
 
@@ -657,7 +657,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .Setup(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
                 .Throws(new ContractStatusException("Contract status is not PublishedToProvider."))
                 .Verifiable();
 
@@ -675,7 +675,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var status = result.Should().BeAssignableTo<ObjectResult>();
             status.Subject.StatusCode.Should().Be((int)expectedStatus);
             status.Subject.Value.Should().Be(problem);
-            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
+            mockContractService.Verify(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             mockLogger.Verify();
         }
 
@@ -696,7 +696,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .Setup(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
                 .Throws(new ContractNotFoundException("Contract was not found."))
                 .Verifiable();
 
@@ -715,7 +715,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var status = result.Should().BeAssignableTo<ObjectResult>();
             status.Subject.StatusCode.Should().Be((int)expectedStatus);
             status.Subject.Value.Should().Be(problem);
-            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
+            mockContractService.Verify(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             mockLogger.Verify();
         }
 
@@ -736,7 +736,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .Setup(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
                 .Throws(new System.Exception())
                 .Verifiable();
 
@@ -755,7 +755,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var status = result.Should().BeAssignableTo<ObjectResult>();
             status.Subject.StatusCode.Should().Be((int)expectedStatus);
             status.Subject.Value.Should().Be(problem);
-            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
+            mockContractService.Verify(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             mockLogger.Verify();
         }
 
@@ -774,7 +774,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .Setup(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
                 .ReturnsAsync(dummyModel)
                 .Verifiable();
 
@@ -793,7 +793,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var status = result.Should().BeAssignableTo<ObjectResult>();
             status.Subject.StatusCode.Should().Be((int)expectedStatus);
             status.Subject.Value.Should().Be(problem);
-            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
+            mockContractService.Verify(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             mockLogger.Verify();
         }
 
@@ -818,7 +818,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .Setup(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
                 .ReturnsAsync(expectedDataModel)
                 .Verifiable();
 
@@ -840,7 +840,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var status = result.Should().BeAssignableTo<ObjectResult>();
             status.Subject.StatusCode.Should().Be((int)expectedStatus);
             status.Subject.Value.Should().Be(validationProblemDetails);
-            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Never);
+            mockContractService.Verify(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Never);
             mockLogger.Verify();
         }
 
@@ -861,7 +861,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
+                .Setup(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
                 .Throws(new ContractUpdateConcurrencyException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<ContractStatus>()))
                 .Verifiable();
 
@@ -880,7 +880,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var status = result.Should().BeAssignableTo<ObjectResult>();
             status.Subject.StatusCode.Should().Be((int)expectedStatus);
             status.Subject.Value.Should().Be(problem);
-            mockContractService.Verify(e => e.UpdateContractWithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
+            mockContractService.Verify(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()), Times.Once);
             mockLogger.Verify();
         }
 

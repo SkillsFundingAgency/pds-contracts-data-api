@@ -295,16 +295,18 @@ namespace Pds.Contracts.Data.Services.Implementations
         }
 
         /// <inheritdoc/>
-        public async Task<UpdatedContractStatusResponse> UpdateContractWithdrawalAsync(UpdateContractWithdrawalRequest request)
+        public async Task<UpdatedContractStatusResponse> WithdrawalAsync(UpdateContractWithdrawalRequest request)
         {
-            _logger.LogInformation($"[{nameof(UpdateContractWithdrawalAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
-            UpdatedContractStatusResponse updatedContractStatusResponse = null;
+            _logger.LogInformation($"[{nameof(WithdrawalAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
 
-            var contract = await _repository.GetAsync(request.Id);
+            var contract = await _repository.GetContractWithContractDataAsync(request.Id);
+
+            ContractStatus newContractStatus = request.WithdrawalType;
+
             _contractValidator.Validate(contract, request);
-            _contractValidator.ValidateStatusChange(contract, request.WithdrawalType);
+            _contractValidator.ValidateStatusChange(contract, newContractStatus);
 
-            updatedContractStatusResponse = new UpdatedContractStatusResponse
+            var updatedContractStatusResponse = new UpdatedContractStatusResponse
             {
                 Id = contract.Id,
                 ContractNumber = contract.ContractNumber,
@@ -313,8 +315,10 @@ namespace Pds.Contracts.Data.Services.Implementations
                 Status = (ContractStatus)contract.Status,
                 Action = ActionType.ContractWithdrawal
             };
-            contract.Status = (int)request.WithdrawalType;
 
+            contract.Status = (int)newContractStatus;
+
+            await _contractDocumentService.UpsertOriginalContractXmlAsync(contract, request);
             await _repository.UpdateContractAsync(contract);
 
             updatedContractStatusResponse.NewStatus = (ContractStatus)contract.Status;

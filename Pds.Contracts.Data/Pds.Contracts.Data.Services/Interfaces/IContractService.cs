@@ -80,7 +80,7 @@ namespace Pds.Contracts.Data.Services.Interfaces
         /// An UpdateContractWithdrawalRequest model containing id, contract number, contract version and withdrawal status.
         /// </param>
         /// <returns>Returns a Updated Contract Status Response model.</returns>
-        Task<UpdatedContractStatusResponse> UpdateContractWithdrawalAsync(UpdateContractWithdrawalRequest request);
+        Task<UpdatedContractStatusResponse> WithdrawalAsync(UpdateContractWithdrawalRequest request);
 
         /// <summary>
         /// Manual update the contract status to Approved.

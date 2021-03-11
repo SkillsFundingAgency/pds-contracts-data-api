@@ -292,7 +292,7 @@ namespace Pds.Contracts.Data.Api.Controllers
 
             try
             {
-                var result = await _contractService.UpdateContractWithdrawalAsync(request);
+                var result = await _contractService.WithdrawalAsync(request);
                 if (result == null)
                 {
                     return Problem(statusCode: StatusCodes.Status404NotFound);

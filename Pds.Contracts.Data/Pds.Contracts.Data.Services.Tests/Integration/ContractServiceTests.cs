@@ -306,7 +306,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             SetMapperHelper();
             var contracts = GetDataModel_Contracts();
 
-            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency, FileName = "sample-blob-file.xml" };
 
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
 
@@ -327,7 +327,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             // update will update the object.
             var actualBeforeUpdate = GetClonedContract(beforeUpdate);
 
-            var contract = await service.UpdateContractWithdrawalAsync(request);
+            var contract = await service.WithdrawalAsync(request);
 
             var afterUpdate = await contractRepo.GetAsync(request.Id);
 
