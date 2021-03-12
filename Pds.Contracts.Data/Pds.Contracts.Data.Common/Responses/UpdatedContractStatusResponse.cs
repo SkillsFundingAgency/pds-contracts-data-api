@@ -50,5 +50,11 @@ namespace Pds.Contracts.Data.Common.Responses
         /// </summary>
         /// <value>The Action Type.</value>
         public ActionType Action { get; set; }
+
+        /// <summary>
+        /// Gets or sets the contract amendment type.
+        /// </summary>
+        /// <value>The contract amendment type enum.</value>
+        public ContractAmendmentType AmendmentType { get; set; }
     }
 }

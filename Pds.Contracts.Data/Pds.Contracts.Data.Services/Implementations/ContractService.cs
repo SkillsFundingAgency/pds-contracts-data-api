@@ -122,7 +122,8 @@ namespace Pds.Contracts.Data.Services.Implementations
                     ContractVersion = newContract.ContractVersion,
                     Ukprn = newContract.Ukprn,
                     NewStatus = (ContractStatus)newContract.Status,
-                    Action = ActionType.ContractCreated
+                    Action = ActionType.ContractCreated,
+                    AmendmentType = request.AmendmentType
                 };
 
                 _logger.LogInformation($"[{nameof(CreateAsync)}] Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created for [{newContract.Ukprn}].");
@@ -384,8 +385,12 @@ namespace Pds.Contracts.Data.Services.Implementations
 
                 // Contracts found
                 var listToUpdate = previousContracts.Where(p => replaceableStatuses.Contains(p.Status)).ToList();
+
+                _logger.LogInformation($"[{nameof(ReplaceContractsWithGivenStatuses)}] found [{listToUpdate.Count}] contracts that need the status set to replaced.");
                 foreach (var item in listToUpdate)
                 {
+                    _logger.LogInformation($"[{nameof(ReplaceContractsWithGivenStatuses)}] Replacing contract [{item.ContractNumber}-{item.ContractVersion}] with Id [{item.Id}]");
+
                     ContractStatus requiredContractStatus = (ContractStatus)item.Status;
                     ContractStatus newContractStatus = ContractStatus.Replaced;
                     var response = await _repository.UpdateContractStatusAsync(item.Id, requiredContractStatus, newContractStatus);
