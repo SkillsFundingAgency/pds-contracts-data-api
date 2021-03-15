@@ -175,7 +175,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
-        public async Task<ActionResult> UpdateLastEmailReminderSent(ContractRequest request)
+        public async Task<ActionResult> UpdateLastEmailReminderSent(UpdateLastEmailReminderSentRequest request)
         {
             _logger.LogInformation($"Update LastEmailReminderSent and LastUpdatedAt called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
             if (!ModelState.IsValid)

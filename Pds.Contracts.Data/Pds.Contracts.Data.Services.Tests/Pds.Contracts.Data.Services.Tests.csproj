@@ -10,12 +10,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Remove="Integration\Resources\Aspose.Total.lic" />
 		<None Remove="Integration\Resources\test.pdf" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="Integration\Resources\Aspose.Total.lic" />
 		<EmbeddedResource Include="Integration\Resources\test.pdf" />
 	</ItemGroup>
 

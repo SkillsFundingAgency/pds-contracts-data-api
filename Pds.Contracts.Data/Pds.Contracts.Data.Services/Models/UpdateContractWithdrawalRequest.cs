@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace Pds.Contracts.Data.Services.Models
 {
     /// <summary>
-    /// Request confirmation approval object.
+    /// Request withdraw object.
     /// </summary>
     public class UpdateContractWithdrawalRequest : ContractRequest
     {

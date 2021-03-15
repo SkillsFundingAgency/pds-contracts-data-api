@@ -211,7 +211,7 @@ namespace Pds.Contracts.Data.Services.Implementations
         }
 
         /// <inheritdoc/>
-        public async Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(ContractRequest request)
+        public async Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(UpdateLastEmailReminderSentRequest request)
         {
             var contract = await _repository.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(request.Id);
             return _mapper.Map<Models.Contract>(contract);

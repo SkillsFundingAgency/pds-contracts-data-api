@@ -61,7 +61,7 @@ namespace Pds.Contracts.Data.Services.Interfaces
         /// An UpdateLastEmailReminderSentRequest model containing id, contract number and contract version.
         /// </param>
         /// <returns>Returns a contract service model.</returns>
-        Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(ContractRequest request);
+        Task<Contract> UpdateLastEmailReminderSentAndLastUpdatedAtAsync(UpdateLastEmailReminderSentRequest request);
 
         /// <summary>
         /// Update the contract status to Approved service. and contract version.

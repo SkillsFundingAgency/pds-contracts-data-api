@@ -1610,9 +1610,9 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
         #region Arrange Helpers
 
-        private ContractRequest GetASingleUpdateLastEmailReminderSentRequest()
+        private UpdateLastEmailReminderSentRequest GetASingleUpdateLastEmailReminderSentRequest()
         {
-            return new ContractRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+            return new UpdateLastEmailReminderSentRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
         }
 
         private UpdateConfirmApprovalRequest GetASingleUpdateConfirmApprovalRequest()

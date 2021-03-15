@@ -183,7 +183,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
                 new DataModels.Contract { Id = 1, Title = title, ContractNumber = string.Empty, ContractVersion = 1, Ukprn = 12345678, LastEmailReminderSent = null }
             };
 
-            var request = new ContractRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1 };
+            var request = new UpdateLastEmailReminderSentRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1 };
 
             foreach (var item in working)
             {

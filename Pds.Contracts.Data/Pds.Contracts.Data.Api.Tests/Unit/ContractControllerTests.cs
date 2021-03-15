@@ -391,7 +391,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()))
+                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()))
                 .ReturnsAsync(expectedDataModel)
                 .Verifiable();
 
@@ -402,7 +402,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             // Assert
             actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.OK);
-            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()), Times.Once);
+            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()), Times.Once);
             mockLogger.Verify();
         }
 
@@ -418,7 +418,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()))
+                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()))
                 .ReturnsAsync(dummyModel)
                 .Verifiable();
 
@@ -431,7 +431,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             // Assert
             actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.NotFound);
-            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()), Times.Once);
+            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()), Times.Once);
             mockLogger.Verify();
         }
 
@@ -447,7 +447,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var mockContractService = new Mock<IContractService>();
             mockContractService
-                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()))
+                .Setup(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()))
                 .ReturnsAsync(expectedDataModel)
                 .Verifiable();
 
@@ -463,7 +463,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             // Assert
             actual.Should().BeStatusCodeResult().StatusCode.Should().Be((int)HttpStatusCode.BadRequest);
-            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<ContractRequest>()), Times.Never);
+            mockContractService.Verify(e => e.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(It.IsAny<UpdateLastEmailReminderSentRequest>()), Times.Never);
             mockLogger.Verify();
         }
 
@@ -1125,9 +1125,9 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             return expected;
         }
 
-        private ContractRequest GetUpdateLastEmailReminderSentRequest()
+        private UpdateLastEmailReminderSentRequest GetUpdateLastEmailReminderSentRequest()
         {
-            return new ContractRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+            return new UpdateLastEmailReminderSentRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
         }
 
         private void SetupLoggerInfo()

@@ -12,7 +12,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Include="DocumentServices\Resources\Aspose.Total.lic" />
 	  <EmbeddedResource Include="DocumentServices\Resources\Logo.png" />
 	</ItemGroup>
 
