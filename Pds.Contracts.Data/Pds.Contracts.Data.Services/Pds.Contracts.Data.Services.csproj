@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Remove="Pds.Contracts.Data.Services.csproj.transform" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="AutoMapper" Version="10.1.1" />
+		<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.Abstractions" Version="2.2.0" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="5.0.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="5.0.1" />
+		<PackageReference Include="Pds.Core.CodeAnalysis.StyleCop" Version="2.0.0" />
+		<PackageReference Include="Pds.Core.ApiClient" Version="3.3.0" />
+		<PackageReference Include="Pds.Core.Utils" Version="2.5.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Pds.Contracts.Data.Common\Pds.Contracts.Data.Common.csproj" />
+		<ProjectReference Include="..\Pds.Contracts.Data.Repository\Pds.Contracts.Data.Repository.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Implementations\" />
+	</ItemGroup>
+
+</Project>
