@@ -12,7 +12,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Include="DocumentServices\Resources\Logo.png" />
+		<EmbeddedResource Include="DocumentServices\Resources\Aspose.Total.lic" />
+		<EmbeddedResource Include="DocumentServices\Resources\Logo.png" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -29,7 +30,7 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.12" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="5.0.1" /> 
+		<PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="5.0.1" />
 		<PackageReference Include="Pds.Audit.Api.Client" Version="1.0.4" />
 		<PackageReference Include="Pds.Core.CodeAnalysis.StyleCop" Version="2.0.0" />
 		<PackageReference Include="Pds.Core.ApiClient" Version="4.0.0" />
