@@ -580,7 +580,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
                 ContractVersion = 1,
                 Value = 1000m,
                 FundingType = ContractFundingType.Unknown,
-                Year = "2021",
+                Year = "2021 to 2030",
                 Type = ContractType.ConditionsOfFundingGrant,
                 ParentContractNumber = null,
                 StartDate = startDate,

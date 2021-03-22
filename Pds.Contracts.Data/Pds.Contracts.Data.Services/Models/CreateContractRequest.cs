@@ -57,7 +57,7 @@ namespace Pds.Contracts.Data.Services.Models
         /// Gets or sets the year of the contract.
         /// </summary>
         [Required]
-        [RegularExpression("^((19|20)[0-9]{2})$", ErrorMessage = "The year should be a 4 digit value")]
+        [StringLength(12, ErrorMessage = "The year must be a value of no more than 12 characters.")]
         public string Year { get; set; }
 
         /// <summary>
