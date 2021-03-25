@@ -346,6 +346,12 @@ namespace Pds.Contracts.Data.Api.Controllers
         {
             _logger.LogInformation($"[{nameof(CreateContract)}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}");
 
+            // additional check to ensure SignedOn value is present for notification contract events.
+            if (request.AmendmentType == ContractAmendmentType.Notfication && request.SignedOn.HasValue == false)
+            {
+                ModelState.AddModelError("SignedOn", "SignedOn is required for 'Notification' amendment type.");
+            }
+
             if (!ModelState.IsValid)
             {
                 _logger.LogError($"[{nameof(CreateContract)}] provided data model failed validation check.");

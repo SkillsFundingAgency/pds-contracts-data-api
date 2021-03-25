@@ -105,6 +105,9 @@ namespace Pds.Contracts.Data.Services.Implementations
                 if (request.AmendmentType == ContractAmendmentType.Notfication)
                 {
                     newContract.Status = (int)ContractStatus.Approved;
+                    newContract.SignedOn = request.SignedOn.Value.Date;
+                    newContract.SignedBy = "Feed";
+                    newContract.SignedByDisplayName = "Feed";
                 }
                 else if (request.AmendmentType == ContractAmendmentType.None || request.AmendmentType == ContractAmendmentType.Variation)
                 {

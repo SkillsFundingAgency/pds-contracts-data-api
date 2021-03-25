@@ -76,18 +76,23 @@ namespace Pds.Contracts.Data.Services.Models
         /// <summary>
         /// Gets or sets the start date of the contract.
         /// </summary>
-        [Required]
         [DataType(DataType.Date)]
         [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString ="{0:yyyy-MM-dd}")]
-        public DateTime StartDate { get; set; }
+        public DateTime? StartDate { get; set; }
 
         /// <summary>
         /// Gets or sets the end date of the contract.
         /// </summary>
-        [Required]
         [DataType(DataType.Date)]
         [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:yyyy-MM-dd}")]
-        public DateTime EndDate { get; set; }
+        public DateTime? EndDate { get; set; }
+
+        /// <summary>
+        /// Gets or sets the end date of the contract.
+        /// </summary>
+        [DataType(DataType.Date)]
+        [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:yyyy-MM-dd}")]
+        public DateTime? SignedOn { get; set; }
 
         /// <summary>
         /// Gets or sets the amendment type.

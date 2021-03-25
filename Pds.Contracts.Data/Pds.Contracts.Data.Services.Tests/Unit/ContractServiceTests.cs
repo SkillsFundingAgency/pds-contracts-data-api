@@ -489,6 +489,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             int expectedStatus = (int)ContractStatus.Replaced;
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Notfication;
+            createRequest.SignedOn = DateTime.UtcNow;
 
             SetupSemaphoreOnEntity();
             SetupLogger_LogInformationMethod();
@@ -540,6 +541,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             // Arrange
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Notfication;
+            createRequest.SignedOn = DateTime.UtcNow;
 
             SetupSemaphoreOnEntity();
             SetupLogger_LogInformationMethod();
@@ -586,6 +588,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Notfication;
+            createRequest.SignedOn = DateTime.UtcNow;
 
             SetupSemaphoreOnEntity();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractReplaced });
@@ -649,6 +652,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Notfication;
+            createRequest.SignedOn = DateTime.UtcNow;
 
             SetupSemaphoreOnEntity();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractReplaced });
@@ -712,6 +716,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.Notfication;
+            createRequest.SignedOn = DateTime.UtcNow;
 
             SetupSemaphoreOnEntity();
             SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractReplaced });

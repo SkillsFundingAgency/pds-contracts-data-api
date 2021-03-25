@@ -97,6 +97,39 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         }
 
         [TestMethod]
+        public async Task Create_SignedOn_IsRequired_WhenAmendmentType_IsNotitification_Returns_BadRequestResult()
+        {
+            // Arrange
+            var contractRequest = new CreateContractRequest();
+            contractRequest.AmendmentType = ContractAmendmentType.Notfication;
+            contractRequest.SignedOn = null;
+
+            var validationProblemDetails = new ValidationProblemDetails()
+            {
+                Detail = "One or more errors with the input",
+                Status = StatusCodes.Status400BadRequest
+            };
+
+            SetupLoggerInfo();
+            SetupLoggerError();
+
+            SetupProblemDetailsFactory(validationProblemDetails);
+            var controller = new ContractController(_logger, _contractService);
+
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
+
+            // Act
+            var result = await controller.CreateContract(contractRequest);
+
+            // Assert
+            var badResult = result.Should().BeAssignableTo<ObjectResult>();
+            badResult.Subject.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+
+            badResult.Subject.Value.Should().Be(validationProblemDetails);
+            VerifyAll();
+        }
+
+        [TestMethod]
         public async Task Create_WhenContractAlreadyExists_Returns_409Conflict()
         {
             // Arrange
