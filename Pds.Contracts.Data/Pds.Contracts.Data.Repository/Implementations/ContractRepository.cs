@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 using Pds.Contracts.Data.Common.CustomExceptionHandlers;
 using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Common.Responses;
@@ -8,6 +9,7 @@ using Pds.Contracts.Data.Repository.Interfaces;
 using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Pds.Contracts.Data.Repository.Implementations
@@ -141,6 +143,18 @@ namespace Pds.Contracts.Data.Repository.Implementations
         }
 
         /// <inheritdoc/>
+        public async Task<Contract> GetByContractNumberAndVersionWithIncludesAsync(string contractNumber, int version, ContractDataEntityInclude contractIncludes)
+        {
+            return contractIncludes switch
+            {
+                ContractDataEntityInclude.Datas => await _repository.GetFirstOrDefault(c => c.ContractNumber == contractNumber & c.ContractVersion == version, q => q.Include(c => c.ContractData)),
+                ContractDataEntityInclude.Content => await _repository.GetFirstOrDefault(c => c.ContractNumber == contractNumber & c.ContractVersion == version, q => q.Include(c => c.ContractContent)),
+                ContractDataEntityInclude.Datas | ContractDataEntityInclude.Content => await _repository.GetFirstOrDefault(c => c.ContractNumber == contractNumber & c.ContractVersion == version, q => q.Include(c => c.ContractContent).Include(c => c.ContractData)),
+                _ => await GetByContractNumberAndVersionAsync(contractNumber, version)
+            };
+        }
+
+        /// <inheritdoc/>
         public async Task<Contract> GetContractWithDatasAsync(int id)
         {
             return await _repository.GetFirstOrDefault(c => c.Id == id, q => q.Include(c => c.ContractData));
@@ -154,7 +168,7 @@ namespace Pds.Contracts.Data.Repository.Implementations
             {
                 try
                 {
-                await _work.CommitAsync();
+                    await _work.CommitAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {

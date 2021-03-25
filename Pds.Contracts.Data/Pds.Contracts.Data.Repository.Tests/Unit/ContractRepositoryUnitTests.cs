@@ -458,6 +458,76 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             _mockLogger.VerifyAll();
         }
 
+        [TestMethod]
+        public async Task GetByContractNumberAndVersionWithIncludesAsync_Datas_ReturnsExpectedResultTest()
+        {
+            //Arrange
+            var expected = new Contract { Id = 1, ContractNumber = "expected-contract-number", ContractVersion = 1 };
+            expected.ContractData = new ContractData();
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetFirstOrDefault(It.IsAny<Expression<Func<Contract, bool>>>(), It.IsAny<Func<IQueryable<Contract>, IIncludableQueryable<Contract, object>>>()))
+                .ReturnsAsync(expected);
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            var actual = await contractRepo.GetByContractNumberAndVersionWithIncludesAsync(expected.ContractNumber, expected.ContractVersion, ContractDataEntityInclude.Datas);
+
+            //Assert
+            actual.Should().Be(expected);
+            actual.ContractContent.Should().BeNull();
+            actual.ContractData.Should().NotBeNull();
+            Mock.Get(mockRepo).VerifyAll();
+            _mockLogger.VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task GetByContractNumberAndVersionWithIncludesAsync_Content_ReturnsExpectedResultTest()
+        {
+            //Arrange
+            var expected = new Contract { Id = 1, ContractNumber = "expected-contract-number", ContractVersion = 1, ContractContent = new ContractContent() { Id = 1 } };
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetFirstOrDefault(It.IsAny<Expression<Func<Contract, bool>>>(), It.IsAny<Func<IQueryable<Contract>, IIncludableQueryable<Contract, object>>>()))
+                .ReturnsAsync(expected);
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            var actual = await contractRepo.GetByContractNumberAndVersionWithIncludesAsync(expected.ContractNumber, expected.ContractVersion, ContractDataEntityInclude.Content);
+
+            //Assert
+            actual.Should().Be(expected);
+            actual.ContractContent.Should().NotBeNull();
+            actual.ContractData.Should().BeNull();
+            Mock.Get(mockRepo).VerifyAll();
+            _mockLogger.VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task GetByContractNumberAndVersionWithIncludesAsync_DataAndContent_ReturnsExpectedResultTest()
+        {
+            //Arrange
+            var expected = new Contract { Id = 1, ContractNumber = "expected-contract-number", ContractVersion = 1, ContractContent = new ContractContent() { Id = 1 }, ContractData = new ContractData() { Id = 1 } };
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetFirstOrDefault(It.IsAny<Expression<Func<Contract, bool>>>(), It.IsAny<Func<IQueryable<Contract>, IIncludableQueryable<Contract, object>>>()))
+                .ReturnsAsync(expected);
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            var actual = await contractRepo.GetByContractNumberAndVersionWithIncludesAsync(expected.ContractNumber, expected.ContractVersion, ContractDataEntityInclude.Content | ContractDataEntityInclude.Content);
+
+            //Assert
+            actual.Should().Be(expected);
+            actual.ContractContent.Should().NotBeNull();
+            actual.ContractData.Should().NotBeNull();
+            Mock.Get(mockRepo).VerifyAll();
+            _mockLogger.VerifyAll();
+        }
+
         private void SetMockLogger()
         {
             _mockLogger

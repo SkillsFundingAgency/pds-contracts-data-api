@@ -42,6 +42,15 @@ namespace Pds.Contracts.Data.Repository.Interfaces
         Task<Contract> GetByContractNumberAndVersionAsync(string contractNumber, int version);
 
         /// <summary>
+        /// Gets the contract by contract number and version with content and datas asynchronously.
+        /// </summary>
+        /// <param name="contractNumber">The contract number.</param>
+        /// <param name="version">The version.</param>
+        /// <param name="contractIncludes">Entities to include in predicate.</param>
+        /// <returns>A <see cref="Task{Contract}"/> corresponding to the input parameter(s).</returns>
+        Task<Contract> GetByContractNumberAndVersionWithIncludesAsync(string contractNumber, int version, ContractDataEntityInclude contractIncludes);
+
+        /// <summary>
         /// Get Contract Reminders Async.
         /// </summary>
         /// <param name="currentDateTimeMinusNumberOfDays">Current date time minus number of days.</param>

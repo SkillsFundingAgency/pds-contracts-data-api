@@ -137,8 +137,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         {
             // Arrange
             CreateContractRequest request = Generate_CreateContractRequest();
-            request.ContractNumber = "Test-Contract-Number";
-            request.ContractVersion = 3;
+            request.ContractNumber = "Contract-Number";
+            request.ContractVersion = 2;
 
             // Act
             var response = await _testClient.PostAsync("/api/contract", GetStringContent(request));
@@ -311,7 +311,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             var content = new UpdateConfirmApprovalRequest()
             {
                 Id = 4,
-                ContractNumber = "Test-Contract-Number",
+                ContractNumber = "Contract-Number4",
                 ContractVersion = 1,
                 FileName = _blobName
             };
@@ -371,6 +371,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         {
             // Arrange
             var content = GetContractRequest();
+            content.ContractNumber = content.ContractNumber + content.Id.ToString();
 
             // Act
             var response = await _testClient.PatchAsync(_manualApproveUrl, GetStringContent(content));
@@ -431,6 +432,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         {
             // Arrange
             var content = GetContractRequest();
+            content.ContractNumber = content.ContractNumber + "6";
             content.Id = 6;
 
             // Act
@@ -486,7 +488,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             var content = new UpdateContractWithdrawalRequest()
             {
                 Id = 7,
-                ContractNumber = "Test-Contract-Number",
+                ContractNumber = "Contract-Number7",
                 ContractVersion = 1,
                 WithdrawalType = ContractStatus.WithdrawnByAgency,
                 FileName = _blobName
@@ -546,21 +548,22 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
 
         private List<DataModels.Contract> GetDataModelContracts()
         {
-            string contractNumber = "Test-Contract-Number";
+            string contractNumber = "Contract-Number";
             string title = "Test Title";
             DateTime lastEmailReminderSent = DateTime.UtcNow;
             return new List<DataModels.Contract>
             {
-                new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
-                new DataModels.Contract { Id = 2, Title = title, ContractNumber = contractNumber, ContractVersion = 2, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
-                new DataModels.Contract { Id = 3, Title = title, ContractNumber = contractNumber, ContractVersion = 3, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
-                new DataModels.Contract { Id = 4, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
-                new DataModels.Contract { Id = 5, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 123456785, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, ContractContent = GetDataModelContractContent(5) },
-                new DataModels.Contract { Id = 6, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 123456786, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, ContractContent = GetDataModelContractContent(6) },
-                new DataModels.Contract { Id = 7, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
-                new DataModels.Contract { Id = 8, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
+                new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber + "1", ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, ContractContent = GetDataModelContractContent(1) },
+                new DataModels.Contract { Id = 2, Title = title, ContractNumber = contractNumber + "2", ContractVersion = 2, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 3, Title = title, ContractNumber = contractNumber + "3", ContractVersion = 3, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 4, Title = title, ContractNumber = contractNumber + "4", ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 5, Title = title, ContractNumber = contractNumber + "5", ContractVersion = 1, Ukprn = 123456785, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, ContractContent = GetDataModelContractContent(5) },
+                new DataModels.Contract { Id = 6, Title = title, ContractNumber = contractNumber + "6", ContractVersion = 1, Ukprn = 123456786, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, ContractContent = GetDataModelContractContent(6) },
+                new DataModels.Contract { Id = 7, Title = title, ContractNumber = contractNumber + "7", ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
+                new DataModels.Contract { Id = 8, Title = title, ContractNumber = contractNumber + "8", ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
                 new DataModels.Contract { Id = 9, Title = title, ContractNumber = "Test-Contract-High", ContractVersion = 10, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
-                new DataModels.Contract { Id = 10, Title = title, ContractNumber = "Test-Contract-High", ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, ContractData = new DataModels.ContractData() { Id = 10, OriginalContractXml = "<contract>sample.xml.data</contract>" } }
+                new DataModels.Contract { Id = 10, Title = title, ContractNumber = "Test-Contract-High", ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, ContractData = new DataModels.ContractData() { Id = 10, OriginalContractXml = "<contract>sample.xml.data</contract>" } },
+                new DataModels.Contract { Id = 11, Title = title, ContractNumber = contractNumber, ContractVersion = 2, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, ContractContent = GetDataModelContractContent(11) }
             };
         }
 
@@ -631,7 +634,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             return new ContractRequest()
             {
                 Id = 5,
-                ContractNumber = "Test-Contract-Number",
+                ContractNumber = "Contract-Number",
                 ContractVersion = 1,
                 FileName = _blobName
             };

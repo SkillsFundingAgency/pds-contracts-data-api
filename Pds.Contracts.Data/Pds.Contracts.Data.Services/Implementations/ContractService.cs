@@ -1,10 +1,8 @@
 ﻿using AutoMapper;
-using Azure.Storage.Blobs;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Pds.Audit.Api.Client.Enumerations;
 using Pds.Audit.Api.Client.Interfaces;
-using Pds.Contracts.Data.Common.CustomExceptionHandlers;
 using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Common.Responses;
 using Pds.Contracts.Data.Repository.Interfaces;
@@ -14,10 +12,7 @@ using Pds.Contracts.Data.Services.Responses;
 using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Threading;
 using System.Threading.Tasks;
 using AuditModels = Pds.Audit.Api.Client.Models;
 using DataModels = Pds.Contracts.Data.Repository.DataModels;
@@ -223,9 +218,9 @@ namespace Pds.Contracts.Data.Services.Implementations
         /// <inheritdoc/>
         public async Task<UpdatedContractStatusResponse> ConfirmApprovalAsync(UpdateConfirmApprovalRequest request)
         {
-            _logger.LogInformation($"[{nameof(ConfirmApprovalAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
+            _logger.LogInformation($"[{nameof(ConfirmApprovalAsync)}] called with contract number: {request.ContractNumber} and contract version {request.ContractVersion}.");
 
-            var contract = await _repository.GetContractWithDatasAsync(request.Id);
+            var contract = await _repository.GetByContractNumberAndVersionWithIncludesAsync(request.ContractNumber, request.ContractVersion, ContractDataEntityInclude.Datas);
 
             ContractStatus newContractStatus = ContractStatus.Approved;
 
@@ -256,16 +251,16 @@ namespace Pds.Contracts.Data.Services.Implementations
         /// <inheritdoc/>
         public async Task<UpdatedContractStatusResponse> ApproveManuallyAsync(ContractRequest request)
         {
-            _logger.LogInformation($"[{nameof(ApproveManuallyAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id}.");
+            _logger.LogInformation($"[{nameof(ApproveManuallyAsync)}] called with contract number: {request.ContractNumber} and contract version {request.ContractVersion}.");
             UpdatedContractStatusResponse updatedContractStatusResponse = null;
 
-            var manullyApproved = true;
+            var manuallyApproved = true;
             var newContractStatus = ContractStatus.Approved;
 
-            var contract = await _repository.GetContractWithContentAndDatasAsync(request.Id);
+            var contract = await _repository.GetByContractNumberAndVersionWithIncludesAsync(request.ContractNumber, request.ContractVersion, ContractDataEntityInclude.Datas | ContractDataEntityInclude.Content);
 
             _contractValidator.Validate(contract, request, c => c.ContractContent != null);
-            _contractValidator.ValidateStatusChange(contract, newContractStatus, manullyApproved);
+            _contractValidator.ValidateStatusChange(contract, newContractStatus, manuallyApproved);
 
             updatedContractStatusResponse = new UpdatedContractStatusResponse
             {
@@ -280,7 +275,7 @@ namespace Pds.Contracts.Data.Services.Implementations
             var contractRefernce = contract.ContractContent.FileName.Replace(".pdf", string.Empty);
             var signer = $"hand and approved by ESFA";
             var updatedDate = DateTime.UtcNow;
-            var signedContractDocument = _documentService.AddSignedDocumentPage(contract.ContractContent.Content, contractRefernce, signer, updatedDate, manullyApproved, (ContractFundingType)contract.FundingType);
+            var signedContractDocument = _documentService.AddSignedDocumentPage(contract.ContractContent.Content, contractRefernce, signer, updatedDate, manuallyApproved, (ContractFundingType)contract.FundingType);
 
             contract.ContractContent.Content = signedContractDocument;
             contract.ContractContent.Size = signedContractDocument.Length;
@@ -289,7 +284,7 @@ namespace Pds.Contracts.Data.Services.Implementations
             contract.SignedOn = updatedDate;
             contract.SignedBy = signer;
             contract.SignedByDisplayName = signer;
-            contract.WasManuallyApproved = manullyApproved;
+            contract.WasManuallyApproved = manuallyApproved;
 
             await _contractDocumentService.UpsertOriginalContractXmlAsync(contract, request);
 
@@ -305,9 +300,9 @@ namespace Pds.Contracts.Data.Services.Implementations
         /// <inheritdoc/>
         public async Task<UpdatedContractStatusResponse> WithdrawalAsync(UpdateContractWithdrawalRequest request)
         {
-            _logger.LogInformation($"[{nameof(WithdrawalAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
+            _logger.LogInformation($"[{nameof(WithdrawalAsync)}] called with contract number: {request.ContractNumber} and contract version {request.ContractVersion}.");
 
-            var contract = await _repository.GetContractWithDatasAsync(request.Id);
+            var contract = await _repository.GetByContractNumberAndVersionWithIncludesAsync(request.ContractNumber, request.ContractVersion, ContractDataEntityInclude.Datas);
 
             ContractStatus newContractStatus = request.WithdrawalType;
 

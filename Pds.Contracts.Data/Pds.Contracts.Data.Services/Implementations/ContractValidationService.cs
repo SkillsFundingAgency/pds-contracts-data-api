@@ -22,7 +22,7 @@ namespace Pds.Contracts.Data.Services.Implementations
             _ = contract ?? throw new ContractNotFoundException(request.ContractNumber, request.ContractVersion, request.Id);
 
             //Ensure contract id matches the contract number version combination.
-            if (request.ContractNumber != contract.ContractNumber || request.ContractVersion != contract.ContractVersion || request.Id != contract.Id)
+            if (request.ContractNumber != contract.ContractNumber || request.ContractVersion != contract.ContractVersion || (request.Id != 0 && request.Id != contract.Id))
             {
                 throw new InvalidContractRequestException(request.ContractNumber, request.ContractVersion, request.Id);
             }
