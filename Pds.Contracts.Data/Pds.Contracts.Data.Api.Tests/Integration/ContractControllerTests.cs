@@ -32,6 +32,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         private readonly HttpClient _testClient;
 
         private readonly string _manualApproveUrl = "/api/Contract/manualApprove";
+        private readonly string _withdrawUrl = "/api/Contract/withdraw";
+        private readonly string _confirmApproval = "/api/Contract/confirmApproval";
 
         private readonly string _blobName = "sample-blob-file.xml";
 
@@ -317,7 +319,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             };
 
             // Act
-            var response = await _testClient.PatchAsync("/api/confirmApproval", GetStringContent(content));
+            var response = await _testClient.PatchAsync(_confirmApproval, GetStringContent(content));
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -336,7 +338,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             };
 
             // Act
-            var response = await _testClient.PatchAsync("/api/confirmApproval", GetStringContent(content));
+            var response = await _testClient.PatchAsync(_confirmApproval, GetStringContent(content));
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -355,7 +357,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             };
 
             // Act
-            var response = await _testClient.PatchAsync("/api/confirmApproval", GetStringContent(content));
+            var response = await _testClient.PatchAsync(_confirmApproval, GetStringContent(content));
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -475,7 +477,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             StringContent content = new StringContent(json, Encoding.Default, "application/json");
 
             // Act
-            var response = await _testClient.PatchAsync("/api/withdraw", content);
+            var response = await _testClient.PatchAsync(_withdrawUrl, content);
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -495,7 +497,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             };
 
             // Act
-            var response = await _testClient.PatchAsync("/api/withdraw", GetStringContent(content));
+            var response = await _testClient.PatchAsync(_withdrawUrl, GetStringContent(content));
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -515,7 +517,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             };
 
             // Act
-            var response = await _testClient.PatchAsync("/api/withdraw", GetStringContent(content));
+            var response = await _testClient.PatchAsync(_withdrawUrl, GetStringContent(content));
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -535,7 +537,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             };
 
             // Act
-            var response = await _testClient.PatchAsync("/api/withdraw", GetStringContent(content));
+            var response = await _testClient.PatchAsync(_withdrawUrl, GetStringContent(content));
 
             // Assert
             response.StatusCode.Should().Be(HttpStatusCode.NotFound);

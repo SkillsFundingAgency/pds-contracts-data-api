@@ -206,7 +206,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         /// <response code="412">Contract pre checks failed.</response>
         /// <response code="500">Application error, invalid operation attempted.</response>
         /// <response code="503">Service is un-available, retry the operation later.</response>
-        [HttpPatch("/api/confirmApproval")]
+        [HttpPatch("confirmApproval")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -272,7 +272,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         /// <response code="412">Contract pre checks failed.</response>
         /// <response code="500">Application error, invalid operation attempted.</response>
         /// <response code="503">Service is un-available, retry the operation later.</response>
-        [HttpPatch("/api/withdraw")]
+        [HttpPatch("withdraw")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
