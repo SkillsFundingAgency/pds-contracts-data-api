@@ -16,14 +16,12 @@ namespace Pds.Contracts.Data.Common.CustomExceptionHandlers
         /// </summary>
         /// <param name="contractNumber">Contract number.</param>
         /// <param name="versionNumber">Contract version number.</param>
-        /// <param name="contractId">Contract internal identifier.</param>
         /// <param name="failedExpectation">Failed validation expression.</param>
-        public ContractExpectationFailedException(string contractNumber, int? versionNumber, int? contractId, string failedExpectation)
-            : base($"Expectation: {failedExpectation} failed in contract with contract number:{contractNumber ?? NotPassedIn}, version: {versionNumber?.ToString() ?? NotPassedIn} and contract id: {contractId?.ToString() ?? "Not passed"}.")
+        public ContractExpectationFailedException(string contractNumber, int? versionNumber, string failedExpectation)
+            : base($"Expectation: {failedExpectation} failed in contract with contract number:{contractNumber ?? NotPassedIn} and version: {versionNumber?.ToString() ?? NotPassedIn}.")
         {
             ContractNumber = contractNumber;
             VersionNumber = versionNumber;
-            ContractId = contractId;
             FailedExpectation = failedExpectation;
         }
 
@@ -45,11 +43,6 @@ namespace Pds.Contracts.Data.Common.CustomExceptionHandlers
         /// Gets VersionNumber.
         /// </summary>
         public int? VersionNumber { get; }
-
-        /// <summary>
-        /// Gets ContractId.
-        /// </summary>
-        public int? ContractId { get; }
 
         /// <summary>
         /// Gets Predicate.

@@ -8,16 +8,6 @@ namespace Pds.Contracts.Data.Services.Models
     public class ContractRequest
     {
         /// <summary>
-        /// Gets or sets the contract Id.
-        /// </summary>
-        /// <value>
-        /// The contract Id.
-        /// </value>
-        [Required]
-        [Range(1, int.MaxValue, ErrorMessage = "Please enter a value greater than zero.")]
-        public int Id { get; set; }
-
-        /// <summary>
         /// Gets or sets the contract number.
         /// </summary>
         /// <value>

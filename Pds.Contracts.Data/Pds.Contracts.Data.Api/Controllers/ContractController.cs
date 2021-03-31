@@ -177,7 +177,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public async Task<ActionResult> UpdateLastEmailReminderSent(UpdateLastEmailReminderSentRequest request)
         {
-            _logger.LogInformation($"Update LastEmailReminderSent and LastUpdatedAt called with contract number: {request.ContractNumber}, contract Id: {request.Id} ");
+            _logger.LogInformation($"[{nameof(UpdateLastEmailReminderSent)}] called with contract number: {request.ContractNumber} and contract version: {request.ContractVersion} ");
             if (!ModelState.IsValid)
             {
                 return StatusCode(StatusCodes.Status400BadRequest);
@@ -217,7 +217,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public async Task<ActionResult> ConfirmApprovalAsync(UpdateConfirmApprovalRequest request)
         {
-            _logger.LogInformation($"[{nameof(ConfirmApprovalAsync)}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} ");
+            _logger.LogInformation($"[{nameof(ConfirmApprovalAsync)}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}");
             if (!ModelState.IsValid)
             {
                 _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] provided data model failed validation check.");
@@ -229,29 +229,34 @@ namespace Pds.Contracts.Data.Api.Controllers
             {
                 await _contractService.ConfirmApprovalAsync(request);
             }
+            catch (InvalidContractRequestException ex)
+            {
+                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] InvalidContractRequestException occurred for the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}. The Error: {ex.Message}");
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+            }
             catch (BlobException ex)
             {
-                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] BlobException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} and fileName: {request.FileName}. The Error: {ex.Message}");
+                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] BlobException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion} and fileName: {request.FileName}. The Error: {ex.Message}");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status500InternalServerError);
             }
             catch (BlobNoContentException ex)
             {
-                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] ContractBlobNoContentException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} and fileName: {request.FileName}. The Error: {ex.Message}");
+                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] ContractBlobNoContentException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion} and fileName: {request.FileName}. The Error: {ex.Message}");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status500InternalServerError);
             }
             catch (ContractStatusException ex)
             {
-                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] ContractStatusException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] ContractStatusException occurred for the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}. The Error: {ex.Message}");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status412PreconditionFailed);
             }
             catch (ContractNotFoundException ex)
             {
-                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] ContractNotFoundException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] ContractNotFoundException occurred for the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}. The Error: {ex.Message}");
                 return Problem(statusCode: StatusCodes.Status404NotFound);
             }
             catch (System.Exception ex)
             {
-                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] Internal server exception has occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] Internal server exception has occurred for the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}. The Error: {ex.Message}");
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
@@ -284,7 +289,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public async Task<ActionResult> WithdrawAsync(UpdateContractWithdrawalRequest request)
         {
-            _logger.LogInformation($"[{nameof(WithdrawAsync)}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} ");
+            _logger.LogInformation($"[{nameof(WithdrawAsync)}] called with contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}.");
             if (!ModelState.IsValid)
             {
                 return ValidationProblem();
@@ -298,24 +303,29 @@ namespace Pds.Contracts.Data.Api.Controllers
                     return Problem(statusCode: StatusCodes.Status404NotFound);
                 }
             }
+            catch (InvalidContractRequestException ex)
+            {
+                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] InvalidContractRequestException occurred for the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}. The Error: {ex.Message}");
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+            }
             catch (ContractNotFoundException ex)
             {
-                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] ContractNotFoundException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] ContractNotFoundException occurred for the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}. The Error: {ex.Message}");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status404NotFound);
             }
             catch (ContractUpdateConcurrencyException ex)
             {
-                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] Contract may have been modified or deleted since Contract were loaded - Contract Id {request.Id}, Contract Number: {request.ContractNumber}, ContractVersion: {request.ContractVersion}.");
+                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] Contract may have been modified or deleted since Contract were loaded - Contract Number: {request.ContractNumber} and ContractVersion: {request.ContractVersion}.");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status409Conflict);
             }
             catch (ContractStatusException ex)
             {
-                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] ContractStatusException occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] ContractStatusException occurred for the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}. The Error: {ex.Message}");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status412PreconditionFailed);
             }
             catch (System.Exception ex)
             {
-                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] Internal server exception has occurred for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}. The Error: {ex.Message}");
+                _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] Internal server exception has occurred for the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}. The Error: {ex.Message}");
                 return Problem(statusCode: StatusCodes.Status500InternalServerError);
             }
 
@@ -413,7 +423,7 @@ namespace Pds.Contracts.Data.Api.Controllers
         [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
         public async Task<ActionResult> ManualApprove(ContractRequest request)
         {
-            _logger.LogInformation($"[{nameof(ManualApprove)}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id} ");
+            _logger.LogInformation($"[{nameof(ManualApprove)}] called with contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}.");
             if (!ModelState.IsValid)
             {
                 _logger.LogError($"[{nameof(ManualApprove)}] provided data model failed validation check.");
@@ -427,32 +437,32 @@ namespace Pds.Contracts.Data.Api.Controllers
             }
             catch (InvalidContractRequestException ex)
             {
-                _logger.LogError(ex, $"[{nameof(ManualApprove)}] Invalid contract request exception with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
+                _logger.LogError(ex, $"[{nameof(ManualApprove)}] Invalid contract request exception with contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}.");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
             }
             catch (ContractNotFoundException ex)
             {
-                _logger.LogError(ex, $"[{nameof(ManualApprove)}] failed to find a contract with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
+                _logger.LogError(ex, $"[{nameof(ManualApprove)}] failed to find a contract with contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}.");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status404NotFound);
             }
             catch (ContractExpectationFailedException ex)
             {
-                _logger.LogError(ex, $"[{nameof(ManualApprove)}] Contract expectation failed exception with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
+                _logger.LogError(ex, $"[{nameof(ManualApprove)}] Contract expectation failed exception with contract number: {request.ContractNumber} and contract  Version number: {request.ContractVersion}.");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status404NotFound);
             }
             catch (ContractUpdateConcurrencyException ex)
             {
-                _logger.LogError(ex, $"[{nameof(ManualApprove)}] Contract may have been modified or deleted since Contract were loaded - Contract Id {request.Id}, Contract Number: {request.ContractNumber}, ContractVersion: {request.ContractVersion}.");
+                _logger.LogError(ex, $"[{nameof(ManualApprove)}] Contract may have been modified or deleted since Contract were loaded - Contract Number: {request.ContractNumber} and ContractVersion: {request.ContractVersion}.");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status409Conflict);
             }
             catch (ContractStatusException ex)
             {
-                _logger.LogError(ex, $"[{nameof(ManualApprove)}] failed contract status expectation. For the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
+                _logger.LogError(ex, $"[{nameof(ManualApprove)}] failed contract status expectation. For the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}.");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status412PreconditionFailed);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"[{nameof(ManualApprove)}] Un-expected exception for the contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}, contract Id: {request.Id}.");
+                _logger.LogError(ex, $"[{nameof(ManualApprove)}] Un-expected exception for the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}.");
                 return Problem(statusCode: StatusCodes.Status500InternalServerError);
             }
 

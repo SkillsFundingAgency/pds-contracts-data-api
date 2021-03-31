@@ -25,8 +25,8 @@ namespace Pds.Contracts.Data.Common.CustomExceptionHandlers
         /// <param name="contractId">The contract id.</param>
         /// <param name="fileName">The blob storage file name.</param>
         /// <param name="message">The raised exception message.</param>
-        public BlobException(string contractNumber, int contractVersion, int contractId, string fileName, string message)
-            : base($"Exception raised for blob {fileName} for contract with ContractId: {contractId}, ContractNumber: {contractNumber}, ContractVersion: {contractVersion} and ContractVersion: {contractVersion}.  Failed with {message}.")
+        public BlobException(string contractNumber, int contractVersion, string fileName, string message)
+            : base($"Exception raised for blob {fileName} for contract with ContractNumber: {contractNumber}, ContractVersion: {contractVersion} and ContractVersion: {contractVersion}.  Failed with {message}.")
         {
         }
 
@@ -38,8 +38,8 @@ namespace Pds.Contracts.Data.Common.CustomExceptionHandlers
         /// <param name="contractId">The contract id.</param>
         /// <param name="fileName">The blob storage file name.</param>
         /// <param name="innerException">The raised exception message.</param>
-        public BlobException(string contractNumber, int contractVersion, int contractId, string fileName, Exception innerException)
-            : base($"Exception raised for blob {fileName} for contract with ContractId: {contractId}, ContractNumber: {contractNumber}, ContractVersion: {contractVersion} and ContractVersion: {contractVersion}.", innerException)
+        public BlobException(string contractNumber, int contractVersion, string fileName, Exception innerException)
+            : base($"Exception raised for blob {fileName} for contract with ContractNumber: {contractNumber}, ContractVersion: {contractVersion} and ContractVersion: {contractVersion}.", innerException)
         {
         }
 

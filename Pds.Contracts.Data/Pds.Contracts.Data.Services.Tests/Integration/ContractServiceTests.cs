@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Azure.Storage.Blobs;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Azure.ServiceBus;
@@ -26,7 +25,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using AuditModels = Pds.Audit.Api.Client.Models;
 using DataModels = Pds.Contracts.Data.Repository.DataModels;
@@ -253,7 +251,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             var working = new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.ApprovedWaitingConfirmation };
 
-            var request = new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "Main-0001", ContractVersion = 1, FileName = BlobHelper.BlobName };
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0001", ContractVersion = 1, FileName = BlobHelper.BlobName };
 
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
             ILoggerAdapter<ContractRepository> loggerRepo = new LoggerAdapter<ContractRepository>(new Logger<ContractRepository>(new LoggerFactory()));
@@ -276,7 +274,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             await work.CommitAsync();
 
             //Act
-            var beforeUpdate = await contractRepo.GetAsync(request.Id);
+            var beforeUpdate = await contractRepo.GetByContractNumberAndVersionWithIncludesAsync(request.ContractNumber, request.ContractVersion, ContractDataEntityInclude.Datas);
 
             // assigning to a new variable before this is an in memory db so the
             // LastEmailReminderSent was being populated.
@@ -292,7 +290,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             var contract = await service.ConfirmApprovalAsync(request);
 
-            var afterUpdate = await contractRepo.GetAsync(request.Id);
+            var afterUpdate = await contractRepo.GetByContractNumberAndVersionWithIncludesAsync(request.ContractNumber, request.ContractVersion, ContractDataEntityInclude.Datas);
 
             //Assert
             contract.Should().NotBeNull();
@@ -309,7 +307,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             SetMapperHelper();
             var contracts = GetDataModel_Contracts();
 
-            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency, FileName = "sample-blob-file.xml" };
+            var request = new UpdateContractWithdrawalRequest() { ContractNumber = "main-0001", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency, FileName = BlobHelper.BlobName };
 
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
 
@@ -324,7 +322,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService, mediator, contractDocumentService);
 
             //Act
-            var beforeUpdate = await contractRepo.GetAsync(request.Id);
+            var beforeUpdate = await contractRepo.GetByContractNumberAndVersionWithIncludesAsync(request.ContractNumber, request.ContractVersion, ContractDataEntityInclude.Datas);
 
             // assigning to a new variable before update because this is an in memory db the
             // update will update the object.
@@ -332,7 +330,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             var contract = await service.WithdrawalAsync(request);
 
-            var afterUpdate = await contractRepo.GetAsync(request.Id);
+            var afterUpdate = await contractRepo.GetByContractNumberAndVersionWithIncludesAsync(request.ContractNumber, request.ContractVersion, ContractDataEntityInclude.Datas);
 
             //Assert
             contract.Should().NotBeNull();
@@ -350,7 +348,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             SetMapperHelper();
             var contracts = GetDataModel_ForManualApprove();
 
-            var request = new ContractRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1, FileName = BlobHelper.BlobName };
+            var request = new ContractRequest() { ContractNumber = "main-0001", ContractVersion = 1, FileName = BlobHelper.BlobName };
 
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
 
@@ -365,7 +363,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService, mediator, contractDocumentService);
 
             //Act
-            var beforeUpdate = await contractRepo.GetAsync(request.Id);
+            var beforeUpdate = await contractRepo.GetByContractNumberAndVersionWithIncludesAsync(request.ContractNumber, request.ContractVersion, ContractDataEntityInclude.Datas | ContractDataEntityInclude.Content);
 
             // assigning to a new variable before update because this is an in memory db the
             // update will update the object.
@@ -373,7 +371,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             var contract = await service.ApproveManuallyAsync(request);
 
-            var afterUpdate = await contractRepo.GetAsync(request.Id);
+            var afterUpdate = await contractRepo.GetByContractNumberAndVersionWithIncludesAsync(request.ContractNumber, request.ContractVersion, ContractDataEntityInclude.Datas | ContractDataEntityInclude.Content);
 
             //Assert
             contract.Should().NotBeNull();
@@ -392,7 +390,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             SetMapperHelper();
             var contracts = GetDataModel_ForManualApprove();
 
-            var request = new ContractRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1, FileName = BlobHelper.BlobName };
+            var request = new ContractRequest() { ContractNumber = "main-0001", ContractVersion = 1, FileName = BlobHelper.BlobName };
 
             ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
 
@@ -407,7 +405,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService, mediator, contractDocumentService);
 
             //Act
-            var beforeUpdate = await contractRepo.GetAsync(request.Id);
+            var beforeUpdate = await contractRepo.GetByContractNumberAndVersionWithIncludesAsync(request.ContractNumber, request.ContractVersion, ContractDataEntityInclude.Datas | ContractDataEntityInclude.Content);
 
             // assigning to a new variable before update because this is an in memory db the
             // update will update the object.
@@ -415,7 +413,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             var contract = await service.ApproveManuallyAsync(request);
 
-            var afterUpdate = await contractRepo.GetContractWithContentAndDatasAsync(request.Id);
+            var afterUpdate = await contractRepo.GetByContractNumberAndVersionWithIncludesAsync(request.ContractNumber, request.ContractVersion, ContractDataEntityInclude.Datas);
 
 
 

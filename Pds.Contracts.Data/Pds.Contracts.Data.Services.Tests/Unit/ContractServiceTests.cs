@@ -998,7 +998,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             SetMockContractValidator_Validate();
             SetupMediator_Publish();
             var contractService = GetContractService();
-            var request = new UpdateConfirmApprovalRequest() { Id = 7, ContractNumber = "Main-0002", ContractVersion = 2, FileName = "Main-0002_v2_637503726040684393.xml" };
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "Main-0002_v2_637503726040684393.xml" };
 
             // Act
             var result = await contractService.ConfirmApprovalAsync(request);
@@ -1031,7 +1031,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             SetMockContractValidator_Validate();
             SetMockContractValidator_Validate_ContractStatusException();
             var contractService = GetContractService();
-            var request = new UpdateConfirmApprovalRequest() { Id = 7, ContractNumber = "Main-0002", ContractVersion = 2, FileName = "Main-0002_v2_637503726040684393.xml" };
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "Main-0002_v2_637503726040684393.xml" };
 
             // Act
             Func<Task> result = async () => await contractService.ConfirmApprovalAsync(request);
@@ -1063,7 +1063,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             SetMockContractDocumentService();
             SetMockContractValidator_Validate_ContractNotFoundException();
             var contractService = GetContractService();
-            var request = new UpdateConfirmApprovalRequest() { Id = 7, ContractNumber = "Main-0002", ContractVersion = 2, FileName = "Main-0002_v2_637503726040684393.xml" };
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "Main-0002_v2_637503726040684393.xml" };
 
             // Act
             Func<Task> result = async () => await contractService.ConfirmApprovalAsync(request);
@@ -1098,7 +1098,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             SetMockContractValidator_Validate();
             SetMockContractValidator_Validate_BlobNoContentException();
             var contractService = GetContractService();
-            var request = new UpdateConfirmApprovalRequest() { Id = 7, ContractNumber = "Main-0002", ContractVersion = 2, FileName = "Main-0002_v2_637503726040684393.xml" };
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "Main-0002_v2_637503726040684393.xml" };
 
             // Act
             Func<Task> result = async () => await contractService.ConfirmApprovalAsync(request);
@@ -1132,7 +1132,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             SetMockContractValidator_Validate();
             SetMockContractValidator_Validate_BlobException();
             var contractService = GetContractService();
-            var request = new UpdateConfirmApprovalRequest() { Id = 7, ContractNumber = "Main-0002", ContractVersion = 2, FileName = null };
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = null };
 
             // Act
             Func<Task> result = async () => await contractService.ConfirmApprovalAsync(request);
@@ -1620,22 +1620,22 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
         private UpdateLastEmailReminderSentRequest GetASingleUpdateLastEmailReminderSentRequest()
         {
-            return new UpdateLastEmailReminderSentRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+            return new UpdateLastEmailReminderSentRequest() { ContractNumber = "abc", ContractVersion = 1 };
         }
 
         private UpdateConfirmApprovalRequest GetASingleUpdateConfirmApprovalRequest()
         {
-            return new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "Main-0002", ContractVersion = 1, FileName = "Main-0002_v2_637503726040684393.xml" };
+            return new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 1, FileName = "Main-0002_v2_637503726040684393.xml" };
         }
 
         private UpdateContractWithdrawalRequest GetASingleUpdateContractWithdrawalRequest()
         {
-            return new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency, FileName = "sample-blob-file.xml" };
+            return new UpdateContractWithdrawalRequest() { ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency, FileName = "sample-blob-file.xml" };
         }
 
         private ContractRequest GetContractRequest()
         {
-            return new ContractRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+            return new ContractRequest() { ContractNumber = "abc", ContractVersion = 1 };
         }
 
         private void SetUpMockUriService(string actionUrl)
@@ -1753,7 +1753,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             Mock.Get(_contractRepository)
               .Setup(r => r.UpdateContractAsync(It.IsAny<DataModels.Contract>()))
-              .Throws(new ContractUpdateConcurrencyException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<ContractStatus>()))
+              .Throws(new ContractUpdateConcurrencyException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<ContractStatus>()))
               .Verifiable();
         }
 
@@ -1837,7 +1837,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
                 .Verifiable();
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.ValidateStatusChange(It.IsAny<DataModels.Contract>(), It.IsAny<ContractStatus>(), false))
-                .Throws(new BlobNoContentException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+                .Throws(new BlobNoContentException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<string>()))
                 .Verifiable();
         }
 
@@ -1878,7 +1878,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>(), c => c.ContractContent != null))
-                .Throws(new ContractExpectationFailedException("acb", 1, 1, "null"))
+                .Throws(new ContractExpectationFailedException("acb", 1, "null"))
                 .Verifiable();
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.ValidateStatusChange(It.IsAny<DataModels.Contract>(), It.IsAny<ContractStatus>(), true))
@@ -1889,7 +1889,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>(), c => c.ContractContent != null))
-                .Throws(new InvalidContractRequestException("abc", 1, 1))
+                .Throws(new InvalidContractRequestException("abc", 1, null))
                 .Verifiable();
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.ValidateStatusChange(It.IsAny<DataModels.Contract>(), It.IsAny<ContractStatus>(), true))
@@ -1922,7 +1922,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()))
-                .Throws(new ContractExpectationFailedException("acb", 1, 1, "null"))
+                .Throws(new ContractExpectationFailedException("acb", 1, "null"))
                 .Verifiable();
         }
 
@@ -1930,7 +1930,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()))
-                .Throws(new InvalidContractRequestException("abc", 1, 1))
+                .Throws(new InvalidContractRequestException("abc", 1, null))
                 .Verifiable();
         }
 
@@ -2069,7 +2069,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         {
             Mock.Get(_mockContractValidator)
                 .Setup(v => v.Validate(It.IsAny<DataModels.Contract>(), It.IsAny<UpdateContractWithdrawalRequest>()))
-                .Throws(new InvalidContractRequestException("abc", 1, 1))
+                .Throws(new InvalidContractRequestException("abc", 1, null))
                 .Verifiable();
         }
 

@@ -46,21 +46,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         }
 
         [TestMethod]
-        public void Validate_InvalidContractRequestException()
-        {
-            // Arrange
-            var contract = GetContract();
-            var contractRequest = GetContractRequest();
-            contractRequest.ContractNumber = "xyz";
-
-            // Act
-            Action act = () => contractValidationService.Validate(contract, contractRequest);
-
-            // Assert
-            act.Should().ThrowExactly<InvalidContractRequestException>();
-        }
-
-        [TestMethod]
         public void Validate_InputExpression_NoException()
         {
             // Arrange
@@ -245,7 +230,7 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
         private ContractRequest GetContractRequest()
         {
-            return new ContractRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+            return new ContractRequest() { ContractNumber = "abc", ContractVersion = 1 };
         }
 
         private CreateContractRequest GetNewContractRequest(string contractNumber, int contractVersion)

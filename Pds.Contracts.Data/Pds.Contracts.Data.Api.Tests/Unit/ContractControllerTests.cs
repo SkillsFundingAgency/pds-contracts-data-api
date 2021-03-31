@@ -526,7 +526,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 ControllerContext = CreateControllerContext()
             };
 
-            var request = new UpdateConfirmApprovalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "abc", ContractVersion = 1 };
 
             // Act
             var actual = await controller.ConfirmApprovalAsync(request);
@@ -552,7 +552,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             var controller = GetContractController();
             controller.ProblemDetailsFactory = _problemDetailsFactory;
-            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "dfgdfg.xml", Id = 7 };
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "dfgdfg.xml" };
 
             // Act
             var actual = await controller.ConfirmApprovalAsync(request);
@@ -587,7 +587,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             controller.ProblemDetailsFactory = _problemDetailsFactory;
             controller.ModelState.AddModelError(key, error);
 
-            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, Id = 0, FileName = "sdfgsdfg.xml" };
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "sdfgsdfg.xml" };
 
             // Act
             var actual = await controller.ConfirmApprovalAsync(request);
@@ -618,8 +618,8 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             controller.ProblemDetailsFactory = _problemDetailsFactory;
             controller.ModelState.AddModelError("Id", "Id must be greater than zero");
 
-            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", Id = 7, ContractVersion = 2, FileName = "dfgsdfg.xml" };
-            request.Id = 0;
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "dfgsdfg.xml" };
+            request.ContractNumber = null;
 
             // Act
             var actual = await controller.ConfirmApprovalAsync(request);
@@ -629,6 +629,62 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             status.Subject.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
             status.Subject.Value.Should().NotBeNull();
             Mock.Get(_contractService).Verify(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Never);
+            Mock.Get(_logger).Verify();
+        }
+
+        [TestMethod]
+        public async Task ConfirmApprovalAsync_ReturnsBlobExceptionResult()
+        {
+            var problem = new ProblemDetails
+            {
+                Status = StatusCodes.Status500InternalServerError
+            };
+
+            SetupLoggerInfo();
+            SetupLoggerError();
+            SetMockContractService_ConfirmApprove_BlobException();
+            SetupCreateProblemDetails(problem);
+
+            var controller = GetContractController();
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "dfgdfg.xml" };
+
+            // Act
+            var actual = await controller.ConfirmApprovalAsync(request);
+
+            // Assert
+            var status = actual.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+            status.Subject.Value.Should().NotBeNull();
+            Mock.Get(_contractService).Verify(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Once);
+            Mock.Get(_logger).Verify();
+        }
+
+        [TestMethod]
+        public async Task ConfirmApprovalAsync_ReturnsBlobNoContentExceptionResult()
+        {
+            var problem = new ProblemDetails
+            {
+                Status = StatusCodes.Status500InternalServerError
+            };
+
+            SetupLoggerInfo();
+            SetupLoggerError();
+            SetMockContractService_ConfirmApprove_BlobNoContentException();
+            SetupCreateProblemDetails(problem);
+
+            var controller = GetContractController();
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "dfgdfg.xml" };
+
+            // Act
+            var actual = await controller.ConfirmApprovalAsync(request);
+
+            // Assert
+            var status = actual.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+            status.Subject.Value.Should().NotBeNull();
+            Mock.Get(_contractService).Verify(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
 
@@ -662,7 +718,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 ControllerContext = CreateControllerContext(), ProblemDetailsFactory = _problemDetailsFactory
             };
 
-            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+            var request = new UpdateContractWithdrawalRequest() { ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
             var actual = await controller.WithdrawAsync(request);
@@ -699,7 +755,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 ControllerContext = CreateControllerContext(), ProblemDetailsFactory = _problemDetailsFactory
             };
 
-            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+            var request = new UpdateContractWithdrawalRequest() { ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
             var result = await controller.WithdrawAsync(request);
@@ -739,7 +795,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 ProblemDetailsFactory = _problemDetailsFactory
             };
 
-            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+            var request = new UpdateContractWithdrawalRequest() { ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
             var result = await controller.WithdrawAsync(request);
@@ -779,7 +835,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 ProblemDetailsFactory = _problemDetailsFactory
             };
 
-            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+            var request = new UpdateContractWithdrawalRequest() { ContractNumber = "abc", ContractVersion = 1 };
 
             // Act
             var result = await controller.WithdrawAsync(request);
@@ -817,7 +873,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 ProblemDetailsFactory = _problemDetailsFactory
             };
 
-            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+            var request = new UpdateContractWithdrawalRequest() { ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
             var result = await controller.WithdrawAsync(request);
@@ -863,8 +919,8 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             controller.ModelState.AddModelError("Id", "Id must be greater than zero");
 
-            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
-            request.Id = 0;
+            var request = new UpdateContractWithdrawalRequest() { ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+            request.ContractNumber = null;
 
             // Act
             var result = await controller.WithdrawAsync(request);
@@ -895,7 +951,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var mockContractService = new Mock<IContractService>();
             mockContractService
                 .Setup(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
-                .Throws(new ContractUpdateConcurrencyException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<ContractStatus>()))
+                .Throws(new ContractUpdateConcurrencyException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<ContractStatus>()))
                 .Verifiable();
 
             var controller = new ContractController(mockLogger.Object, mockContractService.Object)
@@ -904,7 +960,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 ProblemDetailsFactory = _problemDetailsFactory
             };
 
-            var request = new UpdateContractWithdrawalRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
+            var request = new UpdateContractWithdrawalRequest() { ContractNumber = "abc", ContractVersion = 1, WithdrawalType = ContractStatus.WithdrawnByAgency };
 
             // Act
             var result = await controller.WithdrawAsync(request);
@@ -942,39 +998,6 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             // Assert
             result.Should().BeStatusCodeResult().WithStatusCode((int)expectedStatus);
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
-            Mock.Get(_logger).Verify();
-        }
-
-        [TestMethod]
-        public async Task ManualApprove_InputInvalid_ReturnsBadRequestResultAsync()
-        {
-            // Arrange
-            var expectedStatus = HttpStatusCode.BadRequest;
-            SetupLoggerInfo();
-            SetupLoggerError();
-            var validationProblemDetails = new ValidationProblemDetails()
-            {
-                Detail = "One or more errors with the input",
-                Status = StatusCodes.Status400BadRequest
-            };
-            SetupProblemDetailsFactory(validationProblemDetails);
-
-            SetMockContractService_ManualApprove();
-            var controller = GetContractController();
-            controller.ProblemDetailsFactory = _problemDetailsFactory;
-            controller.ModelState.AddModelError("Id", "Id must be greater than zero");
-
-            var request = GetContractRequest();
-            request.Id = 0;
-
-            // Act
-            var result = await controller.ManualApprove(request);
-
-            // Assert
-            var status = result.Should().BeAssignableTo<ObjectResult>();
-            status.Subject.StatusCode.Should().Be((int)expectedStatus);
-            status.Subject.Value.Should().Be(validationProblemDetails);
-            Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Never);
             Mock.Get(_logger).Verify();
         }
 
@@ -1212,7 +1235,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
         private ContractRequest GetContractRequest()
         {
-            return new ContractRequest() { Id = 1, ContractNumber = "abc", ContractVersion = 1 };
+            return new ContractRequest() { ContractNumber = "abc", ContractVersion = 1 };
         }
 
         private ContractController GetContractController()
@@ -1267,6 +1290,22 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 .Verifiable();
         }
 
+        private void SetMockContractService_ConfirmApprove_BlobException()
+        {
+            Mock.Get(_contractService)
+                .Setup(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
+                .Throws(new BlobException("Contract status is not ApprovedWaitingConfirmation."))
+                .Verifiable();
+        }
+
+        private void SetMockContractService_ConfirmApprove_BlobNoContentException()
+        {
+            Mock.Get(_contractService)
+                .Setup(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
+                .Throws(new BlobNoContentException("Contract status is not ApprovedWaitingConfirmation."))
+                .Verifiable();
+        }
+
         private void SetMockContractService_ManualApprove()
         {
             var mockDataModel = Mock.Of<UpdatedContractStatusResponse>(MockBehavior.Strict);
@@ -1281,7 +1320,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         {
             Mock.Get(_contractService)
                 .Setup(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()))
-                .Throws(new InvalidContractRequestException("abc", 1, 1))
+                .Throws(new InvalidContractRequestException("abc", 1))
                 .Verifiable();
         }
 
@@ -1305,7 +1344,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         {
             Mock.Get(_contractService)
                 .Setup(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()))
-                .Throws(new ContractExpectationFailedException("abc", 1, 1, "null"))
+                .Throws(new ContractExpectationFailedException("abc", 1, "null"))
                 .Verifiable();
         }
 
@@ -1321,7 +1360,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         {
             Mock.Get(_contractService)
                  .Setup(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()))
-                 .Throws(new ContractUpdateConcurrencyException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<ContractStatus>()))
+                 .Throws(new ContractUpdateConcurrencyException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<ContractStatus>()))
                  .Verifiable();
         }
 

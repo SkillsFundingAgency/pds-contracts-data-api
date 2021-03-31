@@ -244,16 +244,16 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
 
         #region UpdateLastEmailReminder
 
+
         [TestMethod]
         public async Task UpdateLastEmailReminderSentAsync_WithDefaultParameters_ReturnsResponse()
         {
             // Arrange
-            var content = new ContractRequest()
+            var content = new UpdateLastEmailReminderSentRequest()
             {
                 Id = 1,
                 ContractNumber = "Levy-0002",
-                ContractVersion = 1,
-                FileName = _blobName
+                ContractVersion = 1
             };
 
             // Act
@@ -267,12 +267,11 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         public async Task UpdateLastEmailReminderSentAsync_WithDefaultParameters_Returns400Response()
         {
             // Arrange
-            var content = new ContractRequest()
+            var content = new UpdateLastEmailReminderSentRequest()
             {
                 Id = 0,
                 ContractNumber = "Levy-0002",
-                ContractVersion = 0,
-                FileName = _blobName
+                ContractVersion = 0
             };
 
             // Act
@@ -286,12 +285,11 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         public async Task UpdateLastEmailReminderSentAsync_WithDefaultParameters_Returns404Response()
         {
             // Arrange
-            var content = new ContractRequest()
+            var content = new UpdateLastEmailReminderSentRequest()
             {
                 Id = 99,
                 ContractNumber = "Levy-0002",
-                ContractVersion = 1,
-                FileName = _blobName
+                ContractVersion = 1
             };
 
             // Act
@@ -312,7 +310,6 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             // Arrange
             var content = new UpdateConfirmApprovalRequest()
             {
-                Id = 4,
                 ContractNumber = "Contract-Number4",
                 ContractVersion = 1,
                 FileName = _blobName
@@ -331,7 +328,6 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             // Arrange
             var content = new UpdateConfirmApprovalRequest()
             {
-                Id = 0,
                 ContractNumber = "Levy-0002",
                 ContractVersion = 0,
                 FileName = _blobName
@@ -350,8 +346,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             // Arrange
             var content = new UpdateConfirmApprovalRequest()
             {
-                Id = 99,
-                ContractNumber = "Levy-0002",
+                ContractNumber = "Levy-0099",
                 ContractVersion = 1,
                 FileName = _blobName
             };
@@ -373,7 +368,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         {
             // Arrange
             var content = GetContractRequest();
-            content.ContractNumber = content.ContractNumber + content.Id.ToString();
+            content.ContractNumber = $"{content.ContractNumber}1";
 
             // Act
             var response = await _testClient.PatchAsync(_manualApproveUrl, GetStringContent(content));
@@ -387,7 +382,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         {
             // Arrange
             var content = GetContractRequest();
-            content.Id = 0;
+            content.ContractNumber = null;
 
             // Act
             var response = await _testClient.PatchAsync(_manualApproveUrl, GetStringContent(content));
@@ -401,7 +396,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         {
             // Arrange
             var content = GetContractRequest();
-            content.Id = 99;
+            content.ContractNumber = $"{content.ContractNumber}999";
 
             // Act
             var response = await _testClient.PatchAsync(_manualApproveUrl, GetStringContent(content));
@@ -420,7 +415,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         {
             // Arrange
             var content = GetContractRequest();
-            content.Id = 1;
+            content.ContractNumber = $"{content.ContractNumber}99";
 
             // Act
             var response = await _testClient.PatchAsync(_manualApproveUrl, GetStringContent(content));
@@ -434,8 +429,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         {
             // Arrange
             var content = GetContractRequest();
-            content.ContractNumber = content.ContractNumber + "6";
-            content.Id = 6;
+            content.ContractNumber = $"{content.ContractNumber}6";
 
             // Act
             var response = await _testClient.PatchAsync(_manualApproveUrl, GetStringContent(content));
@@ -489,7 +483,6 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             // Arrange
             var content = new UpdateContractWithdrawalRequest()
             {
-                Id = 7,
                 ContractNumber = "Contract-Number7",
                 ContractVersion = 1,
                 WithdrawalType = ContractStatus.WithdrawnByAgency,
@@ -509,7 +502,6 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             // Arrange
             var content = new UpdateContractWithdrawalRequest()
             {
-                Id = 0,
                 ContractNumber = "Levy-0002",
                 ContractVersion = 0,
                 WithdrawalType = ContractStatus.WithdrawnByAgency,
@@ -529,8 +521,7 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
             // Arrange
             var content = new UpdateContractWithdrawalRequest()
             {
-                Id = 99,
-                ContractNumber = "Levy-0002",
+                ContractNumber = "Levy-0099",
                 ContractVersion = 1,
                 WithdrawalType = ContractStatus.WithdrawnByAgency,
                 FileName = _blobName
@@ -565,7 +556,8 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
                 new DataModels.Contract { Id = 8, Title = title, ContractNumber = contractNumber + "8", ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
                 new DataModels.Contract { Id = 9, Title = title, ContractNumber = "Test-Contract-High", ContractVersion = 10, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, LastEmailReminderSent = null, Status = (int)ContractStatus.ApprovedWaitingConfirmation, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
                 new DataModels.Contract { Id = 10, Title = title, ContractNumber = "Test-Contract-High", ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, ContractData = new DataModels.ContractData() { Id = 10, OriginalContractXml = "<contract>sample.xml.data</contract>" } },
-                new DataModels.Contract { Id = 11, Title = title, ContractNumber = contractNumber, ContractVersion = 2, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, ContractContent = GetDataModelContractContent(11) }
+                new DataModels.Contract { Id = 11, Title = title, ContractNumber = contractNumber, ContractVersion = 2, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, ContractContent = GetDataModelContractContent(11) },
+                new DataModels.Contract { Id = 12, Title = title, ContractNumber = "Levy-0002", ContractVersion = 1, Ukprn = 12345678, CreatedAt = lastEmailReminderSent.AddDays(-45), LastEmailReminderSent = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider },
             };
         }
 
@@ -635,7 +627,6 @@ namespace Pds.Contracts.Data.Api.Tests.Integration
         {
             return new ContractRequest()
             {
-                Id = 5,
                 ContractNumber = "Contract-Number",
                 ContractVersion = 1,
                 FileName = _blobName

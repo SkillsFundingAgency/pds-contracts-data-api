@@ -14,14 +14,12 @@ namespace Pds.Contracts.Data.Common.CustomExceptionHandlers
         /// </summary>
         /// <param name="contractNumber">Contract number.</param>
         /// <param name="contractVersion">Contract version number.</param>
-        /// <param name="contractId">Contract internal identifier.</param>
         /// <param name="status">Contract status.</param>
-        public ContractUpdateConcurrencyException(string contractNumber, int contractVersion, int contractId, ContractStatus status)
-           : base($"Contract may have been modified or deleted since Contract were loaded - Contract Id {contractId}, Contract Number: {contractNumber}, ContractVersion: {contractVersion}.")
+        public ContractUpdateConcurrencyException(string contractNumber, int contractVersion, ContractStatus status)
+           : base($"Contract may have been modified or deleted since Contract were loaded - Contract Number: {contractNumber}, ContractVersion: {contractVersion}.")
         {
             ContractNumber = contractNumber;
             ContractVersion = contractVersion;
-            ContractId = contractId;
             Status = status;
         }
 
@@ -34,11 +32,6 @@ namespace Pds.Contracts.Data.Common.CustomExceptionHandlers
         /// Gets VersionNumber.
         /// </summary>
         public int ContractVersion { get; }
-
-        /// <summary>
-        /// Gets ContractId.
-        /// </summary>
-        public int ContractId { get; }
 
         /// <summary>
         /// Gets or sets status of contract.

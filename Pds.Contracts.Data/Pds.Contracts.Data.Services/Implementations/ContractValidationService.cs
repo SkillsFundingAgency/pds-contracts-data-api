@@ -19,13 +19,7 @@ namespace Pds.Contracts.Data.Services.Implementations
         public void Validate(Contract contract, Models.ContractRequest request)
         {
             //Validate contract can be found.
-            _ = contract ?? throw new ContractNotFoundException(request.ContractNumber, request.ContractVersion, request.Id);
-
-            //Ensure contract id matches the contract number version combination.
-            if (request.ContractNumber != contract.ContractNumber || request.ContractVersion != contract.ContractVersion || (request.Id != 0 && request.Id != contract.Id))
-            {
-                throw new InvalidContractRequestException(request.ContractNumber, request.ContractVersion, request.Id);
-            }
+            _ = contract ?? throw new ContractNotFoundException(request.ContractNumber, request.ContractVersion);
         }
 
         /// <inheritdoc/>
@@ -36,7 +30,7 @@ namespace Pds.Contracts.Data.Services.Implementations
             var validationPredicate = validatePredicate.Compile();
             if (!validationPredicate(contract))
             {
-                throw new ContractExpectationFailedException(request.ContractNumber, request.ContractVersion, request.Id, validatePredicate.Body.ToString());
+                throw new ContractExpectationFailedException(request.ContractNumber, request.ContractVersion, validatePredicate.Body.ToString());
             }
         }
 
@@ -47,7 +41,7 @@ namespace Pds.Contracts.Data.Services.Implementations
 
             if (request.WithdrawalType != ContractStatus.WithdrawnByAgency && request.WithdrawalType != ContractStatus.WithdrawnByProvider)
             {
-                throw new InvalidContractRequestException(request.ContractNumber, request.ContractVersion, request.Id, request.WithdrawalType);
+                throw new InvalidContractRequestException(request.ContractNumber, request.ContractVersion, request.WithdrawalType);
             }
         }
 

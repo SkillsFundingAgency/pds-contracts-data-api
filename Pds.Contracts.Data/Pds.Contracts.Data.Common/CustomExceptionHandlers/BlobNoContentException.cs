@@ -22,8 +22,8 @@ namespace Pds.Contracts.Data.Common.CustomExceptionHandlers
         /// <param name="contractVersion">The contract version.</param>
         /// <param name="contractId">The contract id.</param>
         /// <param name="fileName">The blob storage file name.</param>
-        public BlobNoContentException(string contractNumber, int contractVersion, int contractId, string fileName)
-            : base($"No content found for blob {fileName} for contract with ContractId: {contractId}, ContractNumber: {contractNumber} and ContractVersion: {contractVersion}.")
+        public BlobNoContentException(string contractNumber, int contractVersion, string fileName)
+            : base($"No content found for blob {fileName} for contract with ContractNumber: {contractNumber} and ContractVersion: {contractVersion}.")
         {
         }
     }

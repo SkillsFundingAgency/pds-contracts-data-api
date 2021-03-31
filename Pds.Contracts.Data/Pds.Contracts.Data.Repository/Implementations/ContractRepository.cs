@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
 using Pds.Contracts.Data.Common.CustomExceptionHandlers;
 using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Common.Responses;
@@ -9,7 +8,6 @@ using Pds.Contracts.Data.Repository.Interfaces;
 using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Pds.Contracts.Data.Repository.Implementations
@@ -172,7 +170,7 @@ namespace Pds.Contracts.Data.Repository.Implementations
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    throw new ContractUpdateConcurrencyException(contract.ContractNumber, contract.ContractVersion, contract.Id, (ContractStatus)contract.Status);
+                    throw new ContractUpdateConcurrencyException(contract.ContractNumber, contract.ContractVersion, (ContractStatus)contract.Status);
                 }
             }
             else

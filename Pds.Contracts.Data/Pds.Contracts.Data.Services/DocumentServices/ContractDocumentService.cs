@@ -1,14 +1,10 @@
 ﻿using Azure.Storage.Blobs;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using Pds.Contracts.Data.Common.CustomExceptionHandlers;
 using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
 using Pds.Core.Logging;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using DataModels = Pds.Contracts.Data.Repository.DataModels;
 
@@ -37,7 +33,7 @@ namespace Pds.Contracts.Data.Services.DocumentServices
         /// <inheritdoc/>
         public async Task UpsertOriginalContractXmlAsync(DataModels.Contract contract, ContractRequest request)
         {
-            _logger.LogInformation($"[{nameof(UpsertOriginalContractXmlAsync)}] called with contract number: {request.ContractNumber} and contract Id: {request.Id}.");
+            _logger.LogInformation($"[{nameof(UpsertOriginalContractXmlAsync)}] called with contract number: {request.ContractNumber} and version {request.ContractVersion}.");
             if (contract.ContractData is null)
             {
                 contract.ContractData = new DataModels.ContractData();
@@ -49,7 +45,7 @@ namespace Pds.Contracts.Data.Services.DocumentServices
 
         private async Task<string> GetDocumentContentAsync(ContractRequest request)
         {
-            _logger.LogInformation($"[{nameof(GetDocumentContentAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} and file name: {request.FileName} ");
+            _logger.LogInformation($"[{nameof(GetDocumentContentAsync)}] called with contract number: {request.ContractNumber} and contract version: {request.ContractVersion} and file name: {request.FileName} ");
             string documentContent = null;
             try
             {
@@ -65,19 +61,19 @@ namespace Pds.Contracts.Data.Services.DocumentServices
             }
             catch (BlobException ex)
             {
-                _logger.LogError($"[{nameof(GetDocumentContentAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} and file name: {request.FileName}.  Failed with {ex.Message}.");
-                throw new BlobException(request.ContractNumber, request.ContractVersion, request.Id, request.FileName, ex);
+                _logger.LogError($"[{nameof(GetDocumentContentAsync)}] called with contract number: {request.ContractNumber}, contract version: {request.ContractVersion} and file name: {request.FileName}.  Failed with {ex.Message}.");
+                throw new BlobException(request.ContractNumber, request.ContractVersion, request.FileName, ex);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"[{nameof(GetDocumentContentAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} and file name: {request.FileName}.  Failed with {ex.Message}.");
-                throw new BlobException(request.ContractNumber, request.ContractVersion, request.Id, request.FileName, ex);
+                _logger.LogError($"[{nameof(GetDocumentContentAsync)}] called with contract number: {request.ContractNumber}, contract version: {request.ContractVersion} and file name: {request.FileName}.  Failed with {ex.Message}.");
+                throw new BlobException(request.ContractNumber, request.ContractVersion, request.FileName, ex);
             }
 
             if (string.IsNullOrWhiteSpace(documentContent))
             {
-                _logger.LogError($"[{nameof(GetDocumentContentAsync)}] called with contract number: {request.ContractNumber}, contract Id: {request.Id} and file name: {request.FileName}.  Failed because blob filename has no content.");
-                throw new BlobNoContentException(request.ContractNumber, request.ContractVersion, request.Id, request.FileName);
+                _logger.LogError($"[{nameof(GetDocumentContentAsync)}] called with contract number: {request.ContractNumber}, contract version: {request.ContractVersion} and file name: {request.FileName}.  Failed because blob filename has no content.");
+                throw new BlobNoContentException(request.ContractNumber, request.ContractVersion, request.FileName);
             }
 
             return documentContent;

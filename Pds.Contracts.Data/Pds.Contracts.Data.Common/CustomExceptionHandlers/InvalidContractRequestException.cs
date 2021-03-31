@@ -15,30 +15,13 @@ namespace Pds.Contracts.Data.Common.CustomExceptionHandlers
         /// </summary>
         /// <param name="contractNumber">Contract number.</param>
         /// <param name="versionNumber">Contract version number.</param>
-        /// <param name="contractId">Contract internal identifier.</param>
-        public InvalidContractRequestException(string contractNumber, int versionNumber, int contractId)
-            : base($"Invalid contract request. The contract number: {contractNumber} or contract version: {versionNumber} does not correspond to contract Id: {contractId}.")
-        {
-            VersionNumber = versionNumber;
-            ContractId = contractId;
-            ContractNumber = contractNumber;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="InvalidContractRequestException"/> class.
-        /// </summary>
-        /// <param name="contractNumber">Contract number.</param>
-        /// <param name="versionNumber">Contract version number.</param>
-        /// <param name="contractId">Contract internal identifier.</param>
         /// <param name="withdrawalType">Contract status.</param>
-        public InvalidContractRequestException(string contractNumber, int versionNumber, int contractId, ContractStatus withdrawalType)
-            : base($"Invalid contract status request. The contract withdrawal type request: {withdrawalType.ToString("G")} The contract number: {contractNumber}, contract version: {versionNumber}, contract Id: {contractId}.")
+        public InvalidContractRequestException(string contractNumber, int versionNumber, ContractStatus? withdrawalType = null)
+            : base($"Invalid contract status request. The contract withdrawal type request: {withdrawalType?.ToString()} The contract number: {contractNumber} and contract version: {versionNumber}.")
         {
             VersionNumber = versionNumber;
-            ContractId = contractId;
             ContractNumber = contractNumber;
         }
-
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InvalidContractRequestException"/> class.
@@ -58,11 +41,6 @@ namespace Pds.Contracts.Data.Common.CustomExceptionHandlers
         /// Gets VersionNumber.
         /// </summary>
         public int? VersionNumber { get; }
-
-        /// <summary>
-        /// Gets ContractId.
-        /// </summary>
-        public int? ContractId { get; }
 
         /// <inheritdoc/>
         public override void GetObjectData(SerializationInfo info, StreamingContext context)

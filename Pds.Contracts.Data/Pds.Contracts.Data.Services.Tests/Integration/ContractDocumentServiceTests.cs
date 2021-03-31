@@ -31,7 +31,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
         {
             //Arrange
             var contractDocumentService = BuildContractDocumentService();
-            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = BlobHelper.BlobName, Id = 7 };
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = BlobHelper.BlobName };
             var contract = new DataModels.Contract()
             {
                 Id = 7,
