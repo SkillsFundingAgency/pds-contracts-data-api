@@ -132,6 +132,13 @@
     "blobDelay": {
       "type": "string",
       "defaultValue": "0.00:00:30"
+    },
+    "apiSecurityRestrictions": {
+      "type": "array",
+      "metadata": {
+        "description": "An array of objects containing Name/ipAddress properties for defining the firewall on the api app service"
+      },
+      "defaultValue": []
     }
   },
   "variables": {
@@ -225,6 +232,9 @@
           },
           "appServicePlanResourceGroup": {
             "value": "[resourceGroup().name]"
+          },
+          "ipSecurityRestrictions": {
+            "value": "[parameters('apiSecurityRestrictions')]"
           },
           "appServiceAppSettings": {
             "value": [
