@@ -538,7 +538,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         }
 
         [TestMethod]
-        public async Task ConfirmApprovalAsync_ReturnsContractStatusExceptionResult()
+        public async Task ConfirmApprovalAsync_Returns_412Result_WhenContractStatusExceptionWithInvalidStatusChange()
         {
             var problem = new ProblemDetails
             {
@@ -547,7 +547,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
             SetupLoggerInfo();
             SetupLoggerError();
-            SetMockContractService_ConfirmApprove_ContractStatusException();
+            SetMockContractService_ConfirmApprove_ContractStatusException(newStatus: ContractStatus.PublishedToProvider, oldStatus: ContractStatus.Approved);
             SetupCreateProblemDetails(problem);
 
             var controller = GetContractController();
@@ -564,6 +564,27 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             Mock.Get(_contractService).Verify(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
+
+        [TestMethod]
+        public async Task ConfirmApprovalAsync_Returns_208Result_WhenContractStatusExceptionWithDuplicateStatusChange()
+        {
+            SetupLoggerInfo();
+            SetupLoggerWarning();
+            SetMockContractService_ConfirmApprove_ContractStatusException(newStatus: ContractStatus.Approved, oldStatus: ContractStatus.Approved);
+
+            var controller = GetContractController();
+            controller.ProblemDetailsFactory = _problemDetailsFactory;
+            var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0002", ContractVersion = 2, FileName = "dfgdfg.xml" };
+
+            // Act
+            var actual = await controller.ConfirmApprovalAsync(request);
+
+            // Assert
+            actual.Should().BeStatusCodeResult().WithStatusCode(StatusCodes.Status208AlreadyReported);
+            Mock.Get(_contractService).Verify(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()), Times.Once);
+            Mock.Get(_logger).Verify();
+        }
+
 
         [TestMethod]
         public async Task ConfirmApprovalAsync_ReturnsContractNotFoundExceptionResult()
@@ -698,10 +719,8 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         {
             // Arrange
             var expectedStatus = HttpStatusCode.OK;
-            var problem = GetProblemDetailsAndSetup(expectedStatus);
             var mockDataModel = Mock.Of<UpdatedContractStatusResponse>(MockBehavior.Strict);
 
-            var expectedDataModel = Mock.Of<Contract>();
             var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
@@ -735,7 +754,6 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             // Arrange
             var expectedStatus = HttpStatusCode.PreconditionFailed;
             var problem = GetProblemDetailsAndSetup(expectedStatus);
-            var expectedDataModel = Mock.Of<Contract>();
             var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
@@ -747,7 +765,7 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var mockContractService = new Mock<IContractService>();
             mockContractService
                 .Setup(e => e.WithdrawalAsync(It.IsAny<UpdateContractWithdrawalRequest>()))
-                .Throws(new ContractStatusException("Contract status is not PublishedToProvider."))
+                .Throws(new ContractStatusException("Contract status is not PublishedToProvider.") { CurrentStatus = ContractStatus.Approved, NewStatus = ContractStatus.PublishedToProvider })
                 .Verifiable();
 
             var controller = new ContractController(mockLogger.Object, mockContractService.Object)
@@ -774,7 +792,6 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             // Arrange
             var expectedStatus = HttpStatusCode.NotFound;
             var problem = GetProblemDetailsAndSetup(expectedStatus);
-            var expectedDataModel = Mock.Of<Contract>();
             var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
@@ -814,7 +831,6 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             // Arrange
             var expectedStatus = HttpStatusCode.InternalServerError;
             var problem = GetProblemDetailsAndSetup(expectedStatus);
-            var expectedDataModel = Mock.Of<Contract>();
             var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
@@ -855,7 +871,6 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             var expectedStatus = HttpStatusCode.NotFound;
             var problem = GetProblemDetailsAndSetup(expectedStatus);
             UpdatedContractStatusResponse dummyModel = null;
-            var expectedDataModel = Mock.Of<Contract>();
             var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
@@ -939,7 +954,6 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             // Arrange
             var expectedStatus = HttpStatusCode.Conflict;
             var problem = GetProblemDetailsAndSetup(expectedStatus);
-            var expectedDataModel = Mock.Of<Contract>();
             var mockLogger = new Mock<ILoggerAdapter<ContractController>>(MockBehavior.Strict);
             mockLogger
                 .Setup(logger => logger.LogInformation(It.IsAny<string>()))
@@ -983,7 +997,6 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         {
             // Arrange
             var expectedStatus = HttpStatusCode.OK;
-            var problem = GetProblemDetailsAndSetup(expectedStatus);
             SetMockLogger();
 
             SetMockContractService_ManualApprove();
@@ -1070,13 +1083,13 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
         }
 
         [TestMethod]
-        public async Task ManualApprove_ReturnsContractStatusExceptionResult()
+        public async Task ManualApprove_Returns_412ProblemResult_WhenContractStatusExceptionWithInvalidStatus()
         {
             // Arrange
             var expectedStatus = HttpStatusCode.PreconditionFailed;
             var problem = GetProblemDetailsAndSetup(expectedStatus);
             SetMockLogger_Error();
-            SetMockContractService_ManualApprove_ContractStatusException();
+            SetMockContractService_ManualApprove_ContractStatusException(newStatus: ContractStatus.PublishedToProvider, oldStatus: ContractStatus.Approved);
             var controller = GetContractController();
             var request = GetContractRequest();
 
@@ -1090,6 +1103,28 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
             Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
             Mock.Get(_logger).Verify();
         }
+
+        [TestMethod]
+        public async Task ManualApprove_Returns_208AlreadyReportedResult_WhenContractStatusExceptionWithDuplicateStatusChange()
+        {
+            // Arrange
+            SetupLoggerInfo();
+            SetupLoggerWarning();
+
+            SetMockContractService_ManualApprove_ContractStatusException(ContractStatus.Approved, ContractStatus.Approved);
+            var controller = GetContractController();
+            var request = GetContractRequest();
+
+            // Act
+            var result = await controller.ManualApprove(request);
+
+            // Assert
+            result.Should().BeStatusCodeResult().WithStatusCode(StatusCodes.Status208AlreadyReported);
+
+            Mock.Get(_contractService).Verify(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()), Times.Once);
+            Mock.Get(_logger).Verify();
+        }
+
 
         [TestMethod]
         public async Task ManualApprove_ReturnsGeneralExceptionResult()
@@ -1193,6 +1228,13 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 .Verifiable();
         }
 
+        private void SetupLoggerWarning()
+        {
+            Mock.Get(_logger)
+                .Setup(logger => logger.LogWarning(It.IsAny<string>()))
+                .Verifiable();
+        }
+
         private void SetupLoggerError()
         {
             Mock.Get(_logger)
@@ -1282,11 +1324,11 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 .Verifiable();
         }
 
-        private void SetMockContractService_ConfirmApprove_ContractStatusException()
+        private void SetMockContractService_ConfirmApprove_ContractStatusException(ContractStatus oldStatus, ContractStatus newStatus)
         {
             Mock.Get(_contractService)
                 .Setup(e => e.ConfirmApprovalAsync(It.IsAny<UpdateConfirmApprovalRequest>()))
-                .Throws(new ContractStatusException("Contract status is not ApprovedWaitingConfirmation."))
+                .Throws(new ContractStatusException("Contract status is not ApprovedWaitingConfirmation.") { NewStatus = newStatus, CurrentStatus = oldStatus })
                 .Verifiable();
         }
 
@@ -1324,11 +1366,11 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                 .Verifiable();
         }
 
-        private void SetMockContractService_ManualApprove_ContractStatusException()
+        private void SetMockContractService_ManualApprove_ContractStatusException(ContractStatus oldStatus, ContractStatus newStatus)
         {
             Mock.Get(_contractService)
                 .Setup(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()))
-                .Throws(new ContractStatusException("Contract status is not ApprovedWaitingConfirmation."))
+                .Throws(new ContractStatusException("Contract status is not ApprovedWaitingConfirmation.") { NewStatus = newStatus, CurrentStatus = oldStatus })
                 .Verifiable();
         }
 

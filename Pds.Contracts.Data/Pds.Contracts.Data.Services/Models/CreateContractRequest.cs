@@ -13,7 +13,6 @@ namespace Pds.Contracts.Data.Services.Models
         /// <summary>
         /// Gets or sets the UKPRN assocaited with the contract.
         /// </summary>
-        // TODO : Config can UKPRN be less than 8 digits?
         [Required]
         [RegularExpression("^[0-9]{8}$", ErrorMessage = "UKPRN should consist of 8 digits.")]
         public int UKPRN { get; set; }

@@ -246,6 +246,12 @@ namespace Pds.Contracts.Data.Api.Controllers
             }
             catch (ContractStatusException ex)
             {
+                if (ex.CurrentStatus == ex.NewStatus)
+                {
+                    _logger.LogWarning($"[{nameof(ConfirmApprovalAsync)}] called with same status [{ex.NewStatus}] for contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}");
+                    return StatusCode(StatusCodes.Status208AlreadyReported);
+                }
+
                 _logger.LogError($"[{nameof(ConfirmApprovalAsync)}] ContractStatusException occurred for the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}. The Error: {ex.Message}");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status412PreconditionFailed);
             }
@@ -320,6 +326,12 @@ namespace Pds.Contracts.Data.Api.Controllers
             }
             catch (ContractStatusException ex)
             {
+                if (ex.CurrentStatus == ex.NewStatus)
+                {
+                    _logger.LogWarning($"[{nameof(WithdrawAsync)}] called with same status [{ex.NewStatus}] for contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}");
+                    return StatusCode(StatusCodes.Status208AlreadyReported);
+                }
+
                 _logger.LogError(ex, $"[{nameof(WithdrawAsync)}] ContractStatusException occurred for the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}. The Error: {ex.Message}");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status412PreconditionFailed);
             }
@@ -357,7 +369,7 @@ namespace Pds.Contracts.Data.Api.Controllers
             _logger.LogInformation($"[{nameof(CreateContract)}] called with contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}");
 
             // additional check to ensure SignedOn value is present for notification contract events.
-            if (request.AmendmentType == ContractAmendmentType.Notfication && request.SignedOn.HasValue == false)
+            if (request.AmendmentType == ContractAmendmentType.Notfication && !request.SignedOn.HasValue)
             {
                 ModelState.AddModelError("SignedOn", "SignedOn is required for 'Notification' amendment type.");
             }
@@ -457,6 +469,12 @@ namespace Pds.Contracts.Data.Api.Controllers
             }
             catch (ContractStatusException ex)
             {
+                if (ex.CurrentStatus == ex.NewStatus)
+                {
+                    _logger.LogWarning($"[{nameof(ManualApprove)}] called with same status [{ex.NewStatus}] for contract number: {request.ContractNumber}, contract Version number: {request.ContractVersion}");
+                    return StatusCode(StatusCodes.Status208AlreadyReported);
+                }
+
                 _logger.LogError(ex, $"[{nameof(ManualApprove)}] failed contract status expectation. For the contract number: {request.ContractNumber} and contract Version number: {request.ContractVersion}.");
                 return Problem(detail: ex.Message, statusCode: StatusCodes.Status412PreconditionFailed);
             }
