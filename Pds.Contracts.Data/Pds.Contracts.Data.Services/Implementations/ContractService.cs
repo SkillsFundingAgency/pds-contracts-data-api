@@ -127,7 +127,7 @@ namespace Pds.Contracts.Data.Services.Implementations
                 _logger.LogInformation($"[{nameof(CreateAsync)}] Contract [{newContract.ContractNumber}] version [{newContract.ContractVersion}] has been created for [{newContract.Ukprn}].");
 
                 // Update operations to existing records can be done outside the semaphore
-                if (request.AmendmentType == ContractAmendmentType.Variation)
+                if (request.AmendmentType == ContractAmendmentType.Variation || request.AmendmentType == ContractAmendmentType.None)
                 {
                     var statuses = new int[]
                         {

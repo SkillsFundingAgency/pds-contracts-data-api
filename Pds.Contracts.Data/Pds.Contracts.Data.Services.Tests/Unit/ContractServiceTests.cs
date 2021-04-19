@@ -109,9 +109,10 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         }
 
         [TestMethod]
-        public async Task Create_AmendmentTypeNone_WhenContractAlreadyExists_WithALowerVersion_Then_ContractIsAddedToDatabase_And_NoStatusChangeHappen()
+        public async Task Create_AmendmentTypeNone_When_ContractAlreadyExists_ButNotAtStatus0_WithALowerVersion_Then_ContractIsAddedToDatabase_And_NoStatusChangeHappen()
         {
             // Arrange
+            int contractId = 123;
             CreateContractRequest createRequest = Generate_CreateContractRequest();
             createRequest.AmendmentType = ContractAmendmentType.None;
 
@@ -123,6 +124,60 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             {
                 new DataModels.Contract()
                 {
+                    Id = contractId,
+                    ContractNumber = createRequest.ContractNumber,
+                    ContractVersion = createRequest.ContractVersion - 1,
+                    Status = (int)ContractStatus.Approved
+                }
+            };
+
+            var contractRecord = new DataModels.Contract();
+            contractRecord.Status = -1;
+
+            Mock.Get(_mapper)
+                .Setup(p => p.Map<DataModels.Contract>(createRequest))
+                .Returns(contractRecord)
+                .Verifiable();
+
+            SetupRepository_GetByContractNumberAsyncMethod(createRequest, matchedRecords);
+            SetupRepository_CreateAsyncMethod(contractRecord, Task.CompletedTask);
+            Mock.Get(_mockContractValidator)
+                .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
+
+            SetupMediator_Publish();
+
+            var service = GetContractService();
+
+            // Act
+            await service.CreateAsync(createRequest);
+
+            // Assert
+            VerifyAll();
+            contractRecord.Status.Should().Be((int)ContractStatus.PublishedToProvider);
+            matchedRecords.First().Status.Should().Be((int)ContractStatus.Approved);
+            Mock.Get(_mockMediator).Verify(x => x.Publish(It.IsAny<UpdatedContractStatusResponse>(), It.IsAny<CancellationToken>()), Times.Once());
+            Mock.Get(_contractDocumentService)
+                .Verify(d => d.UpsertOriginalContractXmlAsync(It.IsAny<DataModels.Contract>(), It.IsAny<ContractRequest>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task Create_AmendmentTypeNone_When_ContractAlreadyExists_WithStatus0_WithALowerVersion_Then_ContractIsReplaced()
+        {
+            // Arrange
+            int contractId = 123;
+            CreateContractRequest createRequest = Generate_CreateContractRequest();
+            createRequest.AmendmentType = ContractAmendmentType.None;
+
+            SetupSemaphoreOnEntity();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractReplaced });
+            SetupLogger_LogInformationMethod();
+            SetMockContractDocumentService();
+
+            IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
+            {
+                new DataModels.Contract()
+                {
+                    Id = contractId,
                     ContractNumber = createRequest.ContractNumber,
                     ContractVersion = createRequest.ContractVersion - 1,
                     Status = (int)ContractStatus.PublishedToProvider
@@ -142,6 +197,10 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Mock.Get(_mockContractValidator)
                 .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords));
 
+            Mock.Get(_contractRepository)
+                .Setup(p => p.UpdateContractStatusAsync(contractId, ContractStatus.PublishedToProvider, ContractStatus.Replaced))
+                .Returns(Task.FromResult(new UpdatedContractStatusResponse()))
+                .Verifiable();
             SetupMediator_Publish();
 
             var service = GetContractService();
