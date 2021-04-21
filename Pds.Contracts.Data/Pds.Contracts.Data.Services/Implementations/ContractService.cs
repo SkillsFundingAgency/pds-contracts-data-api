@@ -259,6 +259,8 @@ namespace Pds.Contracts.Data.Services.Implementations
 
             var contract = await _repository.GetByContractNumberAndVersionWithIncludesAsync(request.ContractNumber, request.ContractVersion, ContractDataEntityInclude.Datas | ContractDataEntityInclude.Content);
 
+            var existing = await _repository.GetByContractNumberAsync(request.ContractNumber);
+
             _contractValidator.Validate(contract, request, c => c.ContractContent != null);
             _contractValidator.ValidateStatusChange(contract, newContractStatus, manuallyApproved);
 
@@ -293,6 +295,13 @@ namespace Pds.Contracts.Data.Services.Implementations
             updatedContractStatusResponse.NewStatus = (ContractStatus)contract.Status;
 
             await _mediator.Publish(updatedContractStatusResponse);
+
+            // if there are existing contracts and at least one of them is not the current contract
+            if (existing.Any())
+            {
+                existing = existing.Where(p => p.ContractVersion != contract.ContractVersion).ToList();
+                await ReplaceContractsWithGivenStatuses(existing, new int[] { (int)ContractStatus.Approved, (int)ContractStatus.ApprovedWaitingConfirmation });
+            }
 
             return updatedContractStatusResponse;
         }

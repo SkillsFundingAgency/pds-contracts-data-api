@@ -226,7 +226,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupSemaphoreOnEntity();
             SetupLogger_LogInformationMethod();
-            SetMockContractDocumentService();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
             {
@@ -241,8 +240,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Mock.Get(_mockContractValidator)
                 .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords))
                 .Throws(new DuplicateContractException(createRequest.ContractNumber, createRequest.ContractVersion));
-
-            SetupMediator_Publish();
 
             var service = GetContractService();
 
@@ -267,7 +264,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
 
             SetupSemaphoreOnEntity();
             SetupLogger_LogInformationMethod();
-            SetMockContractDocumentService();
 
             IEnumerable<DataModels.Contract> matchedRecords = new List<DataModels.Contract>()
             {
@@ -282,8 +278,6 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             Mock.Get(_mockContractValidator)
                 .Setup(p => p.ValidateForNewContract(createRequest, matchedRecords))
                 .Throws(new ContractWithHigherVersionAlreadyExistsException(createRequest.ContractNumber, createRequest.ContractVersion));
-
-            SetupMediator_Publish();
 
             var service = GetContractService();
 
@@ -1231,6 +1225,11 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             var contractService = GetContractService();
             var request = GetContractRequest();
 
+            Mock.Get(_contractRepository)
+                .Setup(p => p.GetByContractNumberAsync(request.ContractNumber))
+                .ReturnsAsync(new List<DataModels.Contract>())
+                .Verifiable();
+
             // Act
             var result = await contractService.ApproveManuallyAsync(request);
 
@@ -1267,6 +1266,11 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             var contractService = GetContractService();
             var request = GetContractRequest();
 
+            Mock.Get(_contractRepository)
+                .Setup(p => p.GetByContractNumberAsync(request.ContractNumber))
+                .ReturnsAsync(new List<DataModels.Contract>())
+                .Verifiable();
+
             // Act
             Func<Task> act = async () => await contractService.ApproveManuallyAsync(request);
 
@@ -1301,6 +1305,11 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             var contractService = GetContractService();
             var request = GetContractRequest();
 
+            Mock.Get(_contractRepository)
+                .Setup(p => p.GetByContractNumberAsync(It.IsAny<string>()))
+                .ReturnsAsync(new List<DataModels.Contract>())
+                .Verifiable();
+
             // Act
             Func<Task> act = async () => await contractService.ApproveManuallyAsync(request);
 
@@ -1328,6 +1337,11 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             var dummyData = GetDummyDataModelsContract();
             dummyData.ContractContent = null;
             SetMockRepo_ApproveManuallyAsync_mockDataModel(dummyData);
+
+            Mock.Get(_contractRepository)
+                .Setup(p => p.GetByContractNumberAsync(dummyData.ContractNumber))
+                .ReturnsAsync(new List<DataModels.Contract>() { dummyData })
+                .Verifiable();
 
             SetUpMockUriService("action");
             SetupLogger_LogInformationMethod();
@@ -1374,6 +1388,11 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             var contractService = GetContractService();
             var request = GetContractRequest();
 
+            Mock.Get(_contractRepository)
+                .Setup(p => p.GetByContractNumberAsync(request.ContractNumber))
+                .ReturnsAsync(new List<DataModels.Contract>())
+                .Verifiable();
+
             // Act
             Func<Task> act = async () => await contractService.ApproveManuallyAsync(request);
 
@@ -1410,6 +1429,11 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             var contractService = GetContractService();
             var request = GetContractRequest();
 
+            Mock.Get(_contractRepository)
+                .Setup(p => p.GetByContractNumberAsync(request.ContractNumber))
+                .ReturnsAsync(new List<DataModels.Contract>())
+                .Verifiable();
+
             // Act
             Func<Task> act = async () => await contractService.ApproveManuallyAsync(request);
 
@@ -1430,6 +1454,174 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             _mockLogger.Verify();
         }
 
+        [TestMethod]
+        public async Task ApproveManuallyAsync_When_ContractsAtStatus_Approved_AlreadyExist_Then_ContractsAreMarkedAsReplaced()
+        {
+            // Arrange
+            string contractNumber = "abc";
+            var previousContract = GetDummyDataModelsContract();
+            previousContract.Status = (int)ContractStatus.Approved;
+            var currentContract = GetDummyDataModelsContract();
+            currentContract.Id = 2;
+            currentContract.ContractVersion = 2;
+
+            var responseObj = new UpdatedContractStatusResponse()
+            {
+                ContractNumber = previousContract.ContractNumber,
+                ContractVersion = previousContract.ContractVersion,
+                NewStatus = ContractStatus.Replaced,
+                Status = ContractStatus.Approved
+            };
+
+            var matchedData = new List<DataModels.Contract>() { previousContract, currentContract };
+
+            Mock.Get(_contractRepository)
+                .Setup(p => p.GetByContractNumberAsync(contractNumber))
+                .ReturnsAsync(matchedData)
+                .Verifiable();
+
+            Mock.Get(_contractRepository)
+                .Setup(p => p.UpdateContractStatusAsync(previousContract.Id, ContractStatus.Approved, ContractStatus.Replaced))
+                .ReturnsAsync(responseObj)
+                .Callback(() => { previousContract.Status = (int)ContractStatus.Replaced; })
+                .Verifiable();
+
+            SetupLogger_LogInformationMethod();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractReplaced });
+
+            Mock.Get(_contractRepository)
+                .Setup(r => r.GetByContractNumberAndVersionWithIncludesAsync(currentContract.ContractNumber, currentContract.ContractVersion, It.IsAny<ContractDataEntityInclude>()))
+                .ReturnsAsync(currentContract)
+                .Verifiable();
+
+            Mock.Get(_contractRepository)
+                .Setup(r => r.UpdateContractAsync(currentContract))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            SetMockDocumentService();
+            SetMockContractValidator();
+            SetMockContractDocumentService();
+            SetupMediator_Publish();
+            var contractService = GetContractService();
+            var request = new ContractRequest() { ContractNumber = contractNumber, ContractVersion = currentContract.ContractVersion };
+
+            // Act
+            var result = await contractService.ApproveManuallyAsync(request);
+
+            // Assert
+            result.Should().NotBeNull();
+            previousContract.Status.Should().Be((int)ContractStatus.Replaced);
+            VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task ApproveManuallyAsync_When_ContractsAtStatus_ApprovedWaitingConfirmation_AlreadyExist_Then_ContractsAreMarkedAsReplaced()
+        {
+            // Arrange
+            string contractNumber = "abc";
+            var previousContract = GetDummyDataModelsContract();
+            previousContract.Status = (int)ContractStatus.ApprovedWaitingConfirmation;
+            var currentContract = GetDummyDataModelsContract();
+            currentContract.Id = 2;
+            currentContract.ContractVersion = 2;
+
+            var responseObj = new UpdatedContractStatusResponse()
+            {
+                ContractNumber = previousContract.ContractNumber,
+                ContractVersion = previousContract.ContractVersion,
+                NewStatus = ContractStatus.Replaced,
+                Status = ContractStatus.ApprovedWaitingConfirmation
+            };
+
+            var matchedData = new List<DataModels.Contract>() { previousContract, currentContract };
+
+            Mock.Get(_contractRepository)
+                .Setup(p => p.GetByContractNumberAsync(contractNumber))
+                .ReturnsAsync(matchedData)
+                .Verifiable();
+
+            Mock.Get(_contractRepository)
+                .Setup(p => p.UpdateContractStatusAsync(previousContract.Id, ContractStatus.ApprovedWaitingConfirmation, ContractStatus.Replaced))
+                .ReturnsAsync(responseObj)
+                .Callback(() => { previousContract.Status = (int)ContractStatus.Replaced; })
+                .Verifiable();
+
+            SetupLogger_LogInformationMethod();
+            SetupAuditService_TrySendAuditAsyncMethod(new ActionType[] { ActionType.ContractReplaced });
+
+            Mock.Get(_contractRepository)
+                .Setup(r => r.GetByContractNumberAndVersionWithIncludesAsync(currentContract.ContractNumber, currentContract.ContractVersion, It.IsAny<ContractDataEntityInclude>()))
+                .ReturnsAsync(currentContract)
+                .Verifiable();
+
+            Mock.Get(_contractRepository)
+                .Setup(r => r.UpdateContractAsync(currentContract))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            SetMockDocumentService();
+            SetMockContractValidator();
+            SetMockContractDocumentService();
+            SetupMediator_Publish();
+            var contractService = GetContractService();
+            var request = new ContractRequest() { ContractNumber = contractNumber, ContractVersion = currentContract.ContractVersion };
+
+            // Act
+            var result = await contractService.ApproveManuallyAsync(request);
+
+            // Assert
+            result.Should().NotBeNull();
+            previousContract.Status.Should().Be((int)ContractStatus.Replaced);
+            VerifyAll();
+        }
+
+
+        [TestMethod]
+        public async Task ApproveManuallyAsync_When_ContractsAtStatus_Withdrawn_AlreadyExist_Then_ContractsIsNotReplaced()
+        {
+            // Arrange
+            string contractNumber = "abc";
+            var previousContract = GetDummyDataModelsContract();
+            previousContract.Status = (int)ContractStatus.WithdrawnByAgency;
+            var currentContract = GetDummyDataModelsContract();
+            currentContract.Id = 2;
+            currentContract.ContractVersion = 2;
+
+            var matchedData = new List<DataModels.Contract>() { previousContract, currentContract };
+
+            Mock.Get(_contractRepository)
+                .Setup(p => p.GetByContractNumberAsync(contractNumber))
+                .ReturnsAsync(matchedData)
+                .Verifiable();
+
+            SetupLogger_LogInformationMethod();
+
+            Mock.Get(_contractRepository)
+                .Setup(r => r.GetByContractNumberAndVersionWithIncludesAsync(currentContract.ContractNumber, currentContract.ContractVersion, It.IsAny<ContractDataEntityInclude>()))
+                .ReturnsAsync(currentContract)
+                .Verifiable();
+
+            Mock.Get(_contractRepository)
+                .Setup(r => r.UpdateContractAsync(currentContract))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+
+            SetMockDocumentService();
+            SetMockContractValidator();
+            SetMockContractDocumentService();
+            SetupMediator_Publish();
+            var contractService = GetContractService();
+            var request = new ContractRequest() { ContractNumber = contractNumber, ContractVersion = currentContract.ContractVersion };
+
+            // Act
+            var result = await contractService.ApproveManuallyAsync(request);
+
+            // Assert
+            result.Should().NotBeNull();
+            previousContract.Status.Should().Be((int)ContractStatus.WithdrawnByAgency);
+            VerifyAll();
+        }
         #endregion UpdateContractManualApprove tests
 
 
@@ -2189,6 +2381,10 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
             _mockAuditService.Verify();
             Mock.Get(_mockContractValidator).Verify();
             Mock.Get(_semaphoreOnEntity).Verify();
+
+            Mock.Get(_mockDocumentService).VerifyAll();
+            Mock.Get(_contractDocumentService).VerifyAll();
+            Mock.Get(_mockMediator).VerifyAll();
         }
 
         #endregion
