@@ -1,10 +1,14 @@
 ﻿using AutoMapper;
+using MediatR;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.ServiceBus;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Pds.Contracts.Data.Repository.Context;
 using Pds.Contracts.Data.Repository.DependencyInjection;
+using Pds.Contracts.Data.Services.DocumentServices;
 using Pds.Contracts.Data.Services.Implementations;
 using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Contracts.Data.Services.Models;
@@ -36,6 +40,12 @@ namespace Pds.Contracts.Data.Services.DependencyInjection
             services.AddRepositoriesServices(configuration);
             services.AddAutoMapper(typeof(FeatureServiceCollectionExtensions).Assembly);
             services.AddScoped<IContractService, ContractService>();
+
+            services.AddAsposeLicense();
+            services.AddScoped<IDocumentManagementContractService, AsposeDocumentManagementContractService>();
+            services.AddScoped<IDocumentManagementService, AsposeDocumentManagementService>();
+            services.AddScoped<IContractValidationService, ContractValidationService>();
+
             services.AddTransient(typeof(IAuthenticationService<>), typeof(AuthenticationService<>));
 
             services.AddSingleton<IUriService>(provider =>
@@ -45,6 +55,16 @@ namespace Pds.Contracts.Data.Services.DependencyInjection
                 var absoluteUri = string.Concat(request.Scheme, "://", request.Host.ToUriComponent());
                 return new UriService(absoluteUri);
             });
+
+            services.AddSingleton(typeof(ISemaphoreOnEntity<>), typeof(SemaphoreOnEntity<>));
+
+            services.AddSingleton<ITopicClient>(serviceProvider => ServiceBusHelper.GetTopicClient(configuration));
+            services.AddSingleton<IMessagePublisher, MessagePublisher>();
+
+            services.AddMediatR(typeof(FeatureServiceCollectionExtensions).Assembly);
+
+            services.AddSingleton(s => Helpers.BlobHelper.GetBlobContainerClient(configuration));
+            services.AddSingleton<IContractDocumentService, ContractDocumentService>();
 
             return services;
         }

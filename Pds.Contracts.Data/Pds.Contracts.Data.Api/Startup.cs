@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
+using Pds.Audit.Api.Client.Registrations;
 using Pds.Contracts.Data.Api.MvcConfiguration;
 using Pds.Contracts.Data.Services.DependencyInjection;
 using Pds.Core.ApiAuthentication;
@@ -22,7 +23,9 @@ namespace Pds.Contracts.Data.Api
     public class Startup
     {
         private const string RequireElevatedRightsPolicyName = "RequireElevatedRights";
+
         private const string CurrentApiVersion = "v1.0.0";
+
         private static string _assemblyName;
 
         private readonly IWebHostEnvironment _environment;
@@ -65,6 +68,9 @@ namespace Pds.Contracts.Data.Api
             services.AddApiControllers();
 
             services.AddFeatureServices(Configuration);
+            var policyRegistry = services.AddPolicyRegistry();
+            services.AddAuditApiClient(Configuration, policyRegistry);
+
             services.AddHealthChecks().AddFeatureHealthChecks();
             services.AddPdsApplicationInsightsTelemetry(options => BuildAppInsightsConfiguration(options));
             services.AddLoggerAdapter();
@@ -112,8 +118,6 @@ namespace Pds.Contracts.Data.Api
             {
                 c.SwaggerEndpoint($"/swagger/{CurrentApiVersion}/swagger.json", AssemblyName);
             });
-
-            app.UseHttpsRedirection();
 
             app.UseRouting();
 

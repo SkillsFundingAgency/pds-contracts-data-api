@@ -35,7 +35,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
 
             //Act
             var before = await repo.GetByIdAsync(1);
-            await contractRepo.ExampleCreate(contract);
+            await contractRepo.CreateAsync(contract);
             var after = await repo.GetByIdAsync(1);
 
             //Assert
@@ -92,13 +92,14 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
                 new DataModels.Contract { Id = 3, ContractNumber = ContractNumber, ContractVersion = 3 },
             };
 
-            //Act
             foreach (var item in initialLoad)
             {
                 await repo.AddAsync(item);
             }
 
             await work.CommitAsync();
+
+            //Act
             var actual = await contractRepo.GetByContractNumberAndVersionAsync(expected.ContractNumber, expected.ContractVersion);
 
             //Assert
@@ -121,7 +122,6 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
                 new DataModels.Contract { Id = 3, ContractNumber = ContractNumber, ContractVersion = 3 },
             };
 
-            //Act
             foreach (var item in expected)
             {
                 await repo.AddAsync(item);
@@ -129,6 +129,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
 
             await work.CommitAsync();
 
+            //Act
             var actual = await contractRepo.GetByContractNumberAsync(ContractNumber);
 
             //Assert
@@ -156,7 +157,6 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
             };
             var expected = working.Skip(1);
 
-            //Act
             foreach (var item in working)
             {
                 await repo.AddAsync(item);
@@ -164,6 +164,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
 
             await work.CommitAsync();
 
+            //Act
             var actual = await contractRepo.GetContractRemindersAsync(DateTime.UtcNow.AddDays(-14), 1, 10, ContractSortOptions.LastUpdatedAt, SortDirection.Asc);
 
             //Assert
@@ -189,7 +190,6 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
                 new DataModels.Contract { Id = contractId, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, LastEmailReminderSent = null, LastUpdatedAt = lastEmailReminderSent }
             };
 
-            //Act
             foreach (var item in working)
             {
                 await repo.AddAsync(item);
@@ -199,10 +199,51 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
 
             await contractRepo.UpdateLastEmailReminderSentAndLastUpdatedAtAsync(contractId);
 
+            //Act
             var actual = await contractRepo.GetAsync(contractId);
 
             //Assert
             actual.LastEmailReminderSent.Should().NotBeNull();
+        }
+
+        [TestMethod]
+        public async Task UpdateContractConfirmApprovalAsync_Test()
+        {
+            //Arrange
+            ContractStatus requiredContractStatus = ContractStatus.ApprovedWaitingConfirmation;
+            ContractStatus newContractStatus = ContractStatus.Approved;
+            var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
+            var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
+            var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
+            var contractRepo = new ContractRepository(repo, work, _logger);
+
+            int contractId = 1;
+            const string contractNumber = "main-0001";
+            const string title = "Test Title";
+            DateTime expectedUpdatedDate = DateTime.UtcNow;
+            DateTime lastUpdatedDate = expectedUpdatedDate.AddDays(40);
+
+            var working = new List<DataModels.Contract>
+            {
+                new DataModels.Contract { Id = contractId, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, Status = (int)requiredContractStatus, LastUpdatedAt = lastUpdatedDate }
+            };
+
+            foreach (var item in working)
+            {
+                await repo.AddAsync(item);
+            }
+
+            await work.CommitAsync();
+
+            await contractRepo.UpdateContractStatusAsync(contractId, requiredContractStatus, newContractStatus);
+
+            //Act
+            var actual = await contractRepo.GetAsync(contractId);
+
+            //Assert
+            actual.Should().NotBeNull();
+            actual.Status.Should().Be((int)newContractStatus);
+            actual.LastUpdatedAt.Should().BeSameDateAs(expectedUpdatedDate);
         }
     }
 }

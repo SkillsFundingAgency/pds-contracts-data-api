@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Pds.Contracts.Data.Common.CustomExceptionHandlers;
 using Pds.Contracts.Data.Common.Enums;
+using Pds.Contracts.Data.Common.Responses;
 using Pds.Contracts.Data.Repository.DataModels;
 using Pds.Contracts.Data.Repository.Extensions;
 using Pds.Contracts.Data.Repository.Interfaces;
@@ -28,7 +30,10 @@ namespace Pds.Contracts.Data.Repository.Implementations
         /// <param name="repository">Contract repository.</param>
         /// <param name="work">The single unit of work.</param>
         /// <param name="logger">The logger.</param>
-        public ContractRepository(IRepository<Contract> repository, IUnitOfWork work, ILoggerAdapter<ContractRepository> logger)
+        public ContractRepository(
+            IRepository<Contract> repository,
+            IUnitOfWork work,
+            ILoggerAdapter<ContractRepository> logger)
         {
             _repository = repository;
             _work = work;
@@ -36,7 +41,7 @@ namespace Pds.Contracts.Data.Repository.Implementations
         }
 
         /// <inheritdoc/>
-        public async Task ExampleCreate(Contract contract)
+        public async Task CreateAsync(Contract contract)
         {
             await _repository.AddAsync(contract);
             await _work.CommitAsync();
@@ -94,6 +99,84 @@ namespace Pds.Contracts.Data.Repository.Implementations
             }
 
             return contract;
+        }
+
+        /// <inheritdoc/>
+        public async Task<UpdatedContractStatusResponse> UpdateContractStatusAsync(int contractId, ContractStatus requiredContractStatus, ContractStatus newContractStatus)
+        {
+            UpdatedContractStatusResponse updatedContractStatusResponse = null;
+            var updatedDate = DateTime.UtcNow;
+            var contract = await _repository.GetByIdAsync(contractId);
+            if (contract != null)
+            {
+                updatedContractStatusResponse = new UpdatedContractStatusResponse() { Id = contract.Id, ContractNumber = contract.ContractNumber, ContractVersion = contract.ContractVersion, Ukprn = contract.Ukprn, Status = (ContractStatus)contract.Status };
+
+                if (contract.Status == (int)requiredContractStatus)
+                {
+                    contract.Status = (int)newContractStatus;
+                    contract.LastUpdatedAt = updatedDate;
+                    await _work.CommitAsync();
+                    updatedContractStatusResponse.NewStatus = (ContractStatus)contract.Status;
+                    _logger.LogInformation($"[{nameof(UpdateContractStatusAsync)}] - Updated successfully the contract status to {(ContractStatus)contract.Status} - Contract Id: {contractId}, Contract Number: {contract.ContractNumber}");
+                }
+                else
+                {
+                    _logger.LogError($"[[{nameof(UpdateContractStatusAsync)}] Contract status is not {requiredContractStatus} - Contract Id {contractId} , the current status is {(ContractStatus)contract.Status}.");
+                    throw new ContractStatusException($"Contract status is not {requiredContractStatus} - Contract Id {contractId} , the current status is {(ContractStatus)contract.Status}.");
+                }
+            }
+            else
+            {
+                _logger.LogError($"[[{nameof(UpdateContractStatusAsync)}] Contract not found - Contract Id {contractId}.");
+                throw new ContractNotFoundException($"Contract not found - Contract Id {contractId}.");
+            }
+
+            return updatedContractStatusResponse;
+        }
+
+        /// <inheritdoc/>
+        public async Task<Contract> GetContractWithContentAndDatasAsync(int id)
+        {
+            return await _repository.GetFirstOrDefault(c => c.Id == id, q => q.Include(c => c.ContractContent).Include(c => c.ContractData));
+        }
+
+        /// <inheritdoc/>
+        public async Task<Contract> GetByContractNumberAndVersionWithIncludesAsync(string contractNumber, int version, ContractDataEntityInclude contractIncludes)
+        {
+            return contractIncludes switch
+            {
+                ContractDataEntityInclude.Datas => await _repository.GetFirstOrDefault(c => c.ContractNumber == contractNumber & c.ContractVersion == version, q => q.Include(c => c.ContractData)),
+                ContractDataEntityInclude.Content => await _repository.GetFirstOrDefault(c => c.ContractNumber == contractNumber & c.ContractVersion == version, q => q.Include(c => c.ContractContent)),
+                ContractDataEntityInclude.Datas | ContractDataEntityInclude.Content => await _repository.GetFirstOrDefault(c => c.ContractNumber == contractNumber & c.ContractVersion == version, q => q.Include(c => c.ContractContent).Include(c => c.ContractData)),
+                _ => await GetByContractNumberAndVersionAsync(contractNumber, version)
+            };
+        }
+
+        /// <inheritdoc/>
+        public async Task<Contract> GetContractWithDatasAsync(int id)
+        {
+            return await _repository.GetFirstOrDefault(c => c.Id == id, q => q.Include(c => c.ContractData));
+        }
+
+        /// <inheritdoc/>
+        public async Task UpdateContractAsync(Contract contract)
+        {
+            contract.LastUpdatedAt = DateTime.UtcNow;
+            if (_work.IsTracked(contract))
+            {
+                try
+                {
+                    await _work.CommitAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    throw new ContractUpdateConcurrencyException(contract.ContractNumber, contract.ContractVersion, (ContractStatus)contract.Status);
+                }
+            }
+            else
+            {
+                await _repository.PatchAsync(contract.Id, contract);
+            }
         }
     }
 }

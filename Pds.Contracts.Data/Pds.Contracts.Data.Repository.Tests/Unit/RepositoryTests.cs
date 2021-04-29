@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
+using Pds.Contracts.Data.Repository.DataModels;
 using Pds.Contracts.Data.Repository.Implementations;
 using Pds.Contracts.Data.Repository.Tests.SetUp;
 using System.Collections.Generic;
@@ -195,6 +196,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
                 .Verify(e => e.Update(dummyModel), Times.Once);
         }
 
-        // Unable to unit test Patch method - EF extension method
+        // Unable to unit test Patch method - EF extension method.
+        // Unable to unit test GetFirstOrDefault method - Include is an EF extension method.
     }
 }

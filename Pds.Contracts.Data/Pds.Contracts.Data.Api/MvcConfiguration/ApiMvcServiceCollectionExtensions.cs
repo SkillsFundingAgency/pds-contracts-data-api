@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Pds.Contracts.Data.Api.MvcConfiguration
 {
@@ -13,10 +15,17 @@ namespace Pds.Contracts.Data.Api.MvcConfiguration
         /// using custom conventions for routing.
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
-        public static void AddApiControllers(this IServiceCollection services)
+        /// <returns>Returns an amended IServiceCollection.</returns>
+        public static IServiceCollection AddApiControllers(this IServiceCollection services)
         {
             services.AddControllers(options =>
-                options.Conventions.Add(new RouteTokenTransformerConvention(new SlugifyParameterTransformer())));
+                options.Conventions.Add(new RouteTokenTransformerConvention(new SlugifyParameterTransformer())))
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                });
+
+            return services;
         }
     }
 }

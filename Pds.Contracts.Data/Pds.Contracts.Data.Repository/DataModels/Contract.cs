@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 #nullable disable
 
@@ -112,6 +113,7 @@ namespace Pds.Contracts.Data.Repository.DataModels
         /// <value>
         /// The last updated at.
         /// </value>
+        [ConcurrencyCheck]
         public DateTime LastUpdatedAt { get; set; }
 
         /// <summary>

@@ -31,6 +31,9 @@
     "sharedAppInsightsName": {
       "type": "string"
     },
+    "sharedServiceBusName": {
+      "type": "string"
+    },
     "AverageResponseTimeAlertThreshhold": {
       "type": "string",
       "defaultValue": "2"
@@ -67,6 +70,75 @@
     },
     "authenticationClientId": {
       "type": "string"
+    },
+    "AuditApiBaseAddress": {
+      "type": "string"
+    },
+    "AuditApiAzureAdTenant": {
+      "type": "string"
+    },
+    "AuditApiAzureAdClientId": {
+      "type": "string"
+    },
+    "AuditApiAzureAdClientSecret": {
+      "type": "securestring"
+    },
+    "AuditApiAzureAdAppUri": {
+      "type": "string"
+    },
+    "HttpOptionsRetryCount": {
+      "type": "string",
+      "defaultValue": "3"
+    },
+    "HttpOptionsBackOffPower": {
+      "type": "string",
+      "defaultValue": "2"
+    },
+    "HttpOptionsCircuitBreakerToleranceCount": {
+      "type": "string",
+      "defaultValue": "5"
+    },
+    "HttpOptionsCircuitBreakerDuration": {
+      "type": "string",
+      "defaultValue": "0.00:00:15"
+    },
+    "NotificationTopicSBOptionsRetryCount": {
+      "type": "string",
+      "defaultValue": "3"
+    },
+    "NotificationTopicSBOptionsMinimumBackoff": {
+      "type": "string",
+      "defaultValue": "2"
+    },
+    "NotificationTopicSBOptionsMaximumBackoff": {
+      "type": "string",
+      "defaultValue": "5"
+    },
+    "servicebusAccessKeyName": {
+      "type": "string",
+      "defaultValue": "RootManagedAccessKey"
+    },
+    "sharedStorageAccountName": {
+      "type": "string"
+    },
+    "blobContainer": {
+      "type": "string",
+      "defaultValue": "contractevents"
+    },
+    "blobRetry": {
+      "type": "int",
+      "defaultValue": 3
+    },
+    "blobDelay": {
+      "type": "string",
+      "defaultValue": "0.00:00:30"
+    },
+    "apiSecurityRestrictions": {
+      "type": "array",
+      "metadata": {
+        "description": "An array of objects containing Name/ipAddress properties for defining the firewall on the api app service"
+      },
+      "defaultValue": []
     }
   },
   "variables": {
@@ -76,6 +148,7 @@
     "appServicePlanName": "[concat(variables('resourceNamePrefix'), 'api-asp')]",
     "EnvironmentToEnableAlertsUpon": ["demo", "oat", "release"],
     "EnableAlertsAndMetrics": "[contains(variables('EnvironmentToEnableAlertsUpon'), toLower(parameters('resourceEnvironmentName')))]",
+    "contractNotificationTopicName": "[concat('contract-notification-topic-', parameters('resourceEnvironmentName'))]",
     "AppServiceMetricsToAlertUpon": [
       {
         "MetricName": "Http5xx",
@@ -160,6 +233,9 @@
           "appServicePlanResourceGroup": {
             "value": "[resourceGroup().name]"
           },
+          "ipSecurityRestrictions": {
+            "value": "[parameters('apiSecurityRestrictions')]"
+          },
           "appServiceAppSettings": {
             "value": [
               {
@@ -205,6 +281,82 @@
               {
                 "name": "Authentication:ClientId",
                 "value": "[parameters('authenticationClientId')]"
+              },
+              {
+                "name": "AuditApiConfiguration:ApiBaseAddress",
+                "value": "[parameters('AuditApiBaseAddress')]"
+              },
+              {
+                "name": "AuditApiConfiguration:Authority",
+                "value": "https://login.microsoftonline.com/"
+              },
+              {
+                "name": "AuditApiConfiguration:TenantId",
+                "value": "[parameters('AuditApiAzureAdTenant')]"
+              },
+              {
+                "name": "AuditApiConfiguration:ClientId",
+                "value": "[parameters('AuditApiAzureAdClientId')]"
+              },
+              {
+                "name": "AuditApiConfiguration:ClientSecret",
+                "value": "[parameters('AuditApiAzureAdClientSecret')]"
+              },
+              {
+                "name": "AuditApiConfiguration:AppUri",
+                "value": "[parameters('AuditApiAzureAdAppUri')]"
+              },
+              {
+                "name": "AzureBlobConfiguration:ConnectionString",
+                "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',parameters('sharedStorageAccountName'),';AccountKey=',listKeys(resourceId(parameters('sharedResourceGroupName'),'Microsoft.Storage/storageAccounts',parameters('sharedStorageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value, ';EndpointSuffix=core.windows.net')]" 
+              },
+              {
+                "name": "AzureBlobConfiguration:ContainerName",
+                "value": "[parameters('blobContainer')]"
+              },
+              {
+                "name": "AzureBlobConfiguration:RetryCount",
+                "value": "[parameters('blobRetry')]"
+              },
+               {
+                "name": "AzureBlobConfiguration:Delay",
+                "value": "[parameters('blobDelay')]"
+              },
+              {
+                "name": "HttpPolicyOptions:HttpRetryCount",
+                "value": "[parameters('HttpOptionsRetryCount')]"
+              },
+              {
+                "name": "HttpPolicyOptions:HttpRetryBackoffPower",
+                "value": "[parameters('HttpOptionsBackOffPower')]"
+              },
+              {
+                "name": "HttpPolicyOptions:CircuitBreakerToleranceCount",
+                "value": "[parameters('HttpOptionsCircuitBreakerToleranceCount')]"
+              },
+              {
+                "name": "HttpPolicyOptions:CircuitBreakerDurationOfBreak",
+                "value": "[parameters('HttpOptionsCircuitBreakerDuration')]"
+              },
+              {
+                "name": "NotificationTopicSBOptions:ServiceBusConnectionString",
+                "value": "[listKeys(resourceId(parameters('sharedResourceGroupName'),'Microsoft.ServiceBus/namespaces/AuthorizationRules',parameters('sharedServiceBusName'), parameters('serviceBusAccessKeyName')),'2015-08-01').primaryConnectionString]"
+              },
+              {
+                "name": "NotificationTopicSBOptions:TopicName",
+                "value": "[variables('contractNotificationTopicName')]"
+              },
+              {
+                "name": "NotificationTopicSBOptions:RetryCount",
+                "value": "[parameters('NotificationTopicSBOptionsRetryCount')]"
+              },
+              {
+                "name": "NotificationTopicSBOptions:MinimumBackoff",
+                "value": "[parameters('NotificationTopicSBOptionsMinimumBackoff')]"
+              },
+              {
+                "name": "NotificationTopicSBOptions:MaximumBackoff",
+                "value": "[parameters('NotificationTopicSBOptionsMaximumBackoff')]"
               }
             ]
           },

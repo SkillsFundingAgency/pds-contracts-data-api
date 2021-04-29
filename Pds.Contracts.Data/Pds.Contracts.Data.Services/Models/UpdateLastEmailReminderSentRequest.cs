@@ -3,7 +3,7 @@
 namespace Pds.Contracts.Data.Services.Models
 {
     /// <summary>
-    /// Request object for update last email reminder sent.
+    /// Request update toe last email reminder sent object.
     /// </summary>
     public class UpdateLastEmailReminderSentRequest
     {
