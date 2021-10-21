@@ -106,16 +106,6 @@ namespace Pds.Contracts.Data.Services.Models
         public string ContractAllocationNumber { get; set; }
 
         /// <summary>
-        /// Gets or sets the first census date id.
-        /// </summary>
-        public int? FirstCensusDateId { get; set; }
-
-        /// <summary>
-        /// Gets or sets the second census date id.
-        /// </summary>
-        public int? SecondCensusDateId { get; set; }
-
-        /// <summary>
         /// Gets or sets the created by.
         /// </summary>
         [Required]

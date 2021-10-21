@@ -576,8 +576,6 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
                 EndDate = endDate,
                 AmendmentType = ContractAmendmentType.None,
                 ContractAllocationNumber = null,
-                FirstCensusDateId = null,
-                SecondCensusDateId = null,
                 CreatedBy = "Feed",
                 ContractContent = new CreateContractRequestDocument()
                 {
