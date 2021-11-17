@@ -81,10 +81,6 @@ namespace Pds.Contracts.Data.Repository.Context
             {
                 entity.ToTable("Contracts", "Contracts");
 
-                entity.HasIndex(e => e.FirstCensusDateId, "IX_FirstCensusDate_Id");
-
-                entity.HasIndex(e => e.SecondCensusDateId, "IX_SecondCensusDate_Id");
-
                 entity.Property(e => e.ContractNumber)
                     .IsRequired()
                     .HasMaxLength(20);
@@ -97,8 +93,6 @@ namespace Pds.Contracts.Data.Repository.Context
 
                 entity.Property(e => e.EndDate).HasColumnType("datetime");
 
-                entity.Property(e => e.FirstCensusDateId).HasColumnName("FirstCensusDate_Id");
-
                 entity.Property(e => e.LastEmailReminderSent).HasColumnType("datetime");
 
                 entity.Property(e => e.LastUpdatedAt).HasColumnType("datetime");
@@ -106,8 +100,6 @@ namespace Pds.Contracts.Data.Repository.Context
                 entity.Property(e => e.NotificationReadAt).HasColumnType("datetime");
 
                 entity.Property(e => e.ParentContractNumber).HasMaxLength(20);
-
-                entity.Property(e => e.SecondCensusDateId).HasColumnName("SecondCensusDate_Id");
 
                 entity.Property(e => e.SignedOn).HasColumnType("datetime");
 

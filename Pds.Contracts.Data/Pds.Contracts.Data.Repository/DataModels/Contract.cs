@@ -117,14 +117,6 @@ namespace Pds.Contracts.Data.Repository.DataModels
         public DateTime LastUpdatedAt { get; set; }
 
         /// <summary>
-        /// Gets or sets the first census date identifier.
-        /// </summary>
-        /// <value>
-        /// The first census date identifier.
-        /// </value>
-        public int? FirstCensusDateId { get; set; }
-
-        /// <summary>
         /// Gets or sets the type of the funding.
         /// </summary>
         /// <value>
@@ -163,14 +155,6 @@ namespace Pds.Contracts.Data.Repository.DataModels
         /// The email reminder.
         /// </value>
         public int? EmailReminder { get; set; }
-
-        /// <summary>
-        /// Gets or sets the second census date identifier.
-        /// </summary>
-        /// <value>
-        /// The second census date identifier.
-        /// </value>
-        public int? SecondCensusDateId { get; set; }
 
         /// <summary>
         /// Gets or sets the parent contract number.
