@@ -62,12 +62,24 @@ jobs:
       projects: '**/*.csproj'
       arguments: '--configuration $(buildConfiguration) --no-restore'
 
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core sdk'
+    inputs:
+      packageType: sdk
+      version: 3.x
+
   - task: DotNetCoreCLI@2
     displayName: Test
     inputs:
       command: test
       projects: '**/*Tests/*.csproj'
       arguments: '--configuration $(buildConfiguration) --no-build --collect "Code coverage" --filter TestCategory=Unit'
+      
+  - task: UseDotNet@2
+    displayName: 'Use .NET Core sdk'
+    inputs:
+      packageType: sdk
+      version: 6.x
 
   - task: DotNetCoreCLI@2
     displayName: 'Publish Website'
