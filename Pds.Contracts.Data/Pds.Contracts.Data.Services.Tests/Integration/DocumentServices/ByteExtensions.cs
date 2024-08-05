@@ -46,7 +46,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration.DocumentServices
                     }
 
                     pdf.AssertPage1HasText(fileName, $"Document reference: {contractReference}");
-                    pdf.AssertPage1HasText(fileName, $"Signed by {who} on {when.ToDateDisplay()} as the " + Environment.NewLine + "provider's authorised signatory");
+                    pdf.AssertPage1HasText(fileName, $"Signed by {who} on {when.DisplayFormat()} as the provider's authorised " + Environment.NewLine + "signatory");
                     if (!string.IsNullOrEmpty(principalId))
                     {
                         pdf.AssertPage1HasText(fileName, $"User ID: {principalId}");

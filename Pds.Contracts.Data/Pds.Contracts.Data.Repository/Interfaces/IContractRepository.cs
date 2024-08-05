@@ -42,6 +42,15 @@ namespace Pds.Contracts.Data.Repository.Interfaces
         Task<Contract> GetByContractNumberAndVersionAsync(string contractNumber, int version);
 
         /// <summary>
+        /// Gets the contract by contract number, version and ukprn asynchronously.
+        /// </summary>
+        /// <param name="contractNumber">The contract number.</param>
+        /// <param name="version">The version.</param>
+        /// <param name="ukprn">The UKPRN.</param>
+        /// <returns>A <see cref="Task{Contract}"/> corresponding to the input parameter(s).</returns>
+        Task<Contract> GetContractAsync(string contractNumber, int version, int ukprn);
+
+        /// <summary>
         /// Gets the contract by contract number and version with content and datas asynchronously.
         /// </summary>
         /// <param name="contractNumber">The contract number.</param>

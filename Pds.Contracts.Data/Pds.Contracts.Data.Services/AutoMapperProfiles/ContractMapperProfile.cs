@@ -18,6 +18,7 @@ namespace Pds.Contracts.Data.Services.AutoMapperProfiles
         public ContractMapperProfile()
         {
             CreateMap<DataModel.Contract, ServiceModel.Contract>();
+            CreateMap<DataModel.ContractContent, ServiceModel.ContractContent>();
             CreateMap<DataModel.Contract, ServiceModel.ContractReminderItem>();
 
             CreateMap<ServiceModel.CreateContractRequestDocument, DataModel.ContractContent>()

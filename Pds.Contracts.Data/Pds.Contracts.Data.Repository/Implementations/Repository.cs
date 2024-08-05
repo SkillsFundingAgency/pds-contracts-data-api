@@ -49,12 +49,12 @@ namespace Pds.Contracts.Data.Repository.Implementations
         public async Task PatchAsync(int id, T current) => _dbContext.Entry<T>(await GetByIdAsync(id)).CurrentValues.SetValues(current);
 
         /// <inheritdoc/>
-        public async Task<T> GetFirstOrDefault(
+        public Task<T> GetFirstOrDefault(
                                             Expression<Func<T, bool>> predicate,
                                             Func<IQueryable<T>, IIncludableQueryable<T, object>> includes)
         {
             IQueryable<T> query = _dbContext.Set<T>();
-            return await includes(query).Where(predicate).FirstOrDefaultAsync();
+            return Task.FromResult(includes(query).Where(predicate).FirstOrDefault());
         }
     }
 }

@@ -39,17 +39,31 @@ namespace Pds.Contracts.Data.Services.Tests.Unit
         }
 
         [TestMethod]
-        public void ToDateDisplay_WithDaylightSavingTime()
+        public void DateExtensions_GMTWhenDisplayFormatCalled_ReturnsDateStringAsExpected()
         {
             // Arrange
-            var expectedDateTimeText = "24 February 2021 at 06:55PM";
-            var localDatetime = new DateTime(2021, 2, 24, 18, 55, 0, DateTimeKind.Utc);
+            var input = new DateTime(2024, 1, 5, 22, 6, 45);
+            var expected = "5 January 2024 at 10:06pm";
 
             // Act
-            var actual = localDatetime.ToDateDisplay();
+            var result = input.DisplayFormat();
 
             // Assert
-            actual.Should().Be(expectedDateTimeText);
+            result.Should().Be(expected);
+        }
+
+        [TestMethod]
+        public void DateExtensions_BSTWhenDisplayFormatCalled_ReturnsDateStringAsExpected()
+        {
+            // Arrange
+            var input = new DateTime(2024, 10, 5, 22, 6, 45);
+            var expected = "5 October 2024 at 11:06pm";
+
+            // Act
+            var result = input.DisplayFormat();
+
+            // Assert
+            result.Should().Be(expected);
         }
     }
 }

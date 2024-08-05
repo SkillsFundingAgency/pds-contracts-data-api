@@ -12,10 +12,10 @@ using Pds.Contracts.Data.Services.Responses;
 using Pds.Core.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using AuditModels = Pds.Audit.Api.Client.Models;
-using DataModels = Pds.Contracts.Data.Repository.DataModels;
 
 
 namespace Pds.Contracts.Data.Services.Implementations
@@ -174,6 +174,13 @@ namespace Pds.Contracts.Data.Services.Implementations
         public async Task<Models.Contract> GetByContractNumberAndVersionAsync(string contractNumber, int version)
         {
             var contract = await _repository.GetByContractNumberAndVersionAsync(contractNumber, version).ConfigureAwait(false);
+            return _mapper.Map<Models.Contract>(contract);
+        }
+
+        /// <inheritdoc/>
+        public async Task<Models.Contract> GetContractAsync(string contractNumber, int version, int ukprn)
+        {
+            var contract = await _repository.GetContractAsync(contractNumber, version, ukprn).ConfigureAwait(false);
             return _mapper.Map<Models.Contract>(contract);
         }
 
@@ -338,6 +345,41 @@ namespace Pds.Contracts.Data.Services.Implementations
             await _mediator.Publish(updatedContractStatusResponse);
 
             return updatedContractStatusResponse;
+        }
+
+        /// <inheritdoc/>
+        public async Task PrependSignedPageToDocumentAndSaveAsync(int contractId)
+        {
+            _logger.LogInformation($"[{nameof(PrependSignedPageToDocumentAndSaveAsync)}] called with contract Id: {contractId}.");
+
+            var contract = await _repository.GetAsync(contractId);
+
+            _logger.LogInformation($"Contract signed and pre-pending page to pdf document. Id: {contractId}, signedOnDate {contract.SignedOn.Value}");
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            _logger.LogInformation($"Size of the document before adding contract signed page to {contract.ContractContent.FileName} is : {contract.ContractContent.Content.Length}");
+
+            var signedContractDocument = _documentService.AddSignedDocumentPage(
+                contract.ContractContent.Content,
+                contract.ContractContent.FileName.Replace(".pdf", string.Empty),
+                contract.SignedByDisplayName,
+                contract.SignedOn.Value,
+                false,
+                (ContractFundingType)contract.FundingType);
+
+            sw.Stop();
+
+            contract.ContractContent.Content = signedContractDocument;
+            contract.ContractContent.Size = signedContractDocument.Length;
+
+            _logger.LogInformation($"Time taken for pre-pending the page to {contract.ContractContent.FileName} document:  {sw.Elapsed}");
+
+            _logger.LogInformation($"Size of the document after adding the contract signed page to {contract.ContractContent.FileName} is : {contract.ContractContent.Content.Length}");
+
+
+            await _repository.UpdateContractAsync(contract);
         }
 
         private AuditModels.Audit GetAudit(UpdatedContractStatusResponse updatedContractStatusResponse)

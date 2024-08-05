@@ -5,6 +5,7 @@ using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Core.Logging;
 using System;
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace Pds.Contracts.Data.Services.DocumentServices
 {
@@ -37,6 +38,7 @@ namespace Pds.Contracts.Data.Services.DocumentServices
         /// <param name="fundingType">the contract funding type.</param>
         /// <param name="principalId">The ID of the current user.</param>
         /// <returns>The PDF with signed page.</returns>
+        [SupportedOSPlatform("windows")]
         public byte[] AddSignedDocumentPage(byte[] pdf, string contractRefernce, string signer, DateTime signedOn, bool manuallyApproved, ContractFundingType fundingType, string principalId = null)
         {
             _logger.LogInformation($"[{nameof(AddSignedDocumentPage)}] Adding signed document page to {contractRefernce}.");
@@ -76,7 +78,7 @@ namespace Pds.Contracts.Data.Services.DocumentServices
                     cursorLocation += top.Height + 200;
                     bottom.Top = cursorLocation;
                     bottom.Paragraphs.Add(CreateParagraph($"Document reference: {contractRefernce}"));
-                    bottom.Paragraphs.Add(CreateParagraph($"Signed by {signer} on {signedOn.ToDateDisplay()} as the provider's authorised signatory"));
+                    bottom.Paragraphs.Add(CreateParagraph($"Signed by {signer} on {signedOn.DisplayFormat()} as the provider's authorised signatory"));
                     if (!string.IsNullOrEmpty(principalId))
                     {
                         bottom.Paragraphs.Add(CreateParagraph($"User ID: {principalId}"));

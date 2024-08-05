@@ -106,6 +106,43 @@ namespace Pds.Contracts.Data.Api.Controllers
         }
 
         /// <summary>
+        /// Gets the contract by contract number, version number and ukprn.
+        /// </summary>
+        /// <param name="contractNumber">The contract number.</param>
+        /// <param name="versionNumber">The version number.</param>
+        /// <param name="ukprn">The ukprn number.</param>
+        /// <returns>
+        /// A <see cref="ActionResult{Contract}"/> representing the return value of the this operation.
+        /// </returns>
+        /// <response code="404">
+        /// No contract can be found for given contract number, version number and ukprn.
+        /// </response>
+        /// <response code="500">
+        /// Application error, invalid operation attempted, please report this to developer.
+        /// </response>
+        /// <response code="503">
+        /// Service is un-available, try after sometime may be the application has been flooded.
+        /// </response>
+        [HttpGet("/api/contractByNumberVersionUkprn")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+        public async Task<ActionResult<Contract>> GetContract(string contractNumber, int versionNumber, int ukprn)
+        {
+            _logger.LogInformation($"Get a contract by contract number: {contractNumber}, version: {versionNumber} and ukprn {ukprn}.");
+            var contract = await _contractService.GetContractAsync(contractNumber, versionNumber, ukprn);
+            if (contract is null)
+            {
+                return NotFound();
+            }
+
+            return contract;
+        }
+
+        /// <summary>
         /// Gets a list of unsigned contracts that are past their due date.
         /// </summary>
         /// <param name="reminderInterval">Interval in days.</param>
@@ -485,6 +522,38 @@ namespace Pds.Contracts.Data.Api.Controllers
             }
 
             return new StatusCodeResult(StatusCodes.Status200OK);
+        }
+
+        /// <summary>
+        /// Prepend the signed page after signing the contract.
+        /// </summary>
+        /// <param name="contractId">Contract Id.</param>
+        /// <returns>A <see cref="Task{TResult}"/> representing the result of the asynchronous operation.</returns>
+        [HttpPatch("prependSignedPage")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+        public async Task<ActionResult> PrependSignedPageToDocument([FromBody]int contractId)
+        {
+            _logger.LogInformation($"[{nameof(PrependSignedPageToDocument)}] called with contractId: {contractId}");
+
+            try
+            {
+                await this._contractService.PrependSignedPageToDocumentAndSaveAsync(contractId);
+                return new StatusCodeResult(StatusCodes.Status200OK);
+            }
+            catch (ContractUpdateConcurrencyException ex)
+            {
+                _logger.LogError(ex, $"[{nameof(PrependSignedPageToDocument)}] Contract may have been modified or deleted since Contract were loaded - Contract Id: {contractId}.");
+                return Problem(detail: ex.Message, statusCode: StatusCodes.Status409Conflict);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"[{nameof(PrependSignedPageToDocument)}] Un-expected exception for the contract Id: {contractId}.");
+                return Problem(statusCode: StatusCodes.Status500InternalServerError);
+            }
         }
     }
 }

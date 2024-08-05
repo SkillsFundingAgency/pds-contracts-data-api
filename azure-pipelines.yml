@@ -66,7 +66,7 @@ jobs:
     displayName: 'Use .NET Core sdk'
     inputs:
       packageType: sdk
-      version: 3.x
+      version: 6.x
 
   - task: DotNetCoreCLI@2
     displayName: Test

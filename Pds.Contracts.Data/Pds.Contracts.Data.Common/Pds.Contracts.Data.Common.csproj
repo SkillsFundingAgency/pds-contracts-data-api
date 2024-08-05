@@ -1,15 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
+		<TargetFramework>net6.0</TargetFramework>
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 	</PropertyGroup>
-
 	<ItemGroup>
 		<PackageReference Include="Pds.Core.CodeAnalysis.StyleCop" Version="2.0.0" />
-		<PackageReference Include="Pds.Core.Logging" Version="2.0.3" />
+		<PackageReference Include="Pds.Core.Logging" Version="2.0.6" />
 		<PackageReference Include="MediatR" Version="9.0.0" />
-		<PackageReference Include="Pds.Audit.Api.Client" Version="1.0.4" />
+		<PackageReference Include="Pds.Audit.Api.Client" Version="1.1.4" />
 	</ItemGroup>
-
 </Project>

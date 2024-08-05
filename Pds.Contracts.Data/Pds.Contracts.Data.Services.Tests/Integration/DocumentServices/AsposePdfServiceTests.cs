@@ -5,6 +5,7 @@ using Pds.Contracts.Data.Common.Enums;
 using Pds.Contracts.Data.Services.DocumentServices;
 using Pds.Core.Logging;
 using System;
+using System.Runtime.Versioning;
 
 namespace Pds.Contracts.Data.Services.Tests.Integration.DocumentServices
 {
@@ -14,7 +15,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration.DocumentServices
         private Mock<ILoggerAdapter<AsposeDocumentManagementService>> _mockLogger;
 
         #region AddSignedDocumentPage
-
+        [SupportedOSPlatform("windows")]
         [TestMethod, TestCategory("Integration"), TestCategory("CoreIntegration")]
         public void AddSignedDocumentPage_ManuallySigned()
         {
@@ -33,6 +34,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration.DocumentServices
             actual.ShouldHaveSignedPage("12345678_CityDeals-0002_v1", signer, new DateTime(2021, 10, 18, 18, 55, 10), true, "in-memory-file.pdf", ContractFundingType.Levy, null);
         }
 
+        [SupportedOSPlatform("windows")]
         [TestMethod, TestCategory("Integration"), TestCategory("CoreIntegration")]
         public void AddSignedDocumentPage()
         {
