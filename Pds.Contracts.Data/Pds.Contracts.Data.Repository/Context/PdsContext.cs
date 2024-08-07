@@ -62,6 +62,14 @@ namespace Pds.Contracts.Data.Repository.Context
         public virtual DbSet<ContractFundingStreamPeriodCodeDisplay> ContractFundingStreamPeriodCodeDisplays { get; set; }
 
         /// <summary>
+        /// Gets or sets the full subcontractor declaration.
+        /// </summary>
+        /// <value>
+        /// The full subcontractor declaration.
+        /// </value>
+        public virtual DbSet<FullSubcontractorDeclaration> FullSubcontractorDeclarations { get; set; }
+
+        /// <summary>
         /// Override this method to further configure the model that was discovered by convention from the entity types
         /// exposed in <see cref="T:Microsoft.EntityFrameworkCore.DbSet`1" /> properties on your derived context. The resulting model may be cached
         /// and re-used for subsequent instances of your derived context.
@@ -176,6 +184,19 @@ namespace Pds.Contracts.Data.Repository.Context
                 entity.Property(e => e.LastUpdatedAt).HasColumnType("datetime");
 
                 entity.Property(e => e.Name).IsRequired();
+            });
+
+            modelBuilder.Entity<FullSubcontractorDeclaration>(entity =>
+            {
+                entity.ToTable("FullSubcontractorDeclarations", "Contracts");
+
+                entity.Property(e => e.Ukprn).IsRequired();
+
+                entity.Property(e => e.Version).IsRequired();
+
+                entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+
+                entity.Property(e => e.LastUpdatedAt).HasColumnType("datetime");
             });
 
             OnModelCreatingPartial(modelBuilder);

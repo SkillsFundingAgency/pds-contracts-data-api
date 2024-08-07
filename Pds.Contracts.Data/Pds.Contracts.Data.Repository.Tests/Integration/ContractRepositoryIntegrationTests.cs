@@ -30,7 +30,8 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
                 Id = 1,
                 ContractNumber = "Test",
                 ContractVersion = 1,
-                Year = "2021"
+                Year = "2021",
+                Title = "Mock"
             };
 
             //Act
@@ -56,7 +57,8 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
                 Id = 1,
                 ContractNumber = "Test",
                 ContractVersion = 1,
-                Year = "2021"
+                Year = "2021",
+                Title = "Mock"
             };
 
             //Act
@@ -82,14 +84,15 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
                 Id = 1,
                 ContractNumber = ContractNumber,
                 ContractVersion = 1,
-                Year = "2021"
+                Year = "2021",
+                Title = "Mock"
             };
 
             var initialLoad = new List<DataModels.Contract>
             {
-                new DataModels.Contract { Id = 2, ContractNumber = ContractNumber, ContractVersion = 2 },
+                new DataModels.Contract { Id = 2, ContractNumber = ContractNumber, ContractVersion = 2, Title = "Mock", Year = "2021" },
                 expected,
-                new DataModels.Contract { Id = 3, ContractNumber = ContractNumber, ContractVersion = 3 },
+                new DataModels.Contract { Id = 3, ContractNumber = ContractNumber, ContractVersion = 3, Title = "Mock", Year = "2021" },
             };
 
             foreach (var item in initialLoad)
@@ -107,6 +110,46 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
         }
 
         [TestMethod]
+        public async Task GetByContractNumberVersionAndUkprnAsync_TestAsync()
+        {
+            //Arrange
+            var inMemPdsDbContext = HelperExtensions.GetInMemoryPdsDbContext();
+            var repo = new Repository<DataModels.Contract>(inMemPdsDbContext);
+            var work = new SingleUnitOfWorkForRepositories(inMemPdsDbContext);
+            var contractRepo = new ContractRepository(repo, work, _logger);
+            const string ContractNumber = "Test";
+            var expected = new DataModels.Contract
+            {
+                Id = 1,
+                ContractNumber = ContractNumber,
+                ContractVersion = 1,
+                Year = "2021",
+                Ukprn = 12345678,
+                Title = "Mock",
+            };
+
+            var initialLoad = new List<DataModels.Contract>
+            {
+                new DataModels.Contract { Id = 2, ContractNumber = ContractNumber, ContractVersion = 2, Title = "Mock", Year = "2021" },
+                expected,
+                new DataModels.Contract { Id = 3, ContractNumber = ContractNumber, ContractVersion = 3, Title = "Mock", Year = "2021" },
+            };
+
+            foreach (var item in initialLoad)
+            {
+                await repo.AddAsync(item);
+            }
+
+            await work.CommitAsync();
+
+            //Act
+            var actual = await contractRepo.GetContractAsync(expected.ContractNumber, expected.ContractVersion, expected.Ukprn);
+
+            //Assert
+            actual.Should().Be(expected);
+        }
+
+        [TestMethod]
         public async Task GetByContractNumberAsync_TestAsync()
         {
             //Arrange
@@ -117,9 +160,9 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
             const string ContractNumber = "Test";
             var expected = new List<DataModels.Contract>
             {
-                new DataModels.Contract { Id = 1, ContractNumber = ContractNumber, ContractVersion = 1 },
-                new DataModels.Contract { Id = 2, ContractNumber = ContractNumber, ContractVersion = 2 },
-                new DataModels.Contract { Id = 3, ContractNumber = ContractNumber, ContractVersion = 3 },
+                new DataModels.Contract { Id = 1, ContractNumber = ContractNumber, ContractVersion = 1, Title = "Mock", Year = "2021" },
+                new DataModels.Contract { Id = 2, ContractNumber = ContractNumber, ContractVersion = 2, Title = "Mock", Year = "2021" },
+                new DataModels.Contract { Id = 3, ContractNumber = ContractNumber, ContractVersion = 3, Title = "Mock", Year = "2021" },
             };
 
             foreach (var item in expected)
@@ -151,9 +194,9 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
 
             var working = new List<DataModels.Contract>
             {
-                new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, LastEmailReminderSent = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
-                new DataModels.Contract { Id = 2, Title = title, ContractNumber = contractNumber, ContractVersion = 2, LastEmailReminderSent = lastEmailReminderSent.AddDays(-14), Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
-                new DataModels.Contract { Id = 3, Title = title, ContractNumber = contractNumber, ContractVersion = 3, LastEmailReminderSent = lastEmailReminderSent.AddDays(-15), Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, LastEmailReminderSent = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, Year = "2021" },
+                new DataModels.Contract { Id = 2, Title = title, ContractNumber = contractNumber, ContractVersion = 2, LastEmailReminderSent = lastEmailReminderSent.AddDays(-14), Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, Year = "2021" },
+                new DataModels.Contract { Id = 3, Title = title, ContractNumber = contractNumber, ContractVersion = 3, LastEmailReminderSent = lastEmailReminderSent.AddDays(-15), Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, Year = "2021" },
             };
             var expected = working.Skip(1);
 
@@ -187,7 +230,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
 
             var working = new List<DataModels.Contract>
             {
-                new DataModels.Contract { Id = contractId, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, LastEmailReminderSent = null, LastUpdatedAt = lastEmailReminderSent }
+                new DataModels.Contract { Id = contractId, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, LastEmailReminderSent = null, LastUpdatedAt = lastEmailReminderSent, Year = "2021" }
             };
 
             foreach (var item in working)
@@ -225,7 +268,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Integration
 
             var working = new List<DataModels.Contract>
             {
-                new DataModels.Contract { Id = contractId, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, Status = (int)requiredContractStatus, LastUpdatedAt = lastUpdatedDate }
+                new DataModels.Contract { Id = contractId, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, Status = (int)requiredContractStatus, LastUpdatedAt = lastUpdatedDate, Year = "2021" }
             };
 
             foreach (var item in working)

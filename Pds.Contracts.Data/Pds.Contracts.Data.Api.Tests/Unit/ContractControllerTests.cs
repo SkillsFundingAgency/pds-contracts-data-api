@@ -354,6 +354,63 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
         #endregion
 
+        #region GetByContractNumberVersionAndUkprn
+
+        [TestMethod]
+        public async Task GetByContractNumberVersionAndUkprn_ReturnsSingleContractResultFromContractServiceAsync()
+        {
+            // Arrange
+            var expected = Mock.Of<Services.Models.Contract>();
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+
+            var mockContractService = new Mock<IContractService>();
+            mockContractService
+                .Setup(e => e.GetContractAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .ReturnsAsync(expected)
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object);
+
+            // Act
+            var actual = await controller.GetContract("some-contract-number", 1, 12345678);
+
+            // Assert
+            actual.Should().BeObjectResult().WithValue(expected);
+            mockLogger.Verify();
+            mockContractService.Verify();
+        }
+
+        [TestMethod]
+        public async Task GetByContractNumberVersionAndUkprn_ReturnsNotFoundResultAsync()
+        {
+            // Arrange
+            var mockLogger = new Mock<ILoggerAdapter<ContractController>>();
+            mockLogger
+                .Setup(logger => logger.LogInformation(It.IsAny<string>()))
+                .Verifiable();
+
+            var mockContractService = new Mock<IContractService>();
+            mockContractService
+                .Setup(e => e.GetContractAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+                .ReturnsAsync(default(Services.Models.Contract))
+                .Verifiable();
+
+            var controller = new ContractController(mockLogger.Object, mockContractService.Object);
+
+            // Act
+            var actual = await controller.GetContract("invalid-contract-number", 1, 12345678);
+
+            // Assert
+            actual.Result.Should().BeNotFoundResult();
+            mockLogger.Verify();
+            mockContractService.Verify();
+        }
+
+        #endregion
+
 
         #region GetContractReminders
 
@@ -1174,6 +1231,69 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
 
         #endregion ManualApprove tests.
 
+        #region PrependSignedPageToDocument
+
+        [TestMethod]
+        public async Task PrependSignedPageToDocument_ReturnsOKResultAsync()
+        {
+            // Arrange
+            var expectedStatus = HttpStatusCode.OK;
+            SetMockLogger();
+            SetMockContractService_PrependSignedPageToDocument();
+            var controller = GetContractController();
+
+            // Act
+            var result = await controller.PrependSignedPageToDocument(1);
+
+            // Assert
+            result.Should().BeStatusCodeResult().WithStatusCode((int)expectedStatus);
+            Mock.Get(_contractService).Verify(e => e.PrependSignedPageToDocumentAndSaveAsync(It.IsAny<int>()), Times.Once);
+            Mock.Get(_logger).Verify();
+        }
+
+        [TestMethod]
+        public async Task PrependSignedPageToDocument_ReturnsContractUpdateConcurrencyException()
+        {
+            // Arrange
+            var expectedStatus = HttpStatusCode.Conflict;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
+            SetMockLogger_Error();
+            SetMockContractService_PrependSignedPageToDocument_ContractUpdateConcurrencyException();
+            var controller = GetContractController();
+
+            // Act
+            var result = await controller.PrependSignedPageToDocument(1);
+
+            // Assert
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
+            Mock.Get(_contractService).Verify(e => e.PrependSignedPageToDocumentAndSaveAsync(It.IsAny<int>()), Times.Once);
+            Mock.Get(_logger).Verify();
+        }
+
+        [TestMethod]
+        public async Task PrependSignedPageToDocument_ReturnsGeneralExceptionResult()
+        {
+            // Arrange
+            var expectedStatus = HttpStatusCode.InternalServerError;
+            var problem = GetProblemDetailsAndSetup(expectedStatus);
+            SetMockLogger_Error();
+            SetMockContractService_PrependSignedPageToDocument_GeneralException();
+            var controller = GetContractController();
+
+            // Act
+            var result = await controller.PrependSignedPageToDocument(1);
+
+            // Assert
+            var status = result.Should().BeAssignableTo<ObjectResult>();
+            status.Subject.StatusCode.Should().Be((int)expectedStatus);
+            status.Subject.Value.Should().Be(problem);
+            Mock.Get(_contractService).Verify(e => e.PrependSignedPageToDocumentAndSaveAsync(It.IsAny<int>()), Times.Once);
+            Mock.Get(_logger).Verify();
+        }
+
+        #endregion PrependSignedPageToDocument
 
         #region Arrange Helpers
 
@@ -1404,6 +1524,30 @@ namespace Pds.Contracts.Data.Api.Tests.Unit
                  .Setup(e => e.ApproveManuallyAsync(It.IsAny<ContractRequest>()))
                  .Throws(new ContractUpdateConcurrencyException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<ContractStatus>()))
                  .Verifiable();
+        }
+
+        private void SetMockContractService_PrependSignedPageToDocument()
+        {
+            Mock.Get(_contractService)
+                .Setup(e => e.PrependSignedPageToDocumentAndSaveAsync(It.IsAny<int>()))
+                .Returns(Task.CompletedTask)
+                .Verifiable();
+        }
+
+        private void SetMockContractService_PrependSignedPageToDocument_ContractUpdateConcurrencyException()
+        {
+            Mock.Get(_contractService)
+                 .Setup(e => e.PrependSignedPageToDocumentAndSaveAsync(It.IsAny<int>()))
+                 .Throws(new ContractUpdateConcurrencyException(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<ContractStatus>()))
+                 .Verifiable();
+        }
+
+        private void SetMockContractService_PrependSignedPageToDocument_GeneralException()
+        {
+            Mock.Get(_contractService)
+                .Setup(e => e.PrependSignedPageToDocumentAndSaveAsync(It.IsAny<int>()))
+                .Throws(new Exception())
+                .Verifiable();
         }
 
         private ProblemDetails GetProblemDetailsAndSetup(HttpStatusCode expectedStatus)

@@ -50,13 +50,19 @@ namespace Pds.Contracts.Data.Repository.Implementations
         /// <inheritdoc/>
         public async Task<Contract> GetAsync(int id)
         {
-            return await _repository.GetByIdAsync(id).ConfigureAwait(false);
+            return await _repository.GetFirstOrDefault(c => c.Id == id, q => q.Include(c => c.ContractContent));
         }
 
         /// <inheritdoc/>
         public async Task<Contract> GetByContractNumberAndVersionAsync(string contractNumber, int version)
         {
             return await _repository.GetByPredicateAsync(c => c.ContractNumber == contractNumber && c.ContractVersion == version);
+        }
+
+        /// <inheritdoc/>
+        public async Task<Contract> GetContractAsync(string contractNumber, int version, int ukprn)
+        {
+            return await _repository.GetByPredicateAsync(c => c.ContractNumber == contractNumber && c.ContractVersion == version && c.Ukprn == ukprn);
         }
 
         /// <inheritdoc/>

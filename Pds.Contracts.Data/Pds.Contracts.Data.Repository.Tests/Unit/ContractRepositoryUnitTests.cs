@@ -27,11 +27,19 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
         public async Task GetAsyncTestAsync()
         {
             //Arrange
-            var expected = new Contract { Id = 1 };
+            var expected = new Contract
+            {
+                Id = 1,
+                ContractContent = new ContractContent
+                {
+                    FileName = "testfilename"
+                }
+            };
+
             var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
             var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
             Mock.Get(mockRepo)
-                .Setup(r => r.GetByIdAsync(It.IsAny<int>()))
+                .Setup(r => r.GetFirstOrDefault(It.IsAny<Expression<Func<Contract, bool>>>(), It.IsAny<Func<IQueryable<Contract>, IIncludableQueryable<Contract, object>>>()))
                 .ReturnsAsync(expected);
 
             //Act
@@ -58,6 +66,27 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             //Act
             var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
             var actual = await contractRepo.GetByContractNumberAndVersionAsync(expected.ContractNumber, expected.ContractVersion);
+
+            //Assert
+            actual.Should().Be(expected);
+            Mock.Get(mockRepo).VerifyAll();
+            _mockLogger.VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task GetByContractNumberVersionAndUkprnAsyncTestAsync()
+        {
+            //Arrange
+            var expected = new Contract { Id = 1, ContractNumber = "expected-contract-number", ContractVersion = 1, Ukprn = 12345678 };
+            var mockUnitOfWork = Mock.Of<IUnitOfWork>(MockBehavior.Strict);
+            var mockRepo = Mock.Of<IRepository<Contract>>(MockBehavior.Strict);
+            Mock.Get(mockRepo)
+                .Setup(r => r.GetByPredicateAsync(It.IsAny<Expression<Func<Contract, bool>>>()))
+                .ReturnsAsync(expected);
+
+            //Act
+            var contractRepo = new ContractRepository(mockRepo, mockUnitOfWork, _mockLogger.Object);
+            var actual = await contractRepo.GetContractAsync(expected.ContractNumber, expected.ContractVersion, expected.Ukprn);
 
             //Assert
             actual.Should().Be(expected);
@@ -274,7 +303,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             Func<Task> act = async () => await contractRepo.UpdateContractStatusAsync(searchContractId, requiredContractStatus, newContractStatus);
 
             //Assert
-            act.Should().Throw<ContractStatusException>();
+            act.Should().ThrowAsync<ContractStatusException>();
             Mock.Get(mockRepo).Verify(r => r.GetByIdAsync(searchContractId), Times.Once);
             dummyContract.Status.Should().Be((int)ContractStatus.WithdrawnByAgency);
             dummyContract.LastUpdatedAt.Should().BeSameDateAs(lastUpdatedDate);
@@ -309,7 +338,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             Func<Task> act = async () => await contractRepo.UpdateContractStatusAsync(searchContractId, requiredContractStatus, newContractStatus);
 
             //Assert
-            act.Should().Throw<ContractNotFoundException>();
+            act.Should().ThrowAsync<ContractNotFoundException>();
             Mock.Get(mockRepo).Verify(r => r.GetByIdAsync(searchContractId), Times.Once);
             Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Never);
             _mockLogger.VerifyAll();
@@ -339,7 +368,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             Func<Task> act = async () => await contractRepo.UpdateContractAsync(expected);
 
             //Assert
-            act.Should().NotThrow();
+            act.Should().NotThrowAsync();
             Mock.Get(mockUnitOfWork).Verify(u => u.IsTracked(expected), Times.Once);
             Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Once);
             Mock.Get(mockRepo).Verify(r => r.PatchAsync(It.IsAny<int>(), It.IsAny<Contract>()), Times.Never);
@@ -375,7 +404,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             Func<Task> act = async () => await contractRepo.UpdateContractAsync(expected);
 
             //Assert
-            var result = act.Should().Throw<ContractUpdateConcurrencyException>();
+            var result = act.Should().ThrowAsync<ContractUpdateConcurrencyException>();
             Mock.Get(mockUnitOfWork).Verify(u => u.IsTracked(expected), Times.Once);
             Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Once);
             Mock.Get(mockRepo).Verify(r => r.PatchAsync(It.IsAny<int>(), It.IsAny<Contract>()), Times.Never);
@@ -406,7 +435,7 @@ namespace Pds.Contracts.Data.Repository.Tests.Unit
             Func<Task> act = async () => await contractRepo.UpdateContractAsync(expected);
 
             //Assert
-            act.Should().NotThrow();
+            act.Should().NotThrowAsync();
             Mock.Get(mockUnitOfWork).Verify(u => u.IsTracked(expected), Times.Once);
             Mock.Get(mockUnitOfWork).Verify(u => u.CommitAsync(), Times.Never);
             Mock.Get(mockRepo).Verify(r => r.PatchAsync(It.IsAny<int>(), It.IsAny<Contract>()), Times.Once);

@@ -35,6 +35,15 @@ namespace Pds.Contracts.Data.Services.Interfaces
         Task<Models.Contract> GetByContractNumberAndVersionAsync(string contractNumber, int version);
 
         /// <summary>
+        /// Gets the by contract number, version and ukprn asynchronous.
+        /// </summary>
+        /// <param name="contractNumber">The contract number.</param>
+        /// <param name="version">The version.</param>
+        /// <param name="ukprn">The ukprn.</param>
+        /// <returns>A contract <see cref="Models.Contract"/>.</returns>
+        Task<Models.Contract> GetContractAsync(string contractNumber, int version, int ukprn);
+
+        /// <summary>
         /// Gets the contract by contract number.
         /// </summary>
         /// <param name="contractNumber">The contract identifier.</param>
@@ -90,5 +99,12 @@ namespace Pds.Contracts.Data.Services.Interfaces
         /// </param>
         /// <returns>Returns a Updated Contract Status Response model.</returns>
         Task<UpdatedContractStatusResponse> ApproveManuallyAsync(ContractRequest request);
+
+        /// <summary>
+        /// Prepend signed page to the document after Approved.
+        /// </summary>
+        /// <param name="contractId">Contract Id. </param>
+        /// <returns>Representing the asynchronous operation.</returns>
+        Task PrependSignedPageToDocumentAndSaveAsync(int contractId);
     }
 }

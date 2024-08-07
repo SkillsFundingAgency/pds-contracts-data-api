@@ -6,6 +6,7 @@ using Pds.Core.Logging;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace Pds.Contracts.Data.Services.DocumentServices
 {
@@ -80,6 +81,7 @@ namespace Pds.Contracts.Data.Services.DocumentServices
         /// <param name="overrideWidth">Image width.</param>
         /// <param name="overrideHieght">Imager hieght.</param>
         /// <returns>Image height.</returns>
+        [SupportedOSPlatform("windows")]
         public double AddImage(Page page, string imagePath, int? overrideWidth = null, int? overrideHieght = null)
         {
             var widthOffset = 50;

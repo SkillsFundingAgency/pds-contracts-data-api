@@ -111,9 +111,9 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             var working = new List<DataModels.Contract>
             {
-                new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, LastEmailReminderSent = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
-                new DataModels.Contract { Id = 2, Title = title, ContractNumber = contractNumber, ContractVersion = 2, Ukprn = 12345678, LastEmailReminderSent = lastEmailReminderSent.AddDays(-14), Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
-                new DataModels.Contract { Id = 3, Title = title, ContractNumber = contractNumber, ContractVersion = 3, Ukprn = 12345678, LastEmailReminderSent = lastEmailReminderSent.AddDays(-15), Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans },
+                new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, LastEmailReminderSent = lastEmailReminderSent, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, Year = "2021" },
+                new DataModels.Contract { Id = 2, Title = title, ContractNumber = contractNumber, ContractVersion = 2, Ukprn = 12345678, LastEmailReminderSent = lastEmailReminderSent.AddDays(-14), Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, Year = "2021" },
+                new DataModels.Contract { Id = 3, Title = title, ContractNumber = contractNumber, ContractVersion = 3, Ukprn = 12345678, LastEmailReminderSent = lastEmailReminderSent.AddDays(-15), Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.AdvancedLearnerLoans, Year = "2021" },
             };
 
             var expectedList = new List<ContractReminderItem>
@@ -178,7 +178,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             var working = new List<DataModels.Contract>
             {
-                new DataModels.Contract { Id = 1, Title = title, ContractNumber = string.Empty, ContractVersion = 1, Ukprn = 12345678, LastEmailReminderSent = null }
+                new DataModels.Contract { Id = 1, Title = title, ContractNumber = string.Empty, ContractVersion = 1, Ukprn = 12345678, LastEmailReminderSent = null, Year = "2021" }
             };
 
             var request = new UpdateLastEmailReminderSentRequest() { Id = 1, ContractNumber = "main-0001", ContractVersion = 1 };
@@ -249,7 +249,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             const string contractNumber = "Main-0001";
             const string title = "Test Title";
 
-            var working = new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.ApprovedWaitingConfirmation };
+            var working = new DataModels.Contract { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.ApprovedWaitingConfirmation, Year = "2021" };
 
             var request = new UpdateConfirmApprovalRequest() { ContractNumber = "Main-0001", ContractVersion = 1, FileName = BlobHelper.BlobName };
 
@@ -425,6 +425,32 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             afterUpdate.ContractData.OriginalContractXml.Should().Be(BlobHelper.BlobSampleContent);
         }
 
+        [TestMethod]
+        public async Task PrependSignedPageToDocumentAndSaveAsync_AfterSuccesfullyPrependSignedPage_SaveTheContractContentToDatabase()
+        {
+            //Arrange
+            SetAsposeLicense();
+            string baseUrl = $"https://localhost:5001";
+            var contracts = GetDataModel_Contracts(true);
+
+            ILoggerAdapter<ContractService> logger = new LoggerAdapter<ContractService>(new Logger<ContractService>(new LoggerFactory()));
+            MockAuditService();
+            var contractRepo = await GetContractRepository(contracts);
+            var uriService = new UriService(baseUrl);
+            var asposeDocumentManagementContractService = GetDocumentService();
+            var contractValidationService = GetContractValidationService();
+            var mediator = BuildMediator();
+            var contractDocumentService = BuildContractDocumentService();
+            var service = new ContractService(contractRepo, _mapper, uriService, logger, _mockAuditService.Object, _semaphoreOnEntity, asposeDocumentManagementContractService, contractValidationService, mediator, contractDocumentService);
+
+            //Act
+            await service.PrependSignedPageToDocumentAndSaveAsync(1);
+            var afterUpdate = await contractRepo.GetAsync(1);
+
+            //Assert
+            afterUpdate.ContractContent.Content.ShouldHaveSignedPage("testDoc", afterUpdate.SignedByDisplayName, afterUpdate.SignedOn.Value, false, afterUpdate.ContractContent.FileName, ContractFundingType.CityDeals, null);
+        }
+
         private void SetAsposeLicense()
         {
             var mockServiceCollection = new Mock<IServiceCollection>();
@@ -445,17 +471,46 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
             };
         }
 
-        private List<DataModels.Contract> GetDataModel_Contracts()
+        private List<DataModels.Contract> GetDataModel_Contracts(bool isApproved = false)
         {
             const string contractNumber = "main-000";
             const string title = "Test Title";
             int x = 1;
 
-            var contracts = new List<DataModels.Contract>
+            var contracts = new List<DataModels.Contract>();
+
+            if (isApproved)
             {
-                new DataModels.Contract
-                { Id = 1, Title = title, ContractNumber = contractNumber, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.CityDeals }
-            };
+                contracts.Add(new DataModels.Contract
+                {
+                    Id = 1,
+                    Title = title,
+                    ContractNumber = contractNumber,
+                    ContractVersion = 1,
+                    Ukprn = 12345678,
+                    Status = (int)ContractStatus.Approved,
+                    FundingType = (int)ContractFundingType.CityDeals,
+                    Year = "2021",
+                    SignedByDisplayName = "testsuser",
+                    SignedOn = DateTime.Now,
+                    ContractContent = GetDummyContractContent(1)
+                });
+            }
+            else
+            {
+                contracts.Add(new DataModels.Contract
+                {
+                    Id = 1,
+                    Title = title,
+                    ContractNumber = contractNumber,
+                    ContractVersion = 1,
+                    Ukprn = 12345678,
+                    Status = (int)ContractStatus.PublishedToProvider,
+                    FundingType = (int)ContractFundingType.CityDeals,
+                    Year = "2021",
+                    ContractContent = GetDummyContractContent(1)
+                });
+            }
 
             foreach (var item in contracts)
             {
@@ -475,7 +530,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration
 
             var contracts = new List<DataModels.Contract>
             {
-                new DataModels.Contract { Id = 1, Title = title, ContractNumber = string.Empty, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.CityDeals, ContractContent = GetDummyContractContent(1) }
+                new DataModels.Contract { Id = 1, Title = title, ContractNumber = string.Empty, ContractVersion = 1, Ukprn = 12345678, Status = (int)ContractStatus.PublishedToProvider, FundingType = (int)ContractFundingType.CityDeals, ContractContent = GetDummyContractContent(1), Year = "2021" }
             };
 
             foreach (var item in contracts)

@@ -71,6 +71,9 @@
     "authenticationClientId": {
       "type": "string"
     },
+    "azureAdAudience": {
+      "type": "string"
+    },
     "AuditApiBaseAddress": {
       "type": "string"
     },
@@ -79,9 +82,6 @@
     },
     "AuditApiAzureAdClientId": {
       "type": "string"
-    },
-    "AuditApiAzureAdClientSecret": {
-      "type": "securestring"
     },
     "AuditApiAzureAdAppUri": {
       "type": "string"
@@ -139,6 +139,10 @@
         "description": "An array of objects containing Name/ipAddress properties for defining the firewall on the api app service"
       },
       "defaultValue": []
+    },
+    "sharedKeyVaultName": {
+      "type": "string",
+      "defaultValue": ""
     }
   },
   "variables": {
@@ -271,16 +275,20 @@
                 "value": "[parameters('contractsDBConnectionString')]"
               },
               {
-                "name": "Authentication:Instance",
+                "name": "AzureAd:Instance",
                 "value": "https://login.microsoftonline.com/"
               },
               {
-                "name": "Authentication:TenantId",
+                "name": "AzureAd:TenantId",
                 "value": "[parameters('authenticationTenantId')]"
               },
               {
-                "name": "Authentication:ClientId",
+                "name": "AzureAd:ClientId",
                 "value": "[parameters('authenticationClientId')]"
+              },
+              {
+                "name": "AzureAd:Audience",
+                "value": "[parameters('azureAdAudience')]"
               },
               {
                 "name": "AuditApiConfiguration:ApiBaseAddress",
@@ -297,18 +305,18 @@
               {
                 "name": "AuditApiConfiguration:ClientId",
                 "value": "[parameters('AuditApiAzureAdClientId')]"
-              },
+              },              
               {
-                "name": "AuditApiConfiguration:ClientSecret",
-                "value": "[parameters('AuditApiAzureAdClientSecret')]"
-              },
+								"name": "AuditApiConfiguration:ClientSecret",
+								"value": "[concat('@Microsoft.KeyVault(VaultName=', parameters('sharedKeyVaultName'), ';SecretName=SharedAuditDataApiSecret)')]"
+							},
               {
                 "name": "AuditApiConfiguration:AppUri",
                 "value": "[parameters('AuditApiAzureAdAppUri')]"
               },
               {
                 "name": "AzureBlobConfiguration:ConnectionString",
-                "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',parameters('sharedStorageAccountName'),';AccountKey=',listKeys(resourceId(parameters('sharedResourceGroupName'),'Microsoft.Storage/storageAccounts',parameters('sharedStorageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value, ';EndpointSuffix=core.windows.net')]" 
+                "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',parameters('sharedStorageAccountName'),';AccountKey=',listKeys(resourceId(parameters('sharedResourceGroupName'),'Microsoft.Storage/storageAccounts',parameters('sharedStorageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value, ';EndpointSuffix=core.windows.net')]"
               },
               {
                 "name": "AzureBlobConfiguration:ContainerName",
@@ -318,7 +326,7 @@
                 "name": "AzureBlobConfiguration:RetryCount",
                 "value": "[parameters('blobRetry')]"
               },
-               {
+              {
                 "name": "AzureBlobConfiguration:Delay",
                 "value": "[parameters('blobDelay')]"
               },

@@ -199,5 +199,13 @@ namespace Pds.Contracts.Data.Services.Models
         /// The last updated at.
         /// </value>
         public DateTime LastUpdatedAt { get; set; }
+
+        /// <summary>
+        /// Gets or sets the contract content.
+        /// </summary>
+        /// <value>
+        /// The content of the contract.
+        /// </value>
+        public ContractContent ContractContent { get; set; }
     }
 }

@@ -25,6 +25,7 @@ namespace Pds.Contracts.Data.Repository.DependencyInjection
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IUnitOfWork, SingleUnitOfWorkForRepositories>();
             services.AddScoped<IContractRepository, ContractRepository>();
+            services.AddScoped<ISubcontractorDeclarationRepository, SubcontractorDeclarationRepository>();
             services.AddScoped<DbContext, PdsContext>();
 
             return services;
