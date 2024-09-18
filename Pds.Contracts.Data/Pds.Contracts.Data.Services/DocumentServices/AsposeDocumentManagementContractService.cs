@@ -4,6 +4,7 @@ using Pds.Contracts.Data.Services.Extensions;
 using Pds.Contracts.Data.Services.Interfaces;
 using Pds.Core.Logging;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Versioning;
 
@@ -47,6 +48,13 @@ namespace Pds.Contracts.Data.Services.DocumentServices
             {
                 using (var doc = new Document(inputStream))
                 {
+                    //Store width and height of original pages
+                    var originalPageInfo = new List<Rectangle>();
+                    for (int i = 1; i < doc.Pages.Count + 1; i++)
+                    {
+                        originalPageInfo.Add(doc.Pages[i].GetPageRect(true));
+                    }
+
                     var newPage = doc.Pages.Insert(1);
                     var cursorLocation = 0d;
 
@@ -82,6 +90,12 @@ namespace Pds.Contracts.Data.Services.DocumentServices
                     if (!string.IsNullOrEmpty(principalId))
                     {
                         bottom.Paragraphs.Add(CreateParagraph($"User ID: {principalId}"));
+                    }
+
+                    //Set page size from original values
+                    for (int i = 0; i < originalPageInfo.Count; i++)
+                    {
+                        doc.Pages[i + 2].SetPageSize(originalPageInfo[i].Width, originalPageInfo[i].Height);
                     }
 
                     using (var outputStream = new MemoryStream())

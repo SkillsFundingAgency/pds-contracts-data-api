@@ -146,7 +146,15 @@ namespace Pds.Contracts.Data.Services.DocumentServices
             {
                 if (page.Rect.Width > page.Rect.Height)
                 {
-                    page.PageInfo.IsLandscape = true;
+                    //Rotate newly set page to correct orientation
+                    var pageRectangle = page.MediaBox;
+                    double newHeight = pageRectangle.Width;
+                    double newWidth = pageRectangle.Height;
+                    double newLLX = pageRectangle.LLX;
+
+                    double newLLY = pageRectangle.LLY + (pageRectangle.Height - newHeight);
+                    page.MediaBox = new Rectangle(newLLX, newLLY, newLLX + newWidth, newLLY + newHeight);
+                    page.Rotate = Rotation.None;
                 }
             }
         }
