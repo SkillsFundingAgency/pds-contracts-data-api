@@ -282,7 +282,7 @@ namespace Pds.Contracts.Data.Services.Implementations
             };
 
             var contractRefernce = contract.ContractContent.FileName.Replace(".pdf", string.Empty);
-            var signer = $"hand and approved by ESFA";
+            var signer = $"hand and approved by DfE";
             var updatedDate = DateTime.UtcNow;
             var signedContractDocument = _documentService.AddSignedDocumentPage(contract.ContractContent.Content, contractRefernce, signer, updatedDate, manuallyApproved, (ContractFundingType)contract.FundingType);
 

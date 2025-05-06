@@ -22,7 +22,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration.DocumentServices
             // Arrange
             SetMockLogger();
             SetAsposeLicense();
-            var signer = $"hand and approved by ESFA";
+            var signer = $"hand and approved by DfE";
             var systemUnderTest = new AsposeDocumentManagementContractService(_mockLogger.Object);
 
             var fileContents = ContractContentBuilder.GetDocumentBytes("12345678_CityDeals-0002_v1.pdf");
@@ -41,7 +41,7 @@ namespace Pds.Contracts.Data.Services.Tests.Integration.DocumentServices
             // Arrange
             SetMockLogger();
             SetAsposeLicense();
-            var signer = $"hand and approved by ESFA";
+            var signer = $"hand and approved by DfE";
             var systemUnderTest = new AsposeDocumentManagementContractService(_mockLogger.Object);
 
             var fileContents = ContractContentBuilder.GetDocumentBytes("12345678_CityDeals-0002_v1.pdf");

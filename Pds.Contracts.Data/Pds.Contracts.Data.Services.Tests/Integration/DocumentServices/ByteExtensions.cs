@@ -38,11 +38,11 @@ namespace Pds.Contracts.Data.Services.Tests.Integration.DocumentServices
 
                     if (manuallyApproved)
                     {
-                        pdf.AssertPage1HasText(fileName, $"This {contractType} has been signed by the authorised signatory for the Education and " + Environment.NewLine + "Skills Funding Agency, acting on behalf of the Secretary of State.");
+                        pdf.AssertPage1HasText(fileName, $"This {contractType} has been signed by the authorised signatory for the Department for " + Environment.NewLine + "Education, acting on behalf of the Secretary of State.");
                     }
                     else
                     {
-                        pdf.AssertPage1HasText(fileName, $"This {contractType} has been signed by the authorised signatory for the Education and " + Environment.NewLine + "Skills Funding Agency, acting on behalf of the Secretary of State, and has been " + Environment.NewLine + "digitally signed by all parties.");
+                        pdf.AssertPage1HasText(fileName, $"This {contractType} has been signed by the authorised signatory for the Department for " + Environment.NewLine + "Education, acting on behalf of the Secretary of State, and has been " + Environment.NewLine + "digitally signed by all parties.");
                     }
 
                     pdf.AssertPage1HasText(fileName, $"Document reference: {contractReference}");
