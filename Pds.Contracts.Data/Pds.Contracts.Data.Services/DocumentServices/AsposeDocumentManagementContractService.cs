@@ -15,7 +15,7 @@ namespace Pds.Contracts.Data.Services.DocumentServices
     /// </summary>
     public class AsposeDocumentManagementContractService : AsposeDocumentManagementService, IDocumentManagementContractService
     {
-        private const string OrganisationName = "Education and Skills Funding Agency";
+        private const string OrganisationName = "Department for Education";
 
         private readonly ILoggerAdapter<AsposeDocumentManagementService> _logger;
 
